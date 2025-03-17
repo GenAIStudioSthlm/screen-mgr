@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Screen Controller for {{ screen_id }}</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: radial-gradient(
+          circle,
+          rgb(251, 63, 185) 0%,
+          rgb(8, 5, 5) 100%
+        );
+        padding-left: 20%;
+        padding-right: 20%;
+      }
+      h1 {
+        color: #f6c6ce;
+        text-shadow: black 3px 3px 1px;
+      }
+    </style>
+  </head>
+  <body class="">
+    <div class="mx-auto p-4 w-full max-w-2xl">
+      <img
+        src="/static/genaistudio.png"
+        alt="Genaistudio"
+        class="max-w-sm mx-auto"
+      />
+      <h1 class="text-3xl font-bold text-center my-8">Screen Url Controller</h1>
+
+      <div class="text-center">
+        <div class="flex justify-center mb-3">
+          <div
+            id="connection_status_true"
+            class="bg-green-500 font-bold px-4 py-2 hidden"
+          >
+            Connected
+          </div>
+          <div
+            id="connection_status_false"
+            class="bg-red-500 font-bold px-4 py-2"
+          >
+            Not connected
+          </div>
+        </div>
+        <div class="flex justify-center">
+          <div class="mb-2">Screen ID:</div>
+          <div class="mb-2">{{ screen_id }}</div>
+        </div>
+        <div class="flex justify-center">
+          <div class="mb-4">URL:</div>
+          <div id="content_url"></div>
+        </div>
+        <div class="flex justify-center">
+          <button
+            id="connect_button"
+            onclick="connect()"
+            class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Connect
+          </button>
+          <button
+            id="update_button"
+            onclick="reloadContentWindow('{{ content_url }}')"
+            class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          >
+            Update
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let contentWindow = null;
+      let contentUrl = "{{content_url}}";
+      const ws_url = `ws://${window.location.host}/ws/{{screen_id}}`;
+      let ws = null;
+      let connected = false;
+
+      const connect = () => {
+        connected = false;
+        console.log("Connecting to", ws_url);
+        ws = new WebSocket(ws_url);
+
+        ws.onmessage = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === "refresh" && data.newContentUrl) {
+            reloadContentWindow(data.newContentUrl);
+          }
+        };
+
+        ws.onopen = () => {
+          console.log("Connected to websocket server");
+          connected = true;
+          document
+            .getElementById("connection_status_true")
+            .classList.remove("hidden");
+          document
+            .getElementById("connection_status_false")
+            .classList.add("hidden");
+
+          //hide connect button
+          document.getElementById("connect_button").classList.add("hidden");
+
+          //show update button
+          document.getElementById("update_button").classList.remove("hidden");
+        };
+
+        ws.onclose = () => {
+          console.log("Disconnected from", ws_url);
+          connected = false;
+          document
+            .getElementById("connection_status_false")
+            .classList.remove("hidden");
+          document
+            .getElementById("connection_status_true")
+            .classList.add("hidden");
+
+          //show connect button
+          document.getElementById("connect_button").classList.remove("hidden");
+
+          //hide update button
+          document.getElementById("update_button").classList.add("hidden");
+        };
+      };
+
+      const reloadContentWindow = (contentUrl) => {
+        console.log("Reloading content window with", contentUrl);
+        contentUrl = contentUrl;
+
+        //update the div with id content_url
+        document.getElementById("content_url").innerText = contentUrl;
+
+        // Close existing window if open
+        if (contentWindow && !contentWindow.closed) {
+          contentWindow.close();
+        }
+        // Open the new window with updated URL
+        contentWindow = window.open(contentUrl, "contentWindow");
+      };
+
+      connect();
+
+      reloadContentWindow("{{content_url}}");
+    </script>
+  </body>
+</html>
