@@ -35,82 +35,42 @@
         method="post"
         class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
       >
+        {% for i in range(5) %}
         <div class="mb-4">
           <label
             class="block text-gray-700 text-sm font-bold mb-2"
             for="screen1"
           >
-            Screen 1 URL (station 1)
+            Screen {{i+1}} URL
           </label>
-          <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            name="screen1"
-            value="{{ screens['screen1'] }}"
-          />
+
+          <div class="flex items-center">
+            <input
+              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+              type="text"
+              name="screen{{i+1}}"
+              value="{{ screens['screen' ~ (i+1)] }}"
+            />
+            <button
+              class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+              name="update"
+              value="screen{{i+1}}"
+            >
+              Update
+            </button>
+          </div>
         </div>
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="screen2"
-          >
-            Screen 2 URL (station 2)
-          </label>
-          <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            name="screen2"
-            value="{{ screens['screen2'] }}"
-          />
-        </div>
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="screen3"
-          >
-            Screen 3 URL (station 3)
-          </label>
-          <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            name="screen3"
-            value="{{ screens['screen3'] }}"
-          />
-        </div>
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="screen4"
-          >
-            Screen 4 URL (screen 2)
-          </label>
-          <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            name="screen4"
-            value="{{ screens['screen4'] }}"
-          />
-        </div>
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="screen5"
-          >
-            Screen 5 URL (screen 3)
-          </label>
-          <input
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-            type="text"
-            name="screen5"
-            value="{{ screens['screen5'] }}"
-          />
-        </div>
+        {% endfor %}
+
         <div class="flex items-center justify-between">
           <button
             class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
             type="submit"
+            name="update"
+            value="all"
           >
-            Update
+            Update All
           </button>
         </div>
       </form>

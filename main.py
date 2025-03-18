@@ -10,7 +10,7 @@ from fastapi import (
     WebSocket,
     WebSocketDisconnect,
 )
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
@@ -33,7 +33,7 @@ SCREENS_FILE = "screens.json"
 # Load URLs for each screen from file
 def load_screens() -> Dict[str, str]:
     try:
-        with open(SCREENS_FILE, "r") as file:
+        with open(SCREENS_FILE, "r", encoding="utf-8") as file:
             return json.load(file)
     except FileNotFoundError:
         return {
@@ -47,7 +47,7 @@ def load_screens() -> Dict[str, str]:
 
 # Save URLs for each screen to file
 def save_screens(screens: Dict[str, str]):
-    with open(SCREENS_FILE, "w") as file:
+    with open(SCREENS_FILE, "w", encoding="utf-8") as file:
         json.dump(screens, file, indent=4)
 
 
@@ -101,30 +101,25 @@ async def update_screens(
     screen4: str = Form(...),
     screen5: str = Form(...),
 ):
-    logger.info("Base url: %s", request.base_url)
+    form_data = await request.form()
+    form_data_dict = dict(form_data)
+    print(str(form_data_dict))
 
-    screens["screen1"] = (
-        screen1 if screen1 else str(request.base_url) + "default/screen1"
-    )
-    screens["screen2"] = (
-        screen2 if screen2 else str(request.base_url) + "default/screen2"
-    )
-    screens["screen3"] = (
-        screen3 if screen3 else str(request.base_url) + "default/screen3"
-    )
-    screens["screen4"] = (
-        screen4 if screen4 else str(request.base_url) + "default/screen4"
-    )
-    screens["screen5"] = (
-        screen5 if screen5 else str(request.base_url) + "default/screen5"
-    )
+    screens["screen1"] = screen1 if screen1 else ""
+    screens["screen2"] = screen2 if screen2 else ""
+    screens["screen3"] = screen3 if screen3 else ""
+    screens["screen4"] = screen4 if screen4 else ""
+    screens["screen5"] = screen5 if screen5 else ""
 
     # Save updated URLs to file
     save_screens(screens)
 
     # Notify each screen with its new URL.
     for screen_id, url in screens.items():
-        await manager.broadcast(screen_id, {"type": "refresh", "newContentUrl": url})
+        if form_data_dict["update"] == "all" or form_data_dict["update"] == screen_id:
+            await manager.broadcast(
+                screen_id, {"type": "refresh", "newContentUrl": url}
+            )
     return RedirectResponse(url="/admin", status_code=303)
 
 

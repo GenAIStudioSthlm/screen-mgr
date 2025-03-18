@@ -88,9 +88,14 @@
         ws = new WebSocket(ws_url);
 
         ws.onmessage = (event) => {
+          console.log("Received message", event.data);
           const data = JSON.parse(event.data);
-          if (data.type === "refresh" && data.newContentUrl) {
-            reloadContentWindow(data.newContentUrl);
+          const contentUrl =
+            data.newContentUrl ||
+            `http://${window.location.host}/default/{{screen_id}}`;
+          console.log("Content URL", contentUrl);
+          if (data.type === "refresh") {
+            reloadContentWindow(contentUrl);
           }
         };
 
@@ -145,7 +150,6 @@
       };
 
       connect();
-
       reloadContentWindow("{{content_url}}");
     </script>
   </body>
