@@ -30,6 +30,16 @@ logger = logging.getLogger(__name__)
 SCREENS_FILE = "screens.json"
 
 
+screen_names = [
+    "Station 1",
+    "Station 2",
+    "Station 3",
+    "Screen 2",
+    "Screen 3",
+    "Main Screen",
+]
+
+
 # Load URLs for each screen from file
 def load_screens() -> Dict[str, str]:
     try:
@@ -42,6 +52,7 @@ def load_screens() -> Dict[str, str]:
             "screen3": "",
             "screen4": "",
             "screen5": "",
+            "screen6": "",
         }
 
 
@@ -88,7 +99,8 @@ def get_default_content_url(base_url: str, screen_id: str) -> str:
 @app.get("/admin", response_class=HTMLResponse)
 async def admin_page(request: Request):
     return templates.TemplateResponse(
-        "admin.html", {"request": request, "screens": screens}
+        "admin.html",
+        {"request": request, "screens": screens, "screen_names": screen_names},
     )
 
 
@@ -100,6 +112,7 @@ async def update_screens(
     screen3: str = Form(...),
     screen4: str = Form(...),
     screen5: str = Form(...),
+    screen6: str = Form(...),
 ):
     form_data = await request.form()
     form_data_dict = dict(form_data)
@@ -110,6 +123,7 @@ async def update_screens(
     screens["screen3"] = screen3 if screen3 else ""
     screens["screen4"] = screen4 if screen4 else ""
     screens["screen5"] = screen5 if screen5 else ""
+    screens["screen6"] = screen6 if screen6 else ""
 
     # Save updated URLs to file
     save_screens(screens)

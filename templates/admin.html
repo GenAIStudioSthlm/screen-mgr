@@ -30,18 +30,19 @@
         class="max-w-sm mx-auto"
       />
       <h1 class="text-3xl font-bold text-center my-8">Screen Url Manager</h1>
+
       <form
         action="/admin/update"
         method="post"
         class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
       >
-        {% for i in range(5) %}
+        {% for i in range(6) %}
         <div class="mb-4">
           <label
             class="block text-gray-700 text-sm font-bold mb-2"
             for="screen1"
           >
-            Screen {{i+1}} URL
+            {{screen_names[(i)]}}
           </label>
 
           <div class="flex items-center">
@@ -74,6 +75,28 @@
           </button>
         </div>
       </form>
+      <button
+        class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+        onclick="document.getElementById('imageModal').style.display='block'"
+      >
+        Screen locations
+      </button>
+    </div>
+    <!-- Modal -->
+    <div
+      id="imageModal"
+      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+      style="display: none"
+    >
+      <div class="relative bg-white p-4 rounded shadow-lg mx-auto max-w-lg">
+        <span
+          class="absolute top-0 right-0 p-2 cursor-pointer"
+          onclick="document.getElementById('imageModal').style.display='none'"
+        >
+          CLOSE
+        </span>
+        <img src="/static/studio.png" alt="Studio" class="max-w-full h-auto" />
+      </div>
     </div>
   </body>
 </html>
