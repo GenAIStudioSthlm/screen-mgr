@@ -81,6 +81,7 @@
       const ws_url = `ws://${window.location.host}/ws/{{screen_id}}`;
       let ws = null;
       let connected = false;
+      let timer = null;
 
       const connect = () => {
         connected = false;
@@ -114,6 +115,9 @@
 
           //show update button
           document.getElementById("update_button").classList.remove("hidden");
+
+          // clear the timer
+          clearInterval(timer);
         };
 
         ws.onclose = () => {
@@ -131,6 +135,13 @@
 
           //hide update button
           document.getElementById("update_button").classList.add("hidden");
+
+          // try to reconnect every 5 seconds
+          timer = setInterval(() => {
+            if (!connected) {
+              connect();
+            }
+          }, 5000);
         };
       };
 
