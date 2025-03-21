@@ -10,13 +10,22 @@ class ConnectionManager:
         self.active_connections: Dict[str, List[WebSocket]] = {}
 
     async def connect(self, screen_id: str, websocket: WebSocket):
-        await websocket.accept()
-        logger.info("Screen %s connected", screen_id)
+        try:
+            screen_index = int(screen_id) - 1
+            # if screen_index < 0 or screen_index >= len(screen_manager.screens):
+            #    print(f"Screen ID {screen_id} out of range")
+            #    print(len(screen_manager.screens))
+            #    raise ValueError("Screen ID out of range")
+            await websocket.accept()
+            logger.info("Screen %s connected", screen_id)
+            screen_manager.screens[screen_index].connected = True
+            screen_manager.screens[screen_index].websocket = websocket
+            screen_manager.print_screens()
+            # return True
 
-        # self.active_connections.setdefault(screen_id, []).append(websocket)
-        screen_manager.screens[int(screen_id) - 1].connected = True
-        screen_manager.screens[int(screen_id) - 1].websocket = websocket
-        screen_manager.print_screens()
+        except ValueError:
+            logger.error("Invalid screen ID: %s", screen_id)
+            return False
 
     def disconnect(self, screen_id: str):
         logger.warning("Screen %s disconnected", screen_id)
@@ -32,12 +41,13 @@ class ConnectionManager:
             "url": screen.url,
             "video": screen.video,
             "picture": screen.picture,
+            "pdf": screen.pdf,
         }
         # connection = self.active_connections.get(str(screen.id), [])
         if screen.connected:
             logger.info("Notifying screen %i: %s", screen.id, message)
             await screen.websocket.send_json(message)
-        if not self.active_connections.get(screen.id, []):
+        else:
             logger.warning("No active connections for screen %i", screen.id)
 
 

@@ -4,3 +4,4 @@ screens.json
 __pycache__
 static/pictures
 static/videos
+static/pdfs

@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fullscreen PDF Presentation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        background: black;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+      canvas {
+        width: 100%;
+        height: auto;
+        transition: opacity 1s ease-in-out; /* Smooth transition for opacity */
+        opacity: 1; /* Start fully visible */
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="pdf-canvas"></canvas>
+    <script>
+      const url = "/static/pdfs/{{ presentation }}"; // Path to the PDF file
+      const canvas = document.getElementById("pdf-canvas");
+      const ctx = canvas.getContext("2d");
+
+      let pdfDoc = null;
+      let pageNum = 1;
+      const pageChangeInterval = 5000; // Change page every 5 seconds
+      const fadeDuration = 1000; // Duration of fade-out and fade-in (in milliseconds)
+
+      // Load the PDF
+      pdfjsLib.getDocument(url).promise.then((pdf) => {
+        pdfDoc = pdf;
+        renderPage(pageNum);
+
+        // Automatically change pages
+        setInterval(() => {
+          pageNum = pageNum < pdfDoc.numPages ? pageNum + 1 : 1;
+          fadeAndRenderPage(pageNum);
+        }, pageChangeInterval);
+      });
+
+      // Fade out, render the page, and fade back in
+      function fadeAndRenderPage(num) {
+        // Fade out the canvas
+        canvas.style.opacity = 0;
+
+        // Wait for the fade-out to complete before rendering the next page
+        setTimeout(() => {
+          renderPage(num);
+        }, fadeDuration);
+      }
+
+      // Render a specific page
+      function renderPage(num) {
+        pdfDoc.getPage(num).then((page) => {
+          const viewport = page.getViewport({ scale: 1.5 });
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+
+          const renderContext = {
+            canvasContext: ctx,
+            viewport: viewport,
+          };
+
+          // Render the page and fade in the canvas after rendering
+          page.render(renderContext).promise.then(() => {
+            canvas.style.opacity = 1; // Fade in the canvas
+          });
+        });
+      }
+    </script>
+  </body>
+</html>

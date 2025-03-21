@@ -12,7 +12,7 @@ class Screen(BaseModel):
     name: str = Field(..., description="Name of the screen")
     type: str = Field(
         ...,
-        pattern="^(text|url|default|video|picture)$",
+        pattern="^(text|url|default|video|picture|pdf)$",
         description="Type of the screen content, either 'text' or 'url'",
     )
     text: str = Field("", description="Text content for the screen")
@@ -21,6 +21,7 @@ class Screen(BaseModel):
     picture: str = Field(
         "", description="Picture content for the screen (if applicable)"
     )
+    pdf: str = Field("", description="PDF content for the screen (if applicable)")
     connected: bool = Field(
         False,
         description="Indicates if the screen is currently connected",
@@ -40,6 +41,7 @@ class ScreenManager:
 
     # Load screens from file
     def load_screens(self) -> List[Screen]:
+        print("Loading screens from file...")
         try:
             with open(SCREENS_FILE, "r", encoding="utf-8") as file:
                 raw_screens = json.load(file)

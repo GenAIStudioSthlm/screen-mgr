@@ -23,6 +23,8 @@ VIDEO_FOLDER = "static/videos"
 os.makedirs(VIDEO_FOLDER, exist_ok=True)
 PICTURE_FOLDER = "static/pictures"
 os.makedirs(PICTURE_FOLDER, exist_ok=True)
+PDF_FOLDER = "static/pdfs"
+os.makedirs(PDF_FOLDER, exist_ok=True)
 
 
 @router.get("/admin", response_class=HTMLResponse)
@@ -34,6 +36,7 @@ async def admin_page(request: Request):
             "screens": screen_manager.screens,
             "videos": os.listdir(VIDEO_FOLDER),
             "pictures": os.listdir(PICTURE_FOLDER),
+            "pdfs": os.listdir(PDF_FOLDER),
         },
     )
 
@@ -50,7 +53,8 @@ async def update_screens(
     print("Current screen data:")
     screen_manager.print_screens()  # Print current screen data
 
-    for index in range(5):
+    for index in range(6):
+        print(f"Updating screen {index + 1}...")
         screen_manager.screens[index].type = form_data_dict[f"screen{index + 1}_type"]
         screen_manager.screens[index].url = form_data_dict[f"screen{index + 1}_url"]
         screen_manager.screens[index].text = form_data_dict[f"screen{index + 1}_text"]
@@ -58,6 +62,7 @@ async def update_screens(
         screen_manager.screens[index].picture = form_data_dict[
             f"screen{index + 1}_picture"
         ]
+        screen_manager.screens[index].pdf = form_data_dict[f"screen{index + 1}_pdf"]
 
     print("Updated screen data:")
     screen_manager.print_screens()  # Print updated screen data
@@ -81,19 +86,28 @@ async def update_screens(
 # Screen page route: each screen accesses its unique page.
 # ---------------------------------------------------------------------
 @router.get("/screen/{screen_id}", response_class=HTMLResponse)
-async def screen_page(request: Request, screen_id: int):
+async def screen_page(request: Request, screen_id: str):
     print(f"Screen {screen_id} connected.")
-    screen = screen_manager.screens[screen_id - 1]
+    try:
+        screen_index = int(screen_id) - 1
+    except ValueError:
+        return "Invalid screen ID."
+
+    screen = screen_manager.screens[screen_index]
     base_url = str(request.base_url)  # e.g., 'http://192.168.2.65:8000/'
 
     if screen.type == "text":
-        content_url = base_url + f"responsive/{screen.text}"
+        from urllib.parse import quote
+
+        content_url = base_url + f"responsive/{quote(screen.text)}"
     elif screen.type == "url":
         content_url = screen.url
     elif screen.type == "video":
         content_url = base_url + f"video/{screen.video}"
     elif screen.type == "picture":
         content_url = base_url + f"picture/{screen.picture}"
+    elif screen.type == "pdf":
+        content_url = base_url + f"pdf/{screen.pdf}"
     else:
         content_url = base_url + f"default/{screen_id}"
 
@@ -148,12 +162,24 @@ async def show_picture(request: Request, picture: str):
     )
 
 
+@router.get("/pdf/{presentation}", response_class=HTMLResponse)
+async def show_presentation(request: Request, presentation: str):
+    return templates.TemplateResponse(
+        "content/pdf.html",
+        {"request": request, "presentation": presentation},
+    )
+
+
 # ---------------------------------------------------------------------
 # WebSocket endpoint for each screen.
 # ---------------------------------------------------------------------
 @router.websocket("/ws/{screen_id}")
 async def websocket_endpoint(websocket: WebSocket, screen_id: str):
     await connection_manager.connect(screen_id, websocket)
+    # result = await connection_manager.connect(screen_id, websocket)
+    # if not result:
+    #    await websocket.close()
+    #    return
     try:
         while True:
             # Keep the connection alive.
@@ -203,6 +229,21 @@ async def upload_picture(picture_file: UploadFile = File(...)):
     file_path = os.path.join(PICTURE_FOLDER, picture_file.filename)
     with open(file_path, "wb") as f:
         f.write(await picture_file.read())
+
+    print(f"Uploaded file saved to {file_path}")
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@router.post("/admin/upload_pdf")
+async def upload_pdf(pdf_file: UploadFile = File(...)):
+    # Ensure the uploaded file is a PDF
+    if not pdf_file.filename.endswith(".pdf"):
+        return {"error": "Only PDF files are allowed."}
+
+    # Save the file to the static folder
+    file_path = os.path.join(PDF_FOLDER, pdf_file.filename)
+    with open(file_path, "wb") as f:
+        f.write(await pdf_file.read())
 
     print(f"Uploaded file saved to {file_path}")
     return RedirectResponse(url="/admin", status_code=303)

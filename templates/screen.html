@@ -97,11 +97,15 @@
               data.url ||
               `http://${window.location.host}/default/{{screen_id}}`;
           } else if (data.type === "text" && data.text) {
-            contentUrl = `http://${window.location.host}/responsive/${data.text}`;
+            contentUrl = `http://${
+              window.location.host
+            }/responsive/${encodeURIComponent(data.text)}`;
           } else if (data.type === "video" && data.video) {
             contentUrl = `http://${window.location.host}/video/${data.video}`;
           } else if (data.type === "picture" && data.picture) {
             contentUrl = `http://${window.location.host}/picture/${data.picture}`;
+          } else if (data.type === "pdf" && data.pdf) {
+            contentUrl = `http://${window.location.host}/pdf/${data.pdf}`;
           } else {
             contentUrl = `http://${window.location.host}/default/{{screen_id}}`;
           }
