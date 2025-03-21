@@ -91,13 +91,23 @@
         ws.onmessage = (event) => {
           console.log("Received message", event.data);
           const data = JSON.parse(event.data);
-          const contentUrl =
-            data.newContentUrl ||
-            `http://${window.location.host}/default/{{screen_id}}`;
-          console.log("Content URL", contentUrl);
-          if (data.type === "refresh") {
-            reloadContentWindow(contentUrl);
+          let contentUrl = "";
+          if (data.type === "url") {
+            contentUrl =
+              data.url ||
+              `http://${window.location.host}/default/{{screen_id}}`;
+          } else if (data.type === "text" && data.text) {
+            contentUrl = `http://${window.location.host}/responsive/${data.text}`;
+          } else if (data.type === "video" && data.video) {
+            contentUrl = `http://${window.location.host}/video/${data.video}`;
+          } else if (data.type === "picture" && data.picture) {
+            contentUrl = `http://${window.location.host}/picture/${data.picture}`;
+          } else {
+            contentUrl = `http://${window.location.host}/default/{{screen_id}}`;
           }
+          reloadContentWindow(contentUrl);
+          document.getElementById("content_url").innerText = contentUrl;
+          console.log("Content URL updated to", contentUrl);
         };
 
         ws.onopen = () => {
@@ -161,7 +171,9 @@
       };
 
       connect();
-      reloadContentWindow("{{content_url}}");
+      setTimeout(() => {
+        reloadContentWindow("{{content_url}}");
+      }, 1000);
     </script>
   </body>
 </html>

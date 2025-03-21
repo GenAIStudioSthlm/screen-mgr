@@ -4,12 +4,12 @@
     <meta charset="UTF-8" />
     <title>Admin Panel</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+    ></script>
     <style>
       body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        height: 100vh;
         background: radial-gradient(
           circle,
           rgb(251, 63, 185) 0%,
@@ -22,65 +22,198 @@
       }
     </style>
   </head>
-  <body class="">
-    <div class="mx-auto p-4 w-full max-w-2xl">
-      <img
-        src="/static/genaistudio.png"
-        alt="Genaistudio"
-        class="max-w-sm mx-auto"
-      />
-      <h1 class="text-3xl font-bold text-center my-8">Screen Url Manager</h1>
+  <body class="mx-auto p-4 w-full max-w-3xl">
+    <div class="flex flex-col gap-4">
+      <div class="w-full">
+        <img
+          src="/static/genaistudio.png"
+          alt="Genaistudio"
+          class="max-w-sm mx-auto"
+        />
+        <h1 class="text-3xl font-bold text-center my-8">Screen Url Manager</h1>
+
+        <form
+          action="/admin/update"
+          method="post"
+          class="bg-white shadow-md rounded px-8 pt-6 pb-8 "
+        >
+          {% for i in range(6) %}
+          <div class="mb-4" x-data="{ selectedType: 'url' }">
+            
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              for="screen1"
+            >
+              {{screens[i].name}} 
+              
+                {% if screens[i].connected %}
+              <span class="text-green-500">[Connected]</span> <!-- Checkmark icon -->
+                {% else %}
+                <span class="text-red-500">[Not connected]</span> <!-- Cross icon -->
+                {% endif %}
+
+            </label>
+
+
+            <div class="flex items-center w-full gap-2">
+              <div class="flex items-center w-full">
+                <div class=" mr-1 border rounded py-2 px-3 shadow h-10 bg-gray-200">
+                <select
+                  name="screen{{i+1}}_type"
+                  class="bg-gray-200"
+                  x-model="selectedType"
+                  value="{{ screens[(i)].type }}"
+                  @change="selectedType = $event.target.value"
+                  x-init="selectedType = '{{ screens[(i)].type }}'"
+                >
+                  <option value="url">Url</option>
+                  <option value="text">Text</option>
+                  <option value="video">Video</option>
+                  <option value="picture">Picture</option>
+                  <option value="default">Default</option>
+                </select>
+                </div>
+                <input
+                  class="shadow appearance-none border rounded w-full h-10 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  type="text"
+                  name="screen{{i+1}}_url"
+                  value="{{ screens[(i)].url }}"
+                  x-show="selectedType === 'url'"
+                />
+                <input
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  type="text"
+                  name="screen{{i+1}}_text"
+                  value="{{ screens[(i)].text }}"
+                  x-show="selectedType === 'text'"
+                />
+                
+                <select
+                  name="screen{{i+1}}_picture"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  x-show="selectedType === 'picture'"
+                  x-init="$nextTick(() => $el.value = '{{ screens[(i)].picture }}')"
+                >
+                  <option value="">Select a picture</option>
+                  {% for picture in pictures %}
+                  <option value="{{ picture }}" {% if picture == screens[i].picture %}selected{% endif %}>
+                  {{ picture }}
+                  </option>
+                  {% endfor %}
+                </select>
+
+                <select
+                  name="screen{{i+1}}_video"
+                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                  x-show="selectedType === 'video'"
+                  value="{{ screens[(i)].video }}"
+                >
+                  <option value="">Select a video</option>
+                  {% for video in videos %}
+                  <option value="{{ video }}" {% if video == screens[i].video %}selected{% endif %}>
+                  {{ video }}
+                  </option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div>
+                {% if screens[i].connected %}
+                <button
+                  class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+                  type="submit"
+                  name="update"
+                  value="screen{{i+1}}"
+                 
+                >
+                  Update
+                </button>
+
+                {% endif %} 
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+
+          <div class="flex items-center justify-between ">
+            <button
+              class="bg-black hover:bg-gray-700 text-white font-bold py-2  px-4 rounded focus:outline-none focus:shadow-outline"
+              type="submit"
+              name="update"
+              value="all"
+            >
+              Update All
+            </button>
+          </div>
+        </form>
+        
+      </div>
+        
+      <button
+          class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          onclick="document.getElementById('imageModal').style.display='block'"
+        >
+          Screen locations
+      </button>
 
       <form
-        action="/admin/update"
+        action="/admin/upload_video"
         method="post"
+        enctype="multipart/form-data"
         class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
       >
-        {% for i in range(6) %}
         <div class="mb-4">
           <label
             class="block text-gray-700 text-sm font-bold mb-2"
-            for="screen1"
+            for="video_file"
           >
-            {{screen_names[(i)]}}
+            Upload Video
           </label>
-
-          <div class="flex items-center">
-            <input
-              class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-              type="text"
-              name="screen{{i+1}}"
-              value="{{ screens['screen' ~ (i+1)] }}"
-            />
-            <button
-              class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-              type="submit"
-              name="update"
-              value="screen{{i+1}}"
-            >
-              Update
-            </button>
-          </div>
+          <input
+            type="file"
+            name="videoFile"
+            id="video_file"
+            accept="video/mp4"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
         </div>
-        {% endfor %}
-
-        <div class="flex items-center justify-between">
-          <button
-            class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-            type="submit"
-            name="update"
-            value="all"
-          >
-            Update All
-          </button>
-        </div>
+        <button
+          class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          type="submit"
+        >
+          Upload Video
+        </button>
       </form>
-      <button
-        class="bg-pink-600 hover:bg-pink-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-        onclick="document.getElementById('imageModal').style.display='block'"
+
+      <!-- Add a new form for uploading pictures -->
+      <form
+        action="/admin/upload_picture"
+        method="post"
+        enctype="multipart/form-data"
+        class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
       >
-        Screen locations
-      </button>
+        <div class="mb-4">
+          <label
+            class="block text-gray-700 text-sm font-bold mb-2"
+            for="picture_file"
+          >
+            Upload Picture
+          </label>
+          <input
+            type="file"
+            name="picture_file"
+            id="pictureFile"
+            accept="image/*"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+          />
+        </div>
+        <button
+          class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+          type="submit"
+        >
+          Upload Picture
+        </button>
+      </form>
     </div>
     <!-- Modal -->
     <div

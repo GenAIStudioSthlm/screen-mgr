@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=chromium Kiosk
+Exec=chromium-browser --start-fullscreen  http://studiopi.local:8000/screen/screen1
+
+
+
