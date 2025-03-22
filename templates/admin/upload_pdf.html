@@ -1,9 +1,4 @@
-<form
-  action="/admin/upload_pdf"
-  method="post"
-  enctype="multipart/form-data"
-  class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
->
+<form action="/admin/upload_pdf" method="post" enctype="multipart/form-data">
   <div class="mb-4">
     <label class="block text-gray-700 text-sm font-bold mb-2" for="pdf_file">
       Upload PDF
@@ -23,3 +18,21 @@
     Upload Pdf
   </button>
 </form>
+
+<!-- List of Uploaded PDFs -->
+<div class="mt-6">
+  <h2 class="text-lg font-bold mb-4">Uploaded PDFs</h2>
+  <ul class="list-disc pl-5">
+    {% for pdf in pdfs %}
+    <li class="mb-2">
+      <a
+        href="/static/pdfs/{{pdf }}"
+        class="text-blue-500 hover:underline"
+        target="_blank"
+      >
+        {{ pdf }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</div>

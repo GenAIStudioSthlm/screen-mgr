@@ -108,6 +108,8 @@
             contentUrl = `http://${window.location.host}/picture/${data.picture}`;
           } else if (data.type === "pdf" && data.pdf) {
             contentUrl = `http://${window.location.host}/pdf/${data.pdf}`;
+          } else if (data.type === "slideshow" && data.slideshow) {
+            contentUrl = `http://${window.location.host}/slideshow/${data.slideshow}`;
           } else {
             contentUrl = `http://${window.location.host}/default/{{screen_id}}`;
           }

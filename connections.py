@@ -42,6 +42,7 @@ class ConnectionManager:
             "video": screen.video,
             "picture": screen.picture,
             "pdf": screen.pdf,
+            "slideshow": screen.slideshow,
         }
         # connection = self.active_connections.get(str(screen.id), [])
         if screen.connected:

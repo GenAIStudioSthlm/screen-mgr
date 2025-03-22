@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fullscreen Slideshow</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"
+      defer
+    ></script>
+  </head>
+  <body
+    class="bg-black flex items-center justify-center h-screen overflow-hidden"
+    x-data="slideshow({{ pictures|length }})"
+    x-init="startSlideshow()"
+  >
+    <div class="relative w-full h-full">
+      {% for picture in pictures %}
+      <img
+        src="/static/pictures/{{ folder }}/{{ picture }}"
+        alt="Slideshow Image"
+        class="absolute inset-0 w-full h-full object-contain opacity-0 transition-opacity duration-1000 ease-in-out"
+        :class="{ 'opacity-100': currentSlide === {{ loop.index0 }} }"
+      />
+      {% endfor %}
+    </div>
+
+    <script>
+      function slideshow(totalSlides) {
+        return {
+          currentSlide: 0,
+          totalSlides: totalSlides,
+          startSlideshow() {
+            setInterval(() => {
+              this.currentSlide = (this.currentSlide + 1) % this.totalSlides;
+            }, 5000); // Change slide every 5 seconds
+          },
+        };
+      }
+    </script>
+  </body>
+</html>

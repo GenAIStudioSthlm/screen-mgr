@@ -12,7 +12,7 @@ class Screen(BaseModel):
     name: str = Field(..., description="Name of the screen")
     type: str = Field(
         ...,
-        pattern="^(text|url|default|video|picture|pdf)$",
+        pattern="^(text|url|default|video|picture|pdf|slideshow)$",
         description="Type of the screen content, either 'text' or 'url'",
     )
     text: str = Field("", description="Text content for the screen")
@@ -22,6 +22,9 @@ class Screen(BaseModel):
         "", description="Picture content for the screen (if applicable)"
     )
     pdf: str = Field("", description="PDF content for the screen (if applicable)")
+    slideshow: str = Field(
+        "", description="Slideshow folder for the screen (if applicable)"
+    )
     connected: bool = Field(
         False,
         description="Indicates if the screen is currently connected",

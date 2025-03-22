@@ -1,4 +1,5 @@
 # Admin page with form to update screen URLs.
+import os
 from fastapi import (
     APIRouter,
     Request,
@@ -47,11 +48,19 @@ async def show_video(request: Request, video: str):
 # ---------------------------------------------------------------------
 # Picture
 # ---------------------------------------------------------------------
-@router.get("/picture/{picture}", response_class=HTMLResponse)
-async def show_picture(request: Request, picture: str):
+@router.get("/picture/{folder}/{picture}", response_class=HTMLResponse)
+async def show_picture(request: Request, folder: str, picture: str):
+    print(f"Picture URL: {folder}")
+    print(f"Picture URL: {picture}")
+
+    if folder == "Root":
+        url = picture
+    else:
+        url = f"{folder}/{picture}"
+
     return templates.TemplateResponse(
         "content/picture.html",
-        {"request": request, "picture": picture},
+        {"request": request, "picture": url},  # Decode the URL-encoded slashes
     )
 
 
@@ -60,4 +69,20 @@ async def show_presentation(request: Request, presentation: str):
     return templates.TemplateResponse(
         "content/pdf.html",
         {"request": request, "presentation": presentation},
+    )
+
+
+@router.get("/slideshow/{folder}", response_class=HTMLResponse)
+async def show_slideshow(request: Request, folder: str):
+    # Get the list of pictures in the specified folder
+    slideshow_folder = os.path.join("static/pictures", folder)
+    pictures = [
+        file
+        for file in os.listdir(slideshow_folder)
+        if file.lower().endswith(("png", "jpg", "jpeg", "gif"))
+    ]
+
+    return templates.TemplateResponse(
+        "content/slideshow.html",
+        {"request": request, "folder": folder, "pictures": pictures},
     )

@@ -30,176 +30,95 @@
           alt="Genaistudio"
           class="max-w-sm mx-auto"
         />
-        <h1 class="text-3xl font-bold text-center mt-8 mb-3">Studio Screen Manager</h1>
-<button
-          class="text-right text-white font-bold py-2 "
+        <h1 class="text-3xl font-bold text-center mt-8 mb-3">
+          Studio Screen Manager
+        </h1>
+        <button
+          class="text-right text-white font-bold py-2"
           onclick="document.getElementById('imageModal').style.display='block'"
         >
           Screen locations & ids
-      </button>
-        <form
-          action="/admin/update"
-          method="post"
-          class="bg-white shadow-md rounded px-8 pt-6 pb-8 "
+        </button>
+
+        <!-- Tabs -->
+        <div
+          x-data="{ activeTab: 'screens' }"
+          class="shadow-md rounded bg-white"
         >
-          {% for i in range(6) %}
-          <div class="mb-4" x-data="{ selectedType: 'url' }">
-            
-            <label
-              class="block text-gray-700 text-sm font-bold mb-2"
-              for="screen1"
-            >
-              {{screens[i].name}} 
-              
-                {% if screens[i].connected %}
-              <span class="text-green-500">[Connected]</span> <!-- Checkmark icon -->
-                {% else %}
-                <span class="text-red-500 cursor-pointer" onclick="const next = this.nextElementSibling; next.style.display = next.style.display === 'block' ? 'none' : 'block'">[Not connected ?]</span> <!-- Cross icon -->
-                <span style="display: none" class="border p-3">
-                  This screen is currently not connected. This means it is not running a browser window with the screen controller web app. <br/>
-                  Make sure it is running a browser window in fullscreen with the following url:<br/><br/>
-                  http://studiopi:8000/screen/{{ screens[i].id }} (Sometimes the domain needs to be studiopi.local 🤷)
-                </span>
-                {% endif %}
-
-            </label>
-
-
-            <div class="flex items-center w-full gap-2">
-              <div class="flex items-center w-full">
-                <div class=" mr-1 border rounded py-2 px-3 shadow h-10 bg-gray-200">
-                <select
-                  name="screen{{i+1}}_type"
-                  class="bg-gray-200"
-                  x-model="selectedType"
-                  value="{{ screens[(i)].type }}"
-                  @change="selectedType = $event.target.value"
-                  x-init="selectedType = '{{ screens[(i)].type }}'"
-                >
-                  <option value="url">Url</option>
-                  <option value="text">Text</option>
-                  <option value="video">Video</option>
-                  <option value="picture">Picture</option>
-                  <option value="pdf">PDF</option>
-                  <option value="default">Default</option>
-                </select>
-                </div>
-                <input
-                  class="shadow appearance-none border rounded w-full h-10 py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  type="text"
-                  name="screen{{i+1}}_url"
-                  value="{{ screens[(i)].url }}"
-                  x-show="selectedType === 'url'"
-                />
-                <input
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  type="text"
-                  name="screen{{i+1}}_text"
-                  value="{{ screens[(i)].text }}"
-                  x-show="selectedType === 'text'"
-                />
-                
-                <select
-                  name="screen{{i+1}}_picture"
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  x-show="selectedType === 'picture'"
-                  x-init="$nextTick(() => $el.value = '{{ screens[(i)].picture }}')"
-                >
-                  <option value="">Select a picture</option>
-                  {% for picture in pictures %}
-                  <option value="{{ picture }}" {% if picture == screens[i].picture %}selected{% endif %}>
-                  {{ picture }}
-                  </option>
-                  {% endfor %}
-                </select>
-
-                <select
-                  name="screen{{i+1}}_video"
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  x-show="selectedType === 'video'"
-                  value="{{ screens[(i)].video }}"
-                >
-                  <option value="">Select a video</option>
-                  {% for video in videos %}
-                  <option value="{{ video }}" {% if video == screens[i].video %}selected{% endif %}>
-                  {{ video }}
-                  </option>
-                  {% endfor %}
-                </select>
-
-                <select
-                  name="screen{{i+1}}_pdf"
-                  class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  x-show="selectedType === 'pdf'"
-                  value="{{ screens[(i)].pdf }}"
-                >
-                  <option value="">Select a pdf</option>
-                  {% for pdf in pdfs %}
-                  <option value="{{ pdf }}" {% if pdf == screens[i].pdf %}selected{% endif %}>
-                  {{ pdf }}
-                  </option>
-                  {% endfor %}
-                </select>
-
-              </div>
-
-              <div>
-                {% if screens[i].connected %}
-                <button
-                  class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                  type="submit"
-                  name="update"
-                  value="screen{{i+1}}"
-                 
-                >
-                  Update
-                </button>
-
-                {% endif %} 
-              </div>
-            </div>
-          </div>
-          {% endfor %}
-
-          <div class="flex items-center justify-between ">
+          <div class="flex border-b bg-[#f6c6ce] rounded-t">
             <button
-              class="bg-black hover:bg-gray-700 text-white font-bold py-2  px-4 rounded focus:outline-none focus:shadow-outline"
-              type="submit"
-              name="update"
-              value="all"
+              class="py-3 px-4 text-gray-700 font-bold"
+              :class="{ 'border-b-2 border-black': activeTab === 'screens' }"
+              @click="activeTab = 'screens'"
             >
-              Update All
+              Screens
+            </button>
+            <button
+              class="py-2 px-4 text-gray-700 font-bold"
+              :class="{ 'border-b-2 border-black': activeTab === 'videos' }"
+              @click="activeTab = 'videos'"
+            >
+              Videos
+            </button>
+            <button
+              class="py-2 px-4 text-gray-700 font-bold"
+              :class="{ 'border-b-2 border-black': activeTab === 'pictures' }"
+              @click="activeTab = 'pictures'"
+            >
+              Pictures
+            </button>
+            <button
+              class="py-2 px-4 text-gray-700 font-bold"
+              :class="{ 'border-b-2 border-black': activeTab === 'pdfs' }"
+              @click="activeTab = 'pdfs'"
+            >
+              PDFs
             </button>
           </div>
-        </form>
-        
+
+          <div class="p-4">
+            <!-- Screens Tab -->
+            <div x-show="activeTab === 'screens'" class="p-4">
+              {% include "admin/screens.html" %}
+            </div>
+
+            <!-- Videos Tab -->
+            <div x-show="activeTab === 'videos'" class="p-4">
+              {% include "admin/upload_video.html" %}
+            </div>
+
+            <!-- Pictures Tab -->
+            <div x-show="activeTab === 'pictures'" class="p-4">
+              {% include "admin/upload_picture.html" %}
+            </div>
+
+            <!-- PDFs Tab -->
+            <div x-show="activeTab === 'pdfs'" class="p-4">
+              {% include "admin/upload_pdf.html" %}
+            </div>
+          </div>
+        </div>
       </div>
-        
-      
 
-      {% include "admin/upload_video.html" %}
-
-      <!-- Add a new form for uploading pictures -->
-      {% include "admin/upload_picture.html" %}
-
-       {% include "admin/upload_pdf.html" %}
-      
-
-    </div>
-    <!-- Modal -->
-    <div
-      id="imageModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
-      style="display: none"
-    >
-      <div class="relative bg-white p-4 rounded shadow-lg mx-auto max-w-lg">
-        <span
-          class="absolute top-0 right-0 p-2 cursor-pointer"
-          onclick="document.getElementById('imageModal').style.display='none'"
-        >
-          CLOSE
-        </span>
-        <img src="/static/studio.png" alt="Studio" class="max-w-full h-auto" />
+      <!-- Modal -->
+      <div
+        id="imageModal"
+        class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50"
+        style="display: none"
+      >
+        <div class="relative bg-white p-4 rounded shadow-lg mx-auto max-w-lg">
+          <span
+            class="absolute top-0 right-0 p-2 cursor-pointer"
+            onclick="document.getElementById('imageModal').style.display='none'"
+          >
+            CLOSE
+          </span>
+          <img
+            src="/static/studio.png"
+            alt="Studio"
+            class="max-w-full h-auto"
+          />
+        </div>
       </div>
     </div>
   </body>

@@ -33,9 +33,11 @@ async def screen_page(request: Request, screen_id: str):
     elif screen.type == "video":
         content_url = base_url + f"video/{screen.video}"
     elif screen.type == "picture":
-        content_url = base_url + f"picture/{screen.picture}"
+        content_url = base_url + f"picture/{(screen.picture.replace('/', '%2F'))}"
     elif screen.type == "pdf":
         content_url = base_url + f"pdf/{screen.pdf}"
+    elif screen.type == "slideshow":
+        content_url = base_url + f"slideshow/{screen.slideshow}"
     else:
         content_url = base_url + f"default/{screen_id}"
 

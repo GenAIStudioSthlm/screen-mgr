@@ -32,6 +32,25 @@ async def admin_page(request: Request):
         for f in os.listdir(PICTURE_FOLDER)
         if os.path.isdir(os.path.join(PICTURE_FOLDER, f))
     ]
+
+    # Dictionary to store folders and their pictures
+    uploaded_pictures = {}
+
+    # Walk through the directory and its subfolders
+    for root, dirs, files in os.walk(PICTURE_FOLDER):
+        # Get the relative folder name
+        folder = os.path.relpath(root, PICTURE_FOLDER)
+        folder = folder if folder != "." else "Root"
+
+        # Filter image files and add them to the dictionary
+        pictures = [
+            file
+            for file in files
+            if file.lower().endswith(("png", "jpg", "jpeg", "gif"))
+        ]
+        if pictures:
+            uploaded_pictures[folder] = pictures
+
     return templates.TemplateResponse(
         "admin.html",
         {
@@ -41,6 +60,7 @@ async def admin_page(request: Request):
             "pictures": os.listdir(PICTURE_FOLDER),
             "pdfs": os.listdir(PDF_FOLDER),
             "picture_subfolders": picture_subfolders,
+            "uploaded_pictures": uploaded_pictures,
         },
     )
 
@@ -63,10 +83,18 @@ async def update_screens(
         screen_manager.screens[index].url = form_data_dict[f"screen{index + 1}_url"]
         screen_manager.screens[index].text = form_data_dict[f"screen{index + 1}_text"]
         screen_manager.screens[index].video = form_data_dict[f"screen{index + 1}_video"]
-        screen_manager.screens[index].picture = form_data_dict[
-            f"screen{index + 1}_picture"
-        ]
+
+        # Sanitize the picture value to ensure it doesn't cause issues
+        picture_value = form_data_dict[f"screen{index + 1}_picture"]
+        if "/" in picture_value:
+            picture_value = picture_value.replace(
+                "/", os.sep
+            )  # Replace '/' with the OS-specific separator
+        screen_manager.screens[index].picture = picture_value
         screen_manager.screens[index].pdf = form_data_dict[f"screen{index + 1}_pdf"]
+        screen_manager.screens[index].slideshow = form_data_dict[
+            f"screen{index + 1}_slideshow"
+        ]
 
     print("Updated screen data:")
     screen_manager.print_screens()  # Print updated screen data

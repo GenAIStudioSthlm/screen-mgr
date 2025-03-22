@@ -2,7 +2,6 @@
   action="/admin/upload_picture"
   method="post"
   enctype="multipart/form-data"
-  class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
 >
   <div class="mb-4">
     <label
@@ -47,3 +46,27 @@
     Upload Picture
   </button>
 </form>
+
+<div class="mt-6">
+  <h2 class="text-lg font-bold mb-4">Uploaded Pictures</h2>
+  <ul class="list-disc pl-5">
+    {% for folder, pictures in uploaded_pictures.items() %}
+    <li class="mb-2">
+      <strong>Folder: {{ folder }}</strong>
+      <ul class="list-disc pl-5">
+        {% for picture in pictures %}
+        <li>
+          <a
+            href="/picture/{{ folder }}/{{ picture }}"
+            class="text-blue-500 hover:underline"
+            target="_blank"
+          >
+            {{ picture }}
+          </a>
+        </li>
+        {% endfor %}
+      </ul>
+    </li>
+    {% endfor %}
+  </ul>
+</div>
