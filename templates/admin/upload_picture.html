@@ -1,0 +1,49 @@
+<form
+  action="/admin/upload_picture"
+  method="post"
+  enctype="multipart/form-data"
+  class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
+>
+  <div class="mb-4">
+    <label
+      class="block text-gray-700 text-sm font-bold mb-2"
+      for="picture_file"
+    >
+      Upload Picture
+    </label>
+    <input
+      type="file"
+      name="picture_file"
+      id="picture_file"
+      accept="image/*"
+      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    />
+  </div>
+  <div class="mb-4">
+    <label class="block text-gray-700 text-sm font-bold mb-2" for="subfolder">
+      Select or Create Subfolder
+    </label>
+    <select
+      name="subfolder"
+      id="subfolder"
+      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+    >
+      <option value="">Root</option>
+      {% for folder in picture_subfolders %}
+      <option value="{{ folder }}">{{ folder }}</option>
+      {% endfor %}
+    </select>
+    <input
+      type="text"
+      name="new_subfolder"
+      placeholder="Create new subfolder"
+      class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline mt-2"
+    />
+  </div>
+  <button
+    class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+    type="submit"
+  >
+    Upload Picture
+  </button>
+</form>

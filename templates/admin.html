@@ -177,94 +177,13 @@
         
       
 
-      <form
-        action="/admin/upload_video"
-        method="post"
-        enctype="multipart/form-data"
-        class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="video_file"
-          >
-            Upload Video
-          </label>
-          <input
-            type="file"
-            name="video_file"
-            id="video_file"
-            accept="video/mp4"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <button
-          class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-        >
-          Upload Video
-        </button>
-      </form>
+      {% include "admin/upload_video.html" %}
 
       <!-- Add a new form for uploading pictures -->
-      <form
-        action="/admin/upload_picture"
-        method="post"
-        enctype="multipart/form-data"
-        class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="picture_file"
-          >
-            Upload Picture
-          </label>
-          <input
-            type="file"
-            name="picture_file"
-            id="picture_file"
-            accept="image/*"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <button
-          class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-        >
-          Upload Picture
-        </button>
-      </form>
+      {% include "admin/upload_picture.html" %}
 
-
-      <form
-        action="/admin/upload_pdf"
-        method="post"
-        enctype="multipart/form-data"
-        class="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4"
-      >
-        <div class="mb-4">
-          <label
-            class="block text-gray-700 text-sm font-bold mb-2"
-            for="pdf_file"
-          >
-            Upload PDF
-          </label>
-          <input
-            type="file"
-            name="pdf_file"
-            id="pdf_file"
-            accept="pdf/*"
-            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <button
-          class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          type="submit"
-        >
-          Upload Pdf
-        </button>
-      </form>
+       {% include "admin/upload_pdf.html" %}
+      
 
     </div>
     <!-- Modal -->
