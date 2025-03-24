@@ -33,19 +33,14 @@
         <h1 class="text-3xl font-bold text-center mt-8 mb-3">
           Studio Screen Manager
         </h1>
-        <button
-          class="text-right text-white font-bold py-2"
-          onclick="document.getElementById('imageModal').style.display='block'"
-        >
-          Screen locations & ids
-        </button>
-
+        
+        </div>
         <!-- Tabs -->
         <div
           x-data="{ activeTab: 'screens' }"
           class="shadow-md rounded bg-white"
         >
-          <div class="flex border-b bg-[#f6c6ce] rounded-t">
+          <div class="flex border-b bg-[#f6c6ce] rounded-t items-center">
             <button
               class="py-3 px-4 text-gray-700 font-bold"
               :class="{ 'border-b-2 border-black': activeTab === 'screens' }"
@@ -74,6 +69,14 @@
             >
               PDFs
             </button>
+            <div class="text-right w-full pr-4">
+              <button
+                class="text-right text-black font-bold"
+                onclick="document.getElementById('imageModal').style.display='block'"
+              >
+                Screen locations & ids
+              </button>
+            </div>
           </div>
 
           <div class="p-4">
@@ -97,6 +100,20 @@
               {% include "admin/upload_pdf.html" %}
             </div>
           </div>
+        </div>
+
+        <div class="w-full text-center mt-3">
+          <a
+            href="https://github.com/GenAIStudioSthlm/screen-mgr"
+            class="inline-block text-center"
+            target="_blank"
+          >
+            <img
+              src="/static/github-mark-white.png"
+              alt="GitHub"
+              class="w-6 h-6 float-right"
+            />
+          </a>
         </div>
       </div>
 
