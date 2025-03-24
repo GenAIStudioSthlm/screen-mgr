@@ -71,9 +71,9 @@ async def update_screens(
 ):
     form_data = await request.form()
     form_data_dict = dict(form_data)
+
     print("Form data received:")
     print(json.dumps(form_data_dict, indent=4))
-
     print("Current screen data:")
     screen_manager.print_screens()  # Print current screen data
 
@@ -96,6 +96,38 @@ async def update_screens(
             f"screen{index + 1}_slideshow"
         ]
 
+    # ---------------------------------------------------------
+    # check if some screen whould overwrite all other screens
+    # ---------------------------------------------------------
+    if form_data_dict["update"].endswith("_all"):
+        # get screen id to use
+        screen_id = form_data_dict["update"].split("_")[0].replace("screen", "")
+        screen_index = int(screen_id) - 1
+        # set all other screens to the same values
+        for index in range(6):
+            if index != screen_index:
+                screen_manager.screens[index].type = form_data_dict[
+                    f"screen{screen_id}_type"
+                ]
+                screen_manager.screens[index].url = form_data_dict[
+                    f"screen{screen_id}_url"
+                ]
+                screen_manager.screens[index].text = form_data_dict[
+                    f"screen{screen_id}_text"
+                ]
+                screen_manager.screens[index].video = form_data_dict[
+                    f"screen{screen_id}_video"
+                ]
+                screen_manager.screens[index].picture = form_data_dict[
+                    f"screen{screen_id}_picture"
+                ]
+                screen_manager.screens[index].pdf = form_data_dict[
+                    f"screen{screen_id}_pdf"
+                ]
+                screen_manager.screens[index].slideshow = form_data_dict[
+                    f"screen{screen_id}_slideshow"
+                ]
+
     print("Updated screen data:")
     screen_manager.print_screens()  # Print updated screen data
     # Save updated screen data to file
@@ -106,7 +138,7 @@ async def update_screens(
     print("Notifying screens of URL updates...")
     # Notify each screen with its new URL.
     for screen in screen_manager.screens:
-        if form_data_dict["update"] == "all" or form_data_dict["update"] == (
+        if form_data_dict["update"].endswith("_all") or form_data_dict["update"] == (
             "screen" + str(screen.id)
         ):
             await connection_manager.notify_screen(screen=screen)
