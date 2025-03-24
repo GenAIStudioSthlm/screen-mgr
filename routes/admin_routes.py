@@ -12,6 +12,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from screens import screen_manager
 from connections import connection_manager
+from utils import delete_file
 
 
 templates = Jinja2Templates(directory="templates")
@@ -158,7 +159,7 @@ async def upload_video(video_file: UploadFile = File(...)):
         f.write(await video_file.read())
 
     print(f"Uploaded file saved to {file_path}")
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin#videos", status_code=303)
 
 
 @router.post("/admin/upload_picture")
@@ -192,7 +193,7 @@ async def upload_picture(
         f.write(await picture_file.read())
 
     print(f"Uploaded file saved to {file_path}")
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin#pictures", status_code=303)
 
 
 @router.post("/admin/upload_pdf")
@@ -207,7 +208,7 @@ async def upload_pdf(pdf_file: UploadFile = File(...)):
         f.write(await pdf_file.read())
 
     print(f"Uploaded file saved to {file_path}")
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin#pdfs", status_code=303)
 
 
 # Add this new route after the upload_pdf route
@@ -215,11 +216,12 @@ async def upload_pdf(pdf_file: UploadFile = File(...)):
 async def delete_picture(picture_filename: str = Form(...)):
     """Delete a Picture file."""
     file_path = os.path.join(PICTURE_FOLDER, picture_filename.replace("Root/", ""))
+    print(f"Deleting picture: {file_path}")
     result = delete_file(file_path)
     if result.get("error"):
         return result
   
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin#pictures", status_code=303)
 
 
 @router.post("/admin/delete_pdf")
@@ -229,7 +231,7 @@ async def delete_pdf(pdf_filename: str = Form(...)):
     if result.get("error"):
         return result
 
-    return RedirectResponse(url="/admin", status_code=303)
+    return RedirectResponse(url="/admin#pdfs", status_code=303)
 
 @router.post("/admin/delete_video")
 async def delete_video(video_filename: str = Form(...)):  
@@ -239,4 +241,4 @@ async def delete_video(video_filename: str = Form(...)):
     if result.get("error"):
         return result
 
-    return RedirectResponse(url="/admin", status_code=303)      
+    return RedirectResponse(url="/admin#videos", status_code=303)      
