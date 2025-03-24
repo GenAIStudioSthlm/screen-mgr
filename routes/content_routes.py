@@ -86,3 +86,15 @@ async def show_slideshow(request: Request, folder: str):
         "content/slideshow.html",
         {"request": request, "folder": folder, "pictures": pictures},
     )
+    
+# ---------------------------------------------------------------------
+# YouTube
+# ---------------------------------------------------------------------
+@router.get("/youtube/{url:path}", response_class=HTMLResponse)
+async def show_youtube(request: Request, url: str):
+    # Decode URL if necessary
+    decoded_url = url.replace('%3A', ':').replace('%2F', '/')
+    return templates.TemplateResponse(
+        "content/youtube.html",
+        {"request": request, "video_url": decoded_url},
+    )

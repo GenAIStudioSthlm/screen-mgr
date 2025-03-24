@@ -208,3 +208,35 @@ async def upload_pdf(pdf_file: UploadFile = File(...)):
 
     print(f"Uploaded file saved to {file_path}")
     return RedirectResponse(url="/admin", status_code=303)
+
+
+# Add this new route after the upload_pdf route
+@router.post("/admin/delete_picture")
+async def delete_picture(picture_filename: str = Form(...)):
+    """Delete a Picture file."""
+    file_path = os.path.join(PICTURE_FOLDER, picture_filename.replace("Root/", ""))
+    result = delete_file(file_path)
+    if result.get("error"):
+        return result
+  
+    return RedirectResponse(url="/admin", status_code=303)
+
+
+@router.post("/admin/delete_pdf")
+async def delete_pdf(pdf_filename: str = Form(...)):
+    file_path = os.path.join(PDF_FOLDER, pdf_filename)
+    result = delete_file(file_path)
+    if result.get("error"):
+        return result
+
+    return RedirectResponse(url="/admin", status_code=303)
+
+@router.post("/admin/delete_video")
+async def delete_video(video_filename: str = Form(...)):  
+    
+    file_path = os.path.join(VIDEO_FOLDER, video_filename)
+    result = delete_file(file_path)
+    if result.get("error"):
+        return result
+
+    return RedirectResponse(url="/admin", status_code=303)      

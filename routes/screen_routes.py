@@ -28,8 +28,14 @@ async def screen_page(request: Request, screen_id: str):
 
     if screen.type == "text":
         content_url = base_url + f"responsive/{quote(screen.text)}"
+
     elif screen.type == "url":
-        content_url = screen.url
+        # Check if it's a YouTube URL
+        if "youtube.com" in screen.url or "youtu.be" in screen.url:
+            content_url = base_url + f"youtube/{quote(screen.url)}"
+        else:
+            content_url = screen.url
+
     elif screen.type == "video":
         content_url = base_url + f"video/{screen.video}"
     elif screen.type == "picture":
