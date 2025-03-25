@@ -1,36 +1,31 @@
 <form action="/admin/update" method="post" class=" ">
     {% for i in range(6) %}
-    <div class="mb-4" x-data="{ selectedType: 'url' }">
-        <label class="block text-gray-700 text-sm font-bold mb-2" for="screen1">
+    <div class="mb-0 border-b pt-2 pb-4" x-data="{ selectedType: 'url' }">
+        <label class="block text-gray-700 text-sm font-bold mb-2 flex items-center justify-between" for="screen1">
             {{ screens[i].name }}
-            {% if screens[i].connected %}
-            <span class="text-green-500">[Connected]</span>
-            {% else %}
-            <span class="text-red-500 cursor-pointer"
-                onclick="const next = this.nextElementSibling; next.style.display = next.style.display === 'block' ? 'none' : 'block'">
-                [Not connected ?]
-            </span>
-            <span style="display: none" class="border p-3">
-                This screen is currently not connected. Make sure it is
-                running a browser window in fullscreen with the following
-                URL: <br /><br />
-                http://studiopi:8000/screen/{{ screens[i].id }}
-            </span>
-            {% endif %}
+
+
+
+
         </label>
-        <div class="flex items-center w-full gap-2">
+        <span class="text-red-500 cursor-pointer" id="screen_not_connected_{{ screens[i].id }}" class="hidden "
+            title="This screen is currently not connected. Make sure it is running a browser window in fullscreen with the following URL: http://studiopi:8000/screen/{{ screens[i].id }}">
+            Not connected (?)
+        </span>
+
+        <div class="flex items-center w-full gap-2 hidden" id="update_screen_section_{{i+1}}">
             <div class="flex items-center w-full">
                 <div class="bg-[#f6c6ce] shadow border rounded py-2 px-3">
-                <select name="screen{{i+1}}_type" class="bg-[#f6c6ce] py-0"
-                    x-model="selectedType" x-init="selectedType = '{{ screens[(i)].type }}'">
-                    <option value="url">Url</option>
-                    <option value="text">Text</option>
-                    <option value="video">Video</option>
-                    <option value="picture">Picture</option>
-                    <option value="pdf">PDF</option>
-                    <option value="default">Studio logo</option>
-                    <option value="slideshow">Slideshow</option>
-                </select>
+                    <select name="screen{{i+1}}_type" class="bg-[#f6c6ce] py-0" x-model="selectedType"
+                        x-init="selectedType = '{{ screens[(i)].type }}'">
+                        <option value="url">Url</option>
+                        <option value="text">Text</option>
+                        <option value="video">Video</option>
+                        <option value="picture">Picture</option>
+                        <option value="pdf">PDF</option>
+                        <option value="default">Studio logo</option>
+                        <option value="slideshow">Slideshow</option>
+                    </select>
                 </div>
                 <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{i+1}}_url"
                     value="{{ screens[(i)].url }}" x-show="selectedType === 'url'" />
@@ -38,15 +33,14 @@
                 <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{i+1}}_text"
                     value="{{ screens[(i)].text }}" x-show="selectedType === 'text'" />
 
-                <select name="screen{{i+1}}_picture" 
-                    class="shadow border rounded w-full py-2 px-3"
-                    x-show="selectedType === 'picture'"
-                   >
+                <select name="screen{{i+1}}_picture" class="shadow border rounded w-full py-2 px-3"
+                    x-show="selectedType === 'picture'">
                     <option value="">Select a picture</option>
                     {% for folder, pictures in uploaded_pictures.items() %}
                     <optgroup label="{{ folder }}">
                         {% for picture in pictures %}
-                        <option value="{{ folder }}/{{ picture }}" {% if folder ~ '/' ~ picture == screens[i].picture %}selected{% endif %}>
+                        <option value="{{ folder }}/{{ picture }}" {% if folder ~ '/' ~ picture==screens[i].picture
+                            %}selected{% endif %}>
                             {{ picture }}
                         </option>
                         {% endfor %}
@@ -54,8 +48,7 @@
                     {% endfor %}
                 </select>
 
-                <select name="screen{{i+1}}_video" 
-                    class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{i+1}}_video" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'video'">
                     <option value="">Select a video</option>
                     {% for video in videos %}
@@ -75,25 +68,27 @@
                     {% endfor %}
                 </select>
 
-                <select name="screen{{i+1}}_slideshow"
-                    class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{i+1}}_slideshow" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'slideshow'">
                     <option value="">Select a slideshow folder</option>
                     {% for folder in picture_subfolders %}
-                    <option value="{{ folder }}" {% if folder==screens[i].slideshow %}selected{% endif %}>{{ folder }}</option>
+                    <option value="{{ folder }}" {% if folder==screens[i].slideshow %}selected{% endif %}>{{ folder }}
+                    </option>
                     {% endfor %}
                 </select>
 
             </div>
 
-            <div class="relative whitespace-nowrap bg-red-100">
-                {% if screens[i].connected %}
+            <div class="relative whitespace-nowrap bg-red-100 hidden" id="update_section_{{i+1}}">
+
+
                 <div class="flex items-center">
                     <button class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-l" type="submit"
                         name="update" value="screen{{i+1}}">
                         Update
                     </button>
-                    <button type="button" class="bg-black hover:bg-gray-600 text-gray-200 font-bold py-2 px-2 rounded-r border-l border-white"
+                    <button type="button"
+                        class="bg-black hover:bg-gray-600 text-gray-200 font-bold py-2 px-2 rounded-r border-l border-white"
                         onclick="const dropdown = document.getElementById('dropdown_{{i+1}}'); dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'">
                         ▼
                     </button>
@@ -104,10 +99,14 @@
                         Set for all screens
                     </button>
                 </div>
-                {% endif %}
+
             </div>
         </div>
     </div>
     {% endfor %}
-   
+
 </form>
+
+
+<!-- Include the separate JavaScript file -->
+<script src="static/javascript/screen-status.js"></script>

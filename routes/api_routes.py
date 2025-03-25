@@ -1,6 +1,9 @@
-from fastapi import APIRouter, HTTPException, Form, UploadFile, File
-from fastapi.responses import JSONResponse
 import os
+
+from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.responses import JSONResponse
+
+from connections import connection_manager
 from screens import screen_manager
 
 router = APIRouter()
@@ -72,6 +75,7 @@ async def set_screen_content(
 
         # Save the updated screens to the file
         screen_manager.save_screens()
+        await connection_manager.notify_screen(screen=screen)
 
         return {"message": f"Screen {screen_id} updated successfully"}
     except Exception as e:
