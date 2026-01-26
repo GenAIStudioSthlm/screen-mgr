@@ -96,6 +96,9 @@ async def update_screens(
         screen_manager.screens[index].slideshow = form_data_dict[
             f"screen{index + 1}_slideshow"
         ]
+        screen_manager.screens[index].news_mode = form_data_dict.get(
+            f"screen{index + 1}_news_mode", "landscape"
+        )
 
     # ---------------------------------------------------------
     # check if some screen whould overwrite all other screens
@@ -128,6 +131,9 @@ async def update_screens(
                 screen_manager.screens[index].slideshow = form_data_dict[
                     f"screen{screen_id}_slideshow"
                 ]
+                screen_manager.screens[index].news_mode = form_data_dict.get(
+                    f"screen{screen_id}_news_mode", "landscape"
+                )
 
     print("Updated screen data:")
     screen_manager.print_screens()  # Print updated screen data

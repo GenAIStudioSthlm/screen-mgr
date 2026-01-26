@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News - Presentation</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+    }
+    .slide {
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+    }
+    .slide.active {
+      opacity: 1;
+      transform: scale(1);
+      pointer-events: auto;
+    }
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-color: #1a1a3a;
+    }
+    .slide-number {
+      transition: all 0.3s ease;
+    }
+    .slide-number.active {
+      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
+      transform: scale(1.1);
+    }
+    .progress-bar {
+      transition: width linear;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .slide.active h1 { animation: fadeIn 0.8s ease 0.2s both; }
+    .slide.active .summary { animation: fadeIn 0.8s ease 0.4s both; }
+    .slide.active .source { animation: fadeIn 0.8s ease 0.6s both; }
+  </style>
+</head>
+
+<body class="text-white">
+  <div id="news-container" class="h-full w-full relative flex flex-col">
+    {% if articles %}
+
+    <!-- Slides -->
+    <div class="flex-1 relative">
+      {% for article in articles %}
+      <div class="slide flex flex-col h-full p-12 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+        <!-- Hero Image -->
+        <div class="hero-image h-2/5 rounded-2xl mb-8 shadow-2xl flex items-center justify-center"
+          {% if article.image_url %}style="background-image: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8)), url('{{ article.image_url }}')"{% endif %}>
+          {% if not article.image_url %}
+          <div class="text-center">
+            <svg class="w-32 h-32 text-gray-600 mx-auto" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
+            </svg>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Content -->
+        <div class="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto">
+          <h1 class="text-5xl font-bold leading-tight mb-6">{{ article.title }}</h1>
+
+          <p class="summary text-gray-300 text-2xl leading-relaxed mb-8 max-w-4xl">
+            {{ article.summary[:400] }}{% if article.summary|length > 400 %}...{% endif %}
+          </p>
+
+          <div class="w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded mb-6"></div>
+
+          <div class="source text-xl text-gray-400">
+            {{ article.source_name }}
+            {% if article.published_date %}
+            &bull; {{ article.published_date.strftime('%B %d, %Y') }}
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+    <!-- Bottom Bar -->
+    <div class="bg-black/50 backdrop-blur px-12 py-6">
+      <div class="flex items-center justify-between">
+        <!-- Slide Numbers -->
+        <div class="flex items-center gap-3">
+          {% for i in range(articles|length) %}
+          <button onclick="goToSlide({{ i }})"
+            class="slide-number w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg
+            {% if i == 0 %}active{% else %}bg-white/10 hover:bg-white/20{% endif %}"
+            data-slide="{{ i }}">
+            {{ "%02d"|format(i + 1) }}
+          </button>
+          {% endfor %}
+        </div>
+
+        <!-- Branding & Controls -->
+        <div class="flex items-center gap-8">
+          <div class="text-right">
+            <div class="text-pink-400 font-bold text-xl tracking-wider">AI NEWS WEEKLY</div>
+            <div class="text-gray-500">Week {{ now().isocalendar()[1] }} &bull; {{ now().strftime('%Y') }}</div>
+          </div>
+
+          <!-- Playback Controls -->
+          <div class="flex items-center gap-2">
+            <button onclick="prevSlide()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+            </button>
+            <button onclick="togglePause()" id="pauseBtn" class="w-12 h-12 rounded-full bg-pink-600 hover:bg-pink-700 flex items-center justify-center">
+              <svg id="pauseIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              <svg id="playIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </button>
+            <button onclick="nextSlide()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="mt-4 h-1 bg-white/10 rounded-full overflow-hidden">
+        <div id="progressBar" class="progress-bar h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full" style="width: 0%"></div>
+      </div>
+    </div>
+
+    {% else %}
+    <div class="h-full flex items-center justify-center">
+      <div class="text-center">
+        <div class="text-9xl mb-8">📰</div>
+        <h1 class="text-5xl font-bold">No News Available</h1>
+        <p class="text-gray-400 mt-6 text-2xl">Check back later for updates</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const slideNumbers = document.querySelectorAll('.slide-number');
+    const progressBar = document.getElementById('progressBar');
+    const pauseIcon = document.getElementById('pauseIcon');
+    const playIcon = document.getElementById('playIcon');
+
+    const totalSlides = slides.length;
+    let currentSlide = 0;
+    const rotationSeconds = {{ rotation_seconds }};
+    let isPaused = false;
+    let progressInterval = null;
+    let progress = 0;
+
+    function showSlide(index) {
+      slides.forEach((slide, i) => {
+        slide.classList.toggle('active', i === index);
+      });
+      slideNumbers.forEach((btn, i) => {
+        btn.classList.toggle('active', i === index);
+        btn.classList.toggle('bg-white/10', i !== index);
+      });
+      resetProgress();
+    }
+
+    function nextSlide() {
+      currentSlide = (currentSlide + 1) % totalSlides;
+      showSlide(currentSlide);
+    }
+
+    function prevSlide() {
+      currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
+      showSlide(currentSlide);
+    }
+
+    function goToSlide(index) {
+      currentSlide = index;
+      showSlide(currentSlide);
+    }
+
+    function togglePause() {
+      isPaused = !isPaused;
+      pauseIcon.classList.toggle('hidden', isPaused);
+      playIcon.classList.toggle('hidden', !isPaused);
+
+      if (isPaused) {
+        clearInterval(progressInterval);
+      } else {
+        startProgress();
+      }
+    }
+
+    function resetProgress() {
+      progress = 0;
+      if (progressBar) progressBar.style.width = '0%';
+      if (!isPaused) startProgress();
+    }
+
+    function startProgress() {
+      clearInterval(progressInterval);
+      const stepMs = 50;
+      const steps = (rotationSeconds * 1000) / stepMs;
+      const increment = 100 / steps;
+
+      progressInterval = setInterval(() => {
+        if (isPaused) return;
+        progress += increment;
+        if (progressBar) progressBar.style.width = progress + '%';
+
+        if (progress >= 100) {
+          nextSlide();
+        }
+      }, stepMs);
+    }
+
+    // Keyboard controls
+    document.addEventListener('keydown', (e) => {
+      switch(e.key) {
+        case 'ArrowRight':
+        case ' ':
+          nextSlide();
+          break;
+        case 'ArrowLeft':
+          prevSlide();
+          break;
+        case 'p':
+          togglePause();
+          break;
+      }
+    });
+
+    // Start
+    if (totalSlides > 0) {
+      startProgress();
+    }
+  </script>
+</body>
+</html>

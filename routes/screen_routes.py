@@ -44,6 +44,8 @@ async def screen_page(request: Request, screen_id: str):
         content_url = base_url + f"pdf/{screen.pdf}"
     elif screen.type == "slideshow":
         content_url = base_url + f"slideshow/{screen.slideshow}"
+    elif screen.type == "news":
+        content_url = base_url + f"news/{screen.news_mode}"
     else:
         content_url = base_url + f"default/{screen_id}"
 
