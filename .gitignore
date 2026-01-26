@@ -5,3 +5,4 @@ __pycache__
 static/pictures
 static/videos
 static/pdfs
+data/
