@@ -49,13 +49,8 @@
       <!-- Main Content -->
       <div class="flex-1 flex p-8 gap-8">
         <!-- Image -->
-        <div class="news-image w-2/5 rounded-xl flex items-center justify-center"
-          {% if article.image_url %}style="background-image: url('{{ article.image_url }}')"{% endif %}>
-          {% if not article.image_url %}
-          <svg class="w-24 h-24 text-gray-600" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5-7l-3 3.72L9 13l-3 4h12l-4-5z"/>
-          </svg>
-          {% endif %}
+        <div class="news-image w-2/5 rounded-xl"
+          style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
         </div>
 
         <!-- Text Content -->
