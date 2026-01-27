@@ -24,6 +24,22 @@ class NewsMode(str, Enum):
     PRESENTATION = "presentation"
 
 
+class ContentType(str, Enum):
+    ARTICLE = "article"
+    VIDEO = "video"
+    PODCAST = "podcast"
+
+
+class CategoryType(str, Enum):
+    GENERAL = "General"
+    HEALTHCARE = "Healthcare"
+    INDUSTRY = "Industry"
+    CONSUMER = "Consumer Goods"
+    FINANCE = "Finance"
+    TECHNOLOGY = "Technology"
+    RESEARCH = "Research"
+
+
 class NewsSource(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     name: str = Field(..., description="Display name for the source")
@@ -46,7 +62,9 @@ class NewsArticle(BaseModel):
     title: str = Field(..., description="Article title")
     summary: str = Field(default="", max_length=500)
     image_url: Optional[str] = Field(default=None)
-    article_url: str = Field(..., description="Link to full article")
+    article_url: str = Field(..., description="Link to full article/video/podcast")
+    content_type: ContentType = Field(default=ContentType.ARTICLE, description="Type of content")
+    category: str = Field(default="General", description="Content category for filtering")
     published_date: Optional[datetime] = Field(default=None)
     fetched_date: datetime = Field(default_factory=datetime.now)
     expires_date: Optional[datetime] = Field(default=None)
