@@ -2,8 +2,12 @@
 from fastapi import APIRouter, Request, Form
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
-from news import news_manager, NewsSource, NewsArticle
+from news import news_manager, NewsSource, NewsArticle, ContentType, CategoryType
 from news.fetcher import fetch_all_sources
+
+# Available categories for the dropdown
+CATEGORIES = [e.value for e in CategoryType]
+CONTENT_TYPES = [e.value for e in ContentType]
 
 templates = Jinja2Templates(directory="templates")
 router = APIRouter(prefix="/admin/news", tags=["news-admin"])
@@ -81,9 +85,9 @@ async def delete_source(source_id: str):
 
 # === Articles ===
 @router.get("/articles", response_class=HTMLResponse)
-async def news_articles(request: Request, status: str = None):
+async def news_articles(request: Request, status: str = None, category: str = None, content_type: str = None):
     """List and manage articles"""
-    articles = news_manager.get_articles(status=status, limit=100)
+    articles = news_manager.get_articles(status=status, category=category, content_type=content_type, limit=100)
     sources = news_manager.get_sources()
     return templates.TemplateResponse(
         "admin/news_articles.html",
@@ -92,6 +96,10 @@ async def news_articles(request: Request, status: str = None):
             "articles": articles,
             "sources": sources,
             "current_status": status,
+            "current_category": category,
+            "current_content_type": content_type,
+            "categories": CATEGORIES,
+            "content_types": CONTENT_TYPES,
             "active_tab": "articles",
         },
     )
@@ -104,8 +112,10 @@ async def add_article(
     article_url: str = Form(...),
     image_url: str = Form(""),
     source_name: str = Form("Manual"),
+    content_type: str = Form("article"),
+    category: str = Form("General"),
 ):
-    """Manually add an article"""
+    """Manually add an article, video, or podcast"""
     article = NewsArticle(
         source_id="manual",
         source_name=source_name,
@@ -113,31 +123,37 @@ async def add_article(
         summary=summary,
         article_url=article_url,
         image_url=image_url if image_url else None,
-        status="approved",  # Manual articles auto-approved
+        content_type=content_type,
+        category=category,
+        status="approved",  # Manual items auto-approved
     )
     news_manager.add_article(article)
     return RedirectResponse(url="/admin/news/articles", status_code=303)
 
 
 @router.post("/articles/{article_id}/approve")
-async def approve_article(article_id: str):
+async def approve_article(article_id: str, request: Request):
     """Approve an article for display"""
     news_manager.approve_article(article_id)
-    return RedirectResponse(url="/admin/news/articles", status_code=303)
+    # Stay on same page with same filters
+    referer = request.headers.get("referer", "/admin/news/articles")
+    return RedirectResponse(url=referer, status_code=303)
 
 
 @router.post("/articles/{article_id}/reject")
-async def reject_article(article_id: str):
+async def reject_article(article_id: str, request: Request):
     """Reject an article"""
     news_manager.reject_article(article_id)
-    return RedirectResponse(url="/admin/news/articles", status_code=303)
+    referer = request.headers.get("referer", "/admin/news/articles")
+    return RedirectResponse(url=referer, status_code=303)
 
 
 @router.post("/articles/{article_id}/feature")
-async def feature_article(article_id: str):
+async def feature_article(article_id: str, request: Request):
     """Feature an article (priority display)"""
     news_manager.feature_article(article_id)
-    return RedirectResponse(url="/admin/news/articles", status_code=303)
+    referer = request.headers.get("referer", "/admin/news/articles")
+    return RedirectResponse(url=referer, status_code=303)
 
 
 @router.post("/articles/{article_id}/delete")

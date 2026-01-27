@@ -134,20 +134,35 @@ class NewsManager:
         return False
 
     # === Article CRUD ===
-    def get_articles(self, status: Optional[ArticleStatus] = None, limit: int = 50) -> List[NewsArticle]:
+    def get_articles(self, status: Optional[ArticleStatus] = None, category: Optional[str] = None, content_type: Optional[str] = None, limit: int = 50) -> List[NewsArticle]:
         articles = self.articles
         if status:
             articles = [a for a in articles if a.status == status]
+        if category:
+            articles = [a for a in articles if getattr(a, 'category', 'General') == category]
+        if content_type:
+            articles = [a for a in articles if getattr(a, 'content_type', 'article') == content_type]
         # Sort by published date descending
         articles = sorted(articles, key=lambda a: a.published_date or a.fetched_date, reverse=True)
         return articles[:limit]
 
-    def get_approved_articles(self, limit: int = 20) -> List[NewsArticle]:
+    def get_approved_articles(self, category: Optional[str] = None, limit: int = 20) -> List[NewsArticle]:
         """Get approved and featured articles for display"""
         approved = [a for a in self.articles if a.status in (ArticleStatus.APPROVED, ArticleStatus.FEATURED)]
+        if category:
+            approved = [a for a in approved if getattr(a, 'category', 'General') == category]
         # Featured first, then by date
         approved = sorted(approved, key=lambda a: (a.status != ArticleStatus.FEATURED, -(a.published_date or a.fetched_date).timestamp()))
         return approved[:limit]
+
+    def get_categories(self) -> List[str]:
+        """Get all unique categories from articles"""
+        categories = set()
+        for article in self.articles:
+            cat = getattr(article, 'category', 'General')
+            if cat:
+                categories.add(cat)
+        return sorted(list(categories))
 
     def get_article(self, article_id: str) -> Optional[NewsArticle]:
         return next((a for a in self.articles if a.id == article_id), None)
