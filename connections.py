@@ -25,7 +25,7 @@ class ConnectionManager:
             logger.info("Screen %s connected", screen_id)
             screen_manager.screens[screen_index].connected = True
             screen_manager.screens[screen_index].websocket = websocket
-            screen_manager.print_screens()
+            # screen_manager.print_screens()
 
             # Notify all admin clients about the new screen connection
             await self.broadcast_screen_status(screen_id, True)

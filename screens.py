@@ -12,7 +12,7 @@ class Screen(BaseModel):
     name: str = Field(..., description="Name of the screen")
     type: str = Field(
         ...,
-        pattern="^(text|url|default|video|picture|pdf|slideshow)$",
+        pattern="^(text|url|default|video|picture|pdf|slideshow|screen_share)$",
         description="Type of the screen content, either 'text' or 'url'",
     )
     text: str = Field("", description="Text content for the screen")
@@ -32,6 +32,9 @@ class Screen(BaseModel):
     websocket: WebSocket = Field(
         None,
         description="WebSocket connection for the screen",
+    )
+    screen_share: str = Field(
+        "", description="Screen share room ID for the screen (if applicable)"
     )
 
     class Config:
@@ -59,6 +62,8 @@ class ScreenManager:
                 Screen(id=4, name="Screen 2", type="default"),
                 Screen(id=5, name="Screen 3", type="default"),
                 Screen(id=6, name="Main Screen", type="default"),
+                Screen(id=7, name="Screen 4", type="default"),
+                Screen(id=8, name="Screen 5", type="default"),
             ]
         except ValidationError as e:
             print(f"Error loading screens: {e}")

@@ -1,7 +1,9 @@
 document.addEventListener("DOMContentLoaded", function () {
   // Create WebSocket connection
+  const isSecure = window.location.protocol === "https:";
+  const wsProtocol = isSecure ? "wss" : "ws";
 
-  const wsUrl = `ws://${window.location.host}/ws-screen-status`;
+  const wsUrl = `${wsProtocol}://${window.location.host}/ws-screen-status`;
   const socket = new WebSocket(wsUrl);
 
   // Connection opened

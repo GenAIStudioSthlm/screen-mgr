@@ -86,15 +86,25 @@ async def show_slideshow(request: Request, folder: str):
         "content/slideshow.html",
         {"request": request, "folder": folder, "pictures": pictures},
     )
-    
+
+
 # ---------------------------------------------------------------------
 # YouTube
 # ---------------------------------------------------------------------
 @router.get("/youtube/{url:path}", response_class=HTMLResponse)
 async def show_youtube(request: Request, url: str):
     # Decode URL if necessary
-    decoded_url = url.replace('%3A', ':').replace('%2F', '/')
+    decoded_url = url.replace("%3A", ":").replace("%2F", "/")
     return templates.TemplateResponse(
         "content/youtube.html",
         {"request": request, "video_url": decoded_url},
+    )
+
+
+# Add this function to routes/content_routes.py
+@router.get("/screen-share/{room_id}", response_class=HTMLResponse)
+async def screen_share(request: Request, room_id: str):
+    return templates.TemplateResponse(
+        "content/screen_share.html",
+        {"request": request, "room_id": room_id},
     )

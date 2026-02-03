@@ -64,7 +64,10 @@
 
   <script>
     window.contentUrl = "{{content_url}}";
-    window.ws_url = `ws://${window.location.host}/ws/{{screen_id}}`;
+    const isSecure = window.location.protocol === 'https:';
+    const wsProtocol = isSecure ? 'wss' : 'ws';
+    window.ws_url = `${wsProtocol}://${window.location.host}/ws/{{screen_id}}`;
+
   </script>
   <script src="/static/javascript/screen.js"></script>
 
