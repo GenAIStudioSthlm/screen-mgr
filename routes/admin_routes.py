@@ -78,26 +78,30 @@ async def update_screens(
     print("Current screen data:")
     screen_manager.print_screens()  # Print current screen data
 
-    for index in range(6):
-        print(f"Updating screen {index + 1}...")
-        screen_manager.screens[index].type = form_data_dict[f"screen{index + 1}_type"]
-        screen_manager.screens[index].url = form_data_dict[f"screen{index + 1}_url"]
-        screen_manager.screens[index].text = form_data_dict[f"screen{index + 1}_text"]
-        screen_manager.screens[index].video = form_data_dict[f"screen{index + 1}_video"]
+    for screen in screen_manager.screens:
+        screen_id = screen.id
+        print(f"Updating screen {screen_id}...")
+        screen.type = form_data_dict[f"screen{screen_id}_type"]
+        screen.url = form_data_dict[f"screen{screen_id}_url"]
+        screen.text = form_data_dict[f"screen{screen_id}_text"]
+        screen.video = form_data_dict[f"screen{screen_id}_video"]
 
         # Sanitize the picture value to ensure it doesn't cause issues
-        picture_value = form_data_dict[f"screen{index + 1}_picture"]
+        picture_value = form_data_dict[f"screen{screen_id}_picture"]
         if "/" in picture_value:
             picture_value = picture_value.replace(
                 "/", os.sep
             )  # Replace '/' with the OS-specific separator
-        screen_manager.screens[index].picture = picture_value
-        screen_manager.screens[index].pdf = form_data_dict[f"screen{index + 1}_pdf"]
-        screen_manager.screens[index].slideshow = form_data_dict[
-            f"screen{index + 1}_slideshow"
+        screen.picture = picture_value
+        screen.pdf = form_data_dict[f"screen{screen_id}_pdf"]
+        screen.slideshow = form_data_dict[
+            f"screen{screen_id}_slideshow"
         ]
-        screen_manager.screens[index].news_mode = form_data_dict.get(
-            f"screen{index + 1}_news_mode", "landscape"
+        screen.news_mode = form_data_dict.get(
+            f"screen{screen_id}_news_mode", "landscape"
+        )
+        screen.screen_share = form_data_dict.get(
+            f"screen{screen_id}_screen_share", ""
         )
 
     # ---------------------------------------------------------
@@ -105,31 +109,30 @@ async def update_screens(
     # ---------------------------------------------------------
     if form_data_dict["update"].endswith("_all"):
         # get screen id to use
-        screen_id = form_data_dict["update"].split("_")[0].replace("screen", "")
-        screen_index = int(screen_id) - 1
+        source_screen_id = form_data_dict["update"].split("_")[0].replace("screen", "")
         # set all other screens to the same values
-        for index in range(6):
-            if index != screen_index:
-                screen_manager.screens[index].type = form_data_dict[
-                    f"screen{screen_id}_type"
+        for screen in screen_manager.screens:
+            if str(screen.id) != source_screen_id:
+                screen.type = form_data_dict[
+                    f"screen{source_screen_id}_type"
                 ]
-                screen_manager.screens[index].url = form_data_dict[
-                    f"screen{screen_id}_url"
+                screen.url = form_data_dict[
+                    f"screen{source_screen_id}_url"
                 ]
-                screen_manager.screens[index].text = form_data_dict[
-                    f"screen{screen_id}_text"
+                screen.text = form_data_dict[
+                    f"screen{source_screen_id}_text"
                 ]
-                screen_manager.screens[index].video = form_data_dict[
-                    f"screen{screen_id}_video"
+                screen.video = form_data_dict[
+                    f"screen{source_screen_id}_video"
                 ]
-                screen_manager.screens[index].picture = form_data_dict[
-                    f"screen{screen_id}_picture"
+                screen.picture = form_data_dict[
+                    f"screen{source_screen_id}_picture"
                 ]
-                screen_manager.screens[index].pdf = form_data_dict[
-                    f"screen{screen_id}_pdf"
+                screen.pdf = form_data_dict[
+                    f"screen{source_screen_id}_pdf"
                 ]
-                screen_manager.screens[index].slideshow = form_data_dict[
-                    f"screen{screen_id}_slideshow"
+                screen.slideshow = form_data_dict[
+                    f"screen{source_screen_id}_slideshow"
                 ]
                 screen_manager.screens[index].news_mode = form_data_dict.get(
                     f"screen{screen_id}_news_mode", "landscape"
@@ -226,7 +229,7 @@ async def delete_picture(picture_filename: str = Form(...)):
     result = delete_file(file_path)
     if result.get("error"):
         return result
-  
+
     return RedirectResponse(url="/admin#pictures", status_code=303)
 
 
@@ -239,12 +242,12 @@ async def delete_pdf(pdf_filename: str = Form(...)):
 
     return RedirectResponse(url="/admin#pdfs", status_code=303)
 
+
 @router.post("/admin/delete_video")
-async def delete_video(video_filename: str = Form(...)):  
-    
+async def delete_video(video_filename: str = Form(...)):
     file_path = os.path.join(VIDEO_FOLDER, video_filename)
     result = delete_file(file_path)
     if result.get("error"):
         return result
 
-    return RedirectResponse(url="/admin#videos", status_code=303)      
+    return RedirectResponse(url="/admin#videos", status_code=303)

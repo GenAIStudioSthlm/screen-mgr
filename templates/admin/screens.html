@@ -1,5 +1,5 @@
 <form action="/admin/update" method="post" class=" ">
-    {% for i in range(6) %}
+    {% for i in range(screens|length) %}
     <div class="mb-0 border-b pt-2 pb-4" x-data="{ selectedType: 'url' }">
         <label class="block text-gray-700 text-sm font-bold mb-2 flex items-center justify-between" for="screen1">
             {{ screens[i].name }}
@@ -13,10 +13,10 @@
             Not connected (?)
         </span>
 
-        <div class="flex items-center w-full gap-2 hidden" id="update_screen_section_{{i+1}}">
+        <div class="flex items-center w-full gap-2 hidden" id="update_screen_section_{{ screens[i].id }}">
             <div class="flex items-center w-full">
                 <div class="bg-[#f6c6ce] shadow border rounded py-2 px-3">
-                    <select name="screen{{i+1}}_type" class="bg-[#f6c6ce] py-0" x-model="selectedType"
+                    <select name="screen{{ screens[i].id }}_type" class="bg-[#f6c6ce] py-0" x-model="selectedType"
                         x-init="selectedType = '{{ screens[(i)].type }}'">
                         <option value="url">Url</option>
                         <option value="text">Text</option>
@@ -26,15 +26,22 @@
                         <option value="default">Studio logo</option>
                         <option value="slideshow">Slideshow</option>
                         <option value="news">AI News</option>
+                        <option value="screen_share">Screen Share</option>
                     </select>
                 </div>
-                <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{i+1}}_url"
+
+                <!-- Add input for screen share room ID -->
+                <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{ screens[i].id }}_screen_share"
+                    value="{{ screens[(i)].screen_share }}" x-show="selectedType === 'screen_share'"
+                    placeholder="Room ID (optional)" />
+
+                <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{ screens[i].id }}_url"
                     value="{{ screens[(i)].url }}" x-show="selectedType === 'url'" />
 
-                <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{i+1}}_text"
+                <input class="shadow border rounded w-full py-2 px-3" type="text" name="screen{{ screens[i].id }}_text"
                     value="{{ screens[(i)].text }}" x-show="selectedType === 'text'" />
 
-                <select name="screen{{i+1}}_picture" class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{ screens[i].id }}_picture" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'picture'">
                     <option value="">Select a picture</option>
                     {% for folder, pictures in uploaded_pictures.items() %}
@@ -49,7 +56,7 @@
                     {% endfor %}
                 </select>
 
-                <select name="screen{{i+1}}_video" class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{ screens[i].id }}_video" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'video'">
                     <option value="">Select a video</option>
                     {% for video in videos %}
@@ -59,7 +66,7 @@
                     {% endfor %}
                 </select>
 
-                <select name="screen{{i+1}}_pdf" class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{ screens[i].id }}_pdf" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'pdf'">
                     <option value="">Select a pdf</option>
                     {% for pdf in pdfs %}
@@ -69,7 +76,7 @@
                     {% endfor %}
                 </select>
 
-                <select name="screen{{i+1}}_slideshow" class="shadow border rounded w-full py-2 px-3"
+                <select name="screen{{ screens[i].id }}_slideshow" class="shadow border rounded w-full py-2 px-3"
                     x-show="selectedType === 'slideshow'">
                     <option value="">Select a slideshow folder</option>
                     {% for folder in picture_subfolders %}
@@ -87,23 +94,23 @@
 
             </div>
 
-            <div class="relative whitespace-nowrap bg-red-100 hidden" id="update_section_{{i+1}}">
+            <div class="relative whitespace-nowrap bg-red-100 hidden" id="update_section_{{ screens[i].id }}">
 
 
                 <div class="flex items-center">
                     <button class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-l" type="submit"
-                        name="update" value="screen{{i+1}}">
+                        name="update" value="screen{{ screens[i].id }}">
                         Update
                     </button>
                     <button type="button"
                         class="bg-black hover:bg-gray-600 text-gray-200 font-bold py-2 px-2 rounded-r border-l border-white"
-                        onclick="const dropdown = document.getElementById('dropdown_{{i+1}}'); dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'">
+                        onclick="const dropdown = document.getElementById('dropdown_{{ screens[i].id }}'); dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block'">
                         ▼
                     </button>
                 </div>
-                <div id="dropdown_{{i+1}}" class="absolute right-0   border rounded shadow-lg" style="display: none;">
+                <div id="dropdown_{{ screens[i].id }}" class="absolute right-0   border rounded shadow-lg" style="display: none;">
                     <button class="block bg-black text-left px-4 font-bold py-2 text-white  rounded" type="submit"
-                        name="update" value="screen{{i+1}}_all">
+                        name="update" value="screen{{ screens[i].id }}_all">
                         Set for all screens
                     </button>
                 </div>
@@ -117,4 +124,4 @@
 
 
 <!-- Include the separate JavaScript file -->
-<script src="static/javascript/screen-status.js"></script>
+<script src="static/javascript/screen-status.js?{{timestamp}}"></script>

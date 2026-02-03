@@ -1,0 +1,313 @@
+<div>
+    <h2 class="text-lg font-bold mb-4">Screen Sharing</h2>
+
+    <div id="screen-share-controls" class="mb-4">
+        <button id="start-screen-share"
+            class="bg-black hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">
+            Start Screen Share
+        </button>
+
+        <button id="stop-screen-share"
+            class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline ml-2 hidden">
+            Stop Screen Share
+        </button>
+    </div>
+
+    <div id="screen-share-status" class="text-gray-700 text-sm mb-4">
+        Not sharing screen
+    </div>
+
+    <div class="mb-4">
+        <label class="block text-gray-700 text-sm font-bold mb-2" for="room-id">
+            Room ID
+        </label>
+        <input id="room-id" type="text" value="default-room"
+            class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+    </div>
+
+    <div id="browser-support-warning"
+        class="bg-yellow-100 border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4 hidden">
+        <strong class="font-bold">Warning! </strong>
+        <span id="browser-warning-message">Your browser may not support screen sharing.</span>
+    </div>
+
+    <div class="mb-4">
+        <video id="preview" class="border border-gray-300 rounded w-full hidden" autoplay muted playsinline></video>
+    </div>
+
+    <div class="bg-gray-100 border-l-4 border-gray-500 text-gray-700 p-4 mb-4">
+        <h3 class="font-bold">Requirements for Screen Sharing:</h3>
+        <ul class="list-disc ml-5 mt-2">
+            <li>Modern browser (Chrome, Edge, or Firefox recommended)</li>
+            <li>For security reasons, screen sharing works best with HTTPS</li>
+            <li>If using localhost, HTTP is permitted for testing</li>
+        </ul>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        let peerConnection;
+        let localStream;
+        let ws;
+        const startButton = document.getElementById("start-screen-share");
+        const stopButton = document.getElementById("stop-screen-share");
+        const statusElement = document.getElementById("screen-share-status");
+        const roomIdInput = document.getElementById("room-id");
+        const previewVideo = document.getElementById("preview");
+        const warningElement = document.getElementById("browser-support-warning");
+        const warningMessageElement = document.getElementById("browser-warning-message");
+
+        // Check browser support for screen sharing
+        function checkBrowserSupport() {
+            if (!navigator.mediaDevices) {
+                showWarning("Your browser doesn't support media devices API. Try a modern browser like Chrome.");
+                return false;
+            }
+
+            if (!navigator.mediaDevices.getDisplayMedia) {
+                showWarning("Your browser doesn't support screen sharing. Try Chrome, Edge or Firefox.");
+                return false;
+            }
+
+            // Check if we're on a secure context (HTTPS or localhost)
+            if (window.location.protocol !== 'https:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+                showWarning("Screen sharing requires HTTPS, except on localhost. Current protocol: " + window.location.protocol);
+                return false;
+            }
+
+            return true;
+        }
+
+        function showWarning(message) {
+            warningMessageElement.textContent = message;
+            warningElement.classList.remove("hidden");
+            startButton.disabled = true;
+            startButton.classList.add("opacity-50", "cursor-not-allowed");
+        }
+
+        // WebRTC configuration
+        const configuration = {
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" }
+            ]
+        };
+
+        // Connect to WebSocket signaling server
+        function connectSignaling(roomId) {
+            try {
+                const isSecure = window.location.protocol === 'https:';
+                const wsProtocol = isSecure ? 'wss' : 'ws';
+                const signalServer = `${wsProtocol}://${window.location.host}/ws-webrtc/${roomId}`;
+
+                statusElement.textContent = `Connecting to ${signalServer}...`;
+                ws = new WebSocket(signalServer);
+
+                ws.onopen = () => {
+                    console.log("Connected to signaling server");
+                    // Identify as a broadcaster
+                    ws.send(JSON.stringify({ type: "broadcaster" }));
+                    statusElement.textContent = "Connected to signaling server, waiting for viewers...";
+                };
+
+                ws.onmessage = async (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        console.log("Received message:", message);
+
+                        switch (message.type) {
+                            case "viewer-connected":
+                                statusElement.textContent = "Viewer connected! Creating offer...";
+                                createOfferForViewer();
+                                break;
+                            case "answer":
+                                handleAnswer(message);
+                                break;
+                            case "ice-candidate":
+                                handleIceCandidate(message);
+                                break;
+                        }
+                    } catch (e) {
+                        console.error("Error handling WebSocket message:", e);
+                        statusElement.textContent = "Error handling message: " + e.message;
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log("Disconnected from signaling server");
+                    statusElement.textContent = "Disconnected from signaling server";
+                };
+
+                ws.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                    statusElement.textContent = "WebSocket error: Connection failed";
+                };
+            } catch (e) {
+                console.error("Error connecting to WebSocket:", e);
+                statusElement.textContent = "Failed to connect: " + e.message;
+            }
+        }
+
+        // Start screen sharing
+        async function startScreenShare() {
+            if (!checkBrowserSupport()) {
+                return;
+            }
+
+            try {
+                statusElement.textContent = "Requesting screen sharing permission...";
+
+                localStream = await navigator.mediaDevices.getDisplayMedia({
+                    video: {
+                        cursor: "always"
+                    },
+                    audio: false
+                });
+
+                previewVideo.srcObject = localStream;
+                previewVideo.classList.remove("hidden");
+
+                // Connect to signaling server
+                const roomId = roomIdInput.value || "default-room";
+                connectSignaling(roomId);
+
+                // Show stop button and hide start button
+                startButton.classList.add("hidden");
+                stopButton.classList.remove("hidden");
+                statusElement.textContent = "Screen sharing started, connecting to server...";
+
+                // Handle the stream ending (user clicks "Stop sharing")
+                localStream.getVideoTracks()[0].onended = () => {
+                    stopScreenShare();
+                };
+            } catch (e) {
+                console.error("Error starting screen share:", e);
+
+                if (e.name === 'NotAllowedError') {
+                    statusElement.textContent = "Permission denied. Please allow screen sharing.";
+                } else if (e.name === 'NotFoundError') {
+                    statusElement.textContent = "No screen sharing device found.";
+                } else if (e.name === 'NotReadableError') {
+                    statusElement.textContent = "Could not access your screen. It might be in use by another application.";
+                } else if (e.name === 'AbortError') {
+                    statusElement.textContent = "Screen sharing was aborted.";
+                } else {
+                    statusElement.textContent = `Error starting screen share: ${e.name} - ${e.message}`;
+                }
+            }
+        }
+
+        // Stop screen sharing
+        function stopScreenShare() {
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+
+            if (ws) {
+                ws.close();
+            }
+
+            previewVideo.srcObject = null;
+            previewVideo.classList.add("hidden");
+
+            // Show start button and hide stop button
+            startButton.classList.remove("hidden");
+            stopButton.classList.add("hidden");
+
+            statusElement.textContent = "Screen sharing stopped";
+        }
+
+        // Create offer for a new viewer
+        async function createOfferForViewer() {
+            if (peerConnection) {
+                peerConnection.close();
+            }
+
+            try {
+                peerConnection = new RTCPeerConnection(configuration);
+
+                // Add all tracks from the local stream to the peer connection
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                // Set up ICE candidate event handler
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        ws.send(JSON.stringify({
+                            type: "ice-candidate",
+                            candidate: event.candidate
+                        }));
+                    }
+                };
+
+                peerConnection.onconnectionstatechange = (event) => {
+                    statusElement.textContent = "Connection state: " + peerConnection.connectionState;
+                };
+
+                peerConnection.oniceconnectionstatechange = (event) => {
+                    if (peerConnection.iceConnectionState === "failed" ||
+                        peerConnection.iceConnectionState === "disconnected" ||
+                        peerConnection.iceConnectionState === "closed") {
+                        statusElement.textContent = "Connection lost. ICE state: " + peerConnection.iceConnectionState;
+                    } else if (peerConnection.iceConnectionState === "connected") {
+                        statusElement.textContent = "Connected to viewer!";
+                    } else {
+                        statusElement.textContent = "ICE connection state: " + peerConnection.iceConnectionState;
+                    }
+                };
+
+                // Create and send an offer
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                ws.send(JSON.stringify({
+                    type: "offer",
+                    offer: offer
+                }));
+
+                statusElement.textContent = "Offer sent to viewer";
+            } catch (e) {
+                console.error("Error creating offer:", e);
+                statusElement.textContent = "Error creating offer: " + e.message;
+            }
+        }
+
+        // Handle answer from viewer
+        async function handleAnswer(message) {
+            if (peerConnection) {
+                try {
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(message.answer));
+                    statusElement.textContent = "Received answer from viewer";
+                } catch (e) {
+                    console.error("Error setting remote description:", e);
+                    statusElement.textContent = "Error connecting to viewer: " + e.message;
+                }
+            }
+        }
+
+        // Handle ICE candidate
+        async function handleIceCandidate(message) {
+            if (peerConnection) {
+                try {
+                    await peerConnection.addIceCandidate(message.candidate);
+                } catch (e) {
+                    console.error("Error adding received ice candidate", e);
+                }
+            }
+        }
+
+        // Add event listeners
+        startButton.addEventListener("click", startScreenShare);
+        stopButton.addEventListener("click", stopScreenShare);
+
+        // Check browser support when page loads
+        checkBrowserSupport();
+    });
+</script>
