@@ -7,53 +7,89 @@
   <title>AI News</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --pink-soft: #F4C7CC;
-      --pink-bright: #FF6B9D;
-      --purple-dark: #1a0a2e;
-      --purple-mid: #3d1a5c;
-      --magenta: #8B2D6B;
+      --neon-pink: #FF6AD5;
+      --neon-cyan: #00D4FF;
+      --neon-purple: #C774E8;
+      --warm-peach: #FFB086;
+      --soft-lavender: #E8D5F2;
+      --deep-purple: #0D0221;
+      --mid-purple: #1A0533;
     }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Space Grotesk', sans-serif;
-      background: radial-gradient(ellipse at center, var(--magenta) 0%, var(--purple-dark) 70%);
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(180deg, #1A0533 0%, #0D0221 50%, #000 100%);
     }
 
-    /* Techy grid overlay */
-    body::before {
-      content: '';
+    /* Synthwave grid floor */
+    .grid-floor {
       position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(244, 199, 204, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(244, 199, 204, 0.03) 1px, transparent 1px);
-      background-size: 40px 40px;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background:
+        linear-gradient(transparent 0%, rgba(255, 106, 213, 0.1) 100%),
+        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0, 212, 255, 0.3) 50px),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0, 212, 255, 0.2) 50px);
+      background-size: 100% 100%, 50px 50px, 50px 50px;
+      transform: perspective(200px) rotateX(60deg);
+      transform-origin: bottom;
+      z-index: 0;
+    }
+
+    /* Matrix-style code rain */
+    .matrix-rain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='100'%3E%3Ctext x='5' y='20' fill='%23FF6AD520' font-family='monospace' font-size='10'%3E1%3C/text%3E%3Ctext x='5' y='40' fill='%2300D4FF15' font-family='monospace' font-size='10'%3E0%3C/text%3E%3Ctext x='5' y='60' fill='%23C774E820' font-family='monospace' font-size='10'%3E1%3C/text%3E%3Ctext x='5' y='80' fill='%23FF6AD515' font-family='monospace' font-size='10'%3E0%3C/text%3E%3C/svg%3E");
+      animation: rain 20s linear infinite;
+      opacity: 0.4;
+      z-index: 1;
       pointer-events: none;
+    }
+    @keyframes rain {
+      from { background-position: 0 -100vh; }
+      to { background-position: 0 100vh; }
+    }
+
+    /* Steven Universe stars */
+    .star {
+      position: absolute;
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-bottom: 12px solid var(--neon-pink);
+      opacity: 0.6;
+      filter: blur(0.5px);
       z-index: 1;
     }
-
-    /* Scan line effect */
-    body::after {
+    .star::after {
       content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.1) 2px,
-        rgba(0, 0, 0, 0.1) 4px
-      );
-      pointer-events: none;
-      z-index: 2;
+      position: absolute;
+      top: 4px; left: -6px;
+      width: 0; height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 12px solid var(--neon-pink);
     }
+    .star-1 { top: 8%; left: 10%; transform: scale(0.6); }
+    .star-2 { top: 15%; right: 15%; transform: scale(0.8); border-bottom-color: var(--neon-cyan); }
+    .star-2::after { border-top-color: var(--neon-cyan); }
+    .star-3 { top: 5%; right: 30%; transform: scale(0.5); border-bottom-color: var(--warm-peach); }
+    .star-3::after { border-top-color: var(--warm-peach); }
+    .star-4 { bottom: 45%; left: 5%; transform: scale(0.7); border-bottom-color: var(--neon-purple); }
+    .star-4::after { border-top-color: var(--neon-purple); }
 
     .slide {
       opacity: 0;
@@ -64,137 +100,147 @@
     }
     .slide.active { opacity: 1; }
 
-    /* Bold offset shadow text effect */
-    .title-shadow {
-      position: relative;
-      color: var(--pink-soft);
-    }
-    .title-shadow::before {
-      content: attr(data-text);
-      position: absolute;
-      left: 4px;
-      top: 4px;
-      color: #000;
-      z-index: -1;
+    /* Neon text glow */
+    .neon-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--soft-lavender);
+      text-shadow:
+        0 0 5px var(--neon-pink),
+        0 0 10px var(--neon-pink),
+        0 0 20px var(--neon-pink),
+        0 0 40px var(--neon-purple);
     }
 
     .news-image {
       background-size: cover;
       background-position: center;
-      background-color: var(--purple-mid);
-      border: 3px solid var(--pink-soft);
-      box-shadow: 8px 8px 0 #000;
+      background-color: var(--mid-purple);
+      border: 2px solid var(--neon-cyan);
+      box-shadow:
+        0 0 10px var(--neon-cyan),
+        0 0 20px rgba(0, 212, 255, 0.3),
+        inset 0 0 30px rgba(0, 0, 0, 0.5);
     }
-
-    /* Pink cloud decorations */
-    .cloud {
-      position: absolute;
-      background: var(--pink-soft);
-      border-radius: 100px;
-      opacity: 0.15;
-    }
-    .cloud-1 { width: 120px; height: 40px; top: 5%; right: -20px; }
-    .cloud-2 { width: 80px; height: 30px; top: 8%; right: 40px; }
-    .cloud-3 { width: 100px; height: 35px; bottom: 15%; left: -30px; }
 
     .category-tag {
       display: inline-block;
-      background: var(--pink-soft);
-      color: #000;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      color: #fff;
       padding: 6px 16px;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 0.75rem;
+      font-size: 0.65rem;
       letter-spacing: 2px;
       text-transform: uppercase;
-      box-shadow: 3px 3px 0 #000;
+      border-radius: 20px;
+      box-shadow: 0 0 15px var(--neon-pink);
+    }
+
+    .content-card {
+      background: linear-gradient(135deg, rgba(26, 5, 51, 0.9), rgba(13, 2, 33, 0.95));
+      border: 1px solid rgba(199, 116, 232, 0.3);
+      border-radius: 16px;
+      backdrop-filter: blur(10px);
     }
 
     .source-pill {
       display: inline-flex;
       align-items: center;
       gap: 8px;
-      background: rgba(244, 199, 204, 0.1);
-      border: 1px solid var(--pink-soft);
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
       padding: 8px 16px;
       border-radius: 50px;
+      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
     }
 
     .dot {
-      width: 12px;
-      height: 12px;
-      border: 2px solid var(--pink-soft);
+      width: 10px;
+      height: 10px;
+      border: 2px solid var(--neon-pink);
+      border-radius: 50%;
       background: transparent;
       transition: all 0.3s ease;
     }
     .dot.active {
-      background: var(--pink-soft);
-      box-shadow: 0 0 10px var(--pink-bright);
+      background: var(--neon-pink);
+      box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
     }
 
-    @keyframes glow {
-      0%, 100% { box-shadow: 0 0 5px var(--pink-soft); }
-      50% { box-shadow: 0 0 20px var(--pink-bright); }
+    /* VHS scan line */
+    .vhs-line {
+      position: fixed;
+      left: 0; right: 0;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.1);
+      animation: vhs 8s linear infinite;
+      z-index: 100;
+      pointer-events: none;
     }
-    .glow-border {
-      animation: glow 3s ease-in-out infinite;
+    @keyframes vhs {
+      0% { top: -2px; }
+      100% { top: 100%; }
     }
   </style>
 </head>
 
-<body class="text-white">
-  <!-- Decorative clouds -->
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
+<body>
+  <!-- Effects -->
+  <div class="grid-floor"></div>
+  <div class="matrix-rain"></div>
+  <div class="vhs-line"></div>
+
+  <!-- Stars -->
+  <div class="star star-1"></div>
+  <div class="star star-2"></div>
+  <div class="star star-3"></div>
+  <div class="star star-4"></div>
 
   <div id="news-container" class="h-full w-full relative">
     {% if articles %}
     {% for article in articles %}
-    <div class="slide flex flex-col h-full p-6 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+    <div class="slide flex flex-col h-full p-5 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
 
-      <!-- Header -->
-      <div class="text-center mb-4">
+      <!-- Category -->
+      <div class="text-center mb-4 relative z-10">
         <div class="category-tag">{{ article.category or 'AI News' }}</div>
       </div>
 
       <!-- Image -->
-      <div class="news-image flex-shrink-0 h-1/3 rounded-lg mb-5 glow-border"
+      <div class="news-image flex-shrink-0 h-1/3 rounded-2xl mb-4"
         style="background-image: url('{{ article.image_url or '/static/pictures/default_portrait.png' }}')">
       </div>
 
       <!-- Content -->
-      <div class="flex-1 flex flex-col justify-center text-center px-2">
-        <h1 class="title-shadow text-2xl font-bold leading-tight mb-4" data-text="{{ article.title[:60] }}{% if article.title|length > 60 %}...{% endif %}">
-          {{ article.title[:60] }}{% if article.title|length > 60 %}...{% endif %}
+      <div class="flex-1 flex flex-col justify-center content-card p-5">
+        <h1 class="neon-title text-xl font-bold leading-tight mb-3">
+          {{ article.title[:65] }}{% if article.title|length > 65 %}...{% endif %}
         </h1>
-        <p class="text-gray-300 text-base leading-relaxed mb-5" style="color: rgba(244, 199, 204, 0.7);">
-          {{ article.summary[:160] }}{% if article.summary|length > 160 %}...{% endif %}
+        <p class="text-sm leading-relaxed mb-4" style="color: var(--soft-lavender); opacity: 0.8;">
+          {{ article.summary[:150] }}{% if article.summary|length > 150 %}...{% endif %}
         </p>
-        <div class="flex justify-center">
-          <div class="source-pill text-sm">
-            <span style="color: var(--pink-soft);">{{ article.source_name }}</span>
-            {% if article.published_date %}
-            <span style="color: rgba(244, 199, 204, 0.5);">&bull;</span>
-            <span style="color: rgba(244, 199, 204, 0.6);">{{ article.published_date.strftime('%b %d') }}</span>
-            {% endif %}
-          </div>
+        <div class="source-pill text-xs">
+          <span style="color: var(--neon-cyan);">{{ article.source_name }}</span>
+          {% if article.published_date %}
+          <span style="color: var(--neon-purple);">{{ article.published_date.strftime('%b %d') }}</span>
+          {% endif %}
         </div>
       </div>
 
-      <!-- Pagination dots -->
-      <div class="flex justify-center gap-3 py-4">
+      <!-- Dots -->
+      <div class="flex justify-center gap-3 py-3">
         {% for i in range(articles|length) %}
-        <div class="dot rounded-full {% if i == loop.index0 %}active{% endif %}"></div>
+        <div class="dot {% if i == loop.index0 %}active{% endif %}"></div>
         {% endfor %}
       </div>
     </div>
     {% endfor %}
     {% else %}
-    <div class="h-full flex items-center justify-center" style="z-index: 10; position: relative;">
-      <div class="text-center">
-        <div class="text-6xl mb-4" style="filter: drop-shadow(4px 4px 0 #000);">📰</div>
-        <h1 class="title-shadow text-2xl font-bold" data-text="No News Available">No News Available</h1>
-        <p class="mt-3" style="color: rgba(244, 199, 204, 0.6);">Check back later for updates</p>
+    <div class="h-full flex items-center justify-center relative z-10">
+      <div class="text-center content-card p-8 rounded-2xl">
+        <div class="text-5xl mb-4">✨</div>
+        <h1 class="neon-title text-2xl font-bold">No News Available</h1>
+        <p class="mt-3 text-sm" style="color: var(--soft-lavender);">Check back later</p>
       </div>
     </div>
     {% endif %}
@@ -210,9 +256,7 @@
       slides.forEach((slide, i) => {
         slide.classList.toggle('active', i === index);
         const dots = slide.querySelectorAll('.dot');
-        dots.forEach((dot, j) => {
-          dot.classList.toggle('active', j === index);
-        });
+        dots.forEach((dot, j) => dot.classList.toggle('active', j === index));
       });
     }
 

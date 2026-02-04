@@ -7,58 +7,132 @@
   <title>AI News - Presentation</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --pink-soft: #F4C7CC;
-      --pink-bright: #FF6B9D;
-      --purple-dark: #1a0a2e;
-      --purple-mid: #3d1a5c;
-      --magenta: #8B2D6B;
+      --neon-pink: #FF6AD5;
+      --neon-cyan: #00D4FF;
+      --neon-purple: #C774E8;
+      --warm-peach: #FFB086;
+      --soft-lavender: #E8D5F2;
+      --deep-purple: #0D0221;
+      --mid-purple: #1A0533;
     }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Space Grotesk', sans-serif;
-      background: radial-gradient(ellipse at 30% 50%, var(--magenta) 0%, var(--purple-dark) 60%);
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(160deg, #1A0533 0%, #0D0221 30%, #050010 70%, #000 100%);
     }
 
-    /* Techy grid overlay */
-    body::before {
-      content: '';
+    /* Large synthwave sun */
+    .synthwave-sun {
       position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(244, 199, 204, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(244, 199, 204, 0.04) 1px, transparent 1px);
-      background-size: 60px 60px;
-      pointer-events: none;
-      z-index: 1;
+      bottom: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 500px;
+      height: 250px;
+      background: linear-gradient(180deg, #FF6AD5 0%, #FFB086 40%, #FF6AD5 80%, #C774E8 100%);
+      border-radius: 250px 250px 0 0;
+      opacity: 0.25;
+      z-index: 0;
     }
-
-    /* Subtle scan line effect */
-    body::after {
+    .synthwave-sun::before {
       content: '';
-      position: fixed;
+      position: absolute;
       inset: 0;
       background: repeating-linear-gradient(
         0deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 0, 0, 0.05) 3px,
-        rgba(0, 0, 0, 0.05) 6px
+        transparent 0px,
+        transparent 12px,
+        rgba(0,0,0,0.5) 12px,
+        rgba(0,0,0,0.5) 18px
       );
-      pointer-events: none;
-      z-index: 2;
     }
+
+    /* Synthwave grid */
+    .grid-floor {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 40%;
+      background:
+        linear-gradient(transparent 0%, rgba(255, 106, 213, 0.2) 100%),
+        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0, 212, 255, 0.5) 80px),
+        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0, 212, 255, 0.4) 50px);
+      background-size: 100% 100%, 80px 80px, 80px 50px;
+      transform: perspective(400px) rotateX(70deg);
+      transform-origin: bottom;
+      z-index: 0;
+      animation: gridMove 20s linear infinite;
+    }
+    @keyframes gridMove {
+      from { background-position: 0 0, 0 0, 0 0; }
+      to { background-position: 0 0, 0 0, 0 500px; }
+    }
+
+    /* Matrix digital rain */
+    .matrix-rain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='150'%3E%3Ctext x='12' y='25' fill='%23FF6AD515' font-family='monospace' font-size='14'%3E1%3C/text%3E%3Ctext x='12' y='55' fill='%2300D4FF10' font-family='monospace' font-size='14'%3E0%3C/text%3E%3Ctext x='12' y='85' fill='%23C774E812' font-family='monospace' font-size='14'%3E1%3C/text%3E%3Ctext x='12' y='115' fill='%23FF6AD508' font-family='monospace' font-size='14'%3E0%3C/text%3E%3C/svg%3E");
+      animation: rain 30s linear infinite;
+      opacity: 0.4;
+      z-index: 1;
+      pointer-events: none;
+    }
+    @keyframes rain {
+      from { background-position: 0 -100vh; }
+      to { background-position: 0 100vh; }
+    }
+
+    /* Steven Universe inspired stars */
+    .star {
+      position: absolute;
+      width: 0; height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-bottom: 20px solid var(--neon-pink);
+      opacity: 0.4;
+      z-index: 1;
+      animation: twinkle 3s ease-in-out infinite;
+    }
+    .star::after {
+      content: '';
+      position: absolute;
+      top: 7px; left: -10px;
+      width: 0; height: 0;
+      border-left: 10px solid transparent;
+      border-right: 10px solid transparent;
+      border-top: 20px solid var(--neon-pink);
+    }
+    @keyframes twinkle {
+      0%, 100% { opacity: 0.4; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+    .star-1 { top: 8%; left: 3%; transform: scale(0.8); animation-delay: 0s; }
+    .star-2 { top: 5%; right: 5%; transform: scale(1); border-bottom-color: var(--neon-cyan); animation-delay: 0.5s; }
+    .star-2::after { border-top-color: var(--neon-cyan); }
+    .star-3 { top: 15%; left: 12%; transform: scale(0.5); border-bottom-color: var(--warm-peach); animation-delay: 1s; }
+    .star-3::after { border-top-color: var(--warm-peach); }
+    .star-4 { top: 10%; right: 15%; transform: scale(0.7); border-bottom-color: var(--neon-purple); animation-delay: 1.5s; }
+    .star-4::after { border-top-color: var(--neon-purple); }
+    .star-5 { top: 3%; left: 35%; transform: scale(0.4); border-bottom-color: var(--soft-lavender); animation-delay: 2s; }
+    .star-5::after { border-top-color: var(--soft-lavender); }
+    .star-6 { top: 12%; right: 35%; transform: scale(0.6); animation-delay: 2.5s; }
 
     .slide {
       opacity: 0;
       transform: scale(0.98);
-      transition: opacity 1s ease-in-out, transform 1s ease-in-out;
+      transition: all 1s ease-in-out;
       position: absolute;
       inset: 0;
       pointer-events: none;
@@ -70,191 +144,216 @@
       pointer-events: auto;
     }
 
-    /* Bold offset shadow text effect */
-    .title-shadow {
-      position: relative;
-      color: var(--pink-soft);
-      display: inline-block;
-    }
-    .title-shadow::before {
-      content: attr(data-text);
-      position: absolute;
-      left: 6px;
-      top: 6px;
-      color: #000;
-      z-index: -1;
+    /* Neon glow title */
+    .neon-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--soft-lavender);
+      text-shadow:
+        0 0 5px var(--neon-pink),
+        0 0 15px var(--neon-pink),
+        0 0 35px var(--neon-pink),
+        0 0 50px var(--neon-purple);
     }
 
     .hero-image {
       background-size: cover;
       background-position: center;
-      background-color: var(--purple-mid);
-      border: 5px solid var(--pink-soft);
-      box-shadow: 12px 12px 0 #000;
+      background-color: var(--mid-purple);
+      border: 4px solid var(--neon-cyan);
+      box-shadow:
+        0 0 30px var(--neon-cyan),
+        0 0 60px rgba(0, 212, 255, 0.2),
+        inset 0 0 60px rgba(0, 0, 0, 0.5);
       position: relative;
     }
     .hero-image::after {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to bottom, transparent 50%, rgba(26, 10, 46, 0.9));
+      background: linear-gradient(to right, rgba(13, 2, 33, 0.8) 0%, transparent 30%);
     }
-
-    /* Pink cloud decorations */
-    .cloud {
-      position: absolute;
-      background: var(--pink-soft);
-      border-radius: 100px;
-      opacity: 0.1;
-      z-index: 0;
-    }
-    .cloud-1 { width: 300px; height: 80px; top: 5%; right: 10%; }
-    .cloud-2 { width: 200px; height: 60px; top: 10%; right: 25%; }
-    .cloud-3 { width: 250px; height: 70px; bottom: 25%; left: -60px; }
-    .cloud-4 { width: 180px; height: 55px; bottom: 30%; left: 50px; }
-    .cloud-5 { width: 150px; height: 45px; top: 40%; right: -30px; }
 
     .category-tag {
       display: inline-block;
-      background: var(--pink-soft);
-      color: #000;
-      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      color: #fff;
+      padding: 10px 28px;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 0.9rem;
-      letter-spacing: 2px;
+      font-size: 0.85rem;
+      letter-spacing: 3px;
       text-transform: uppercase;
-      box-shadow: 5px 5px 0 #000;
+      border-radius: 30px;
+      box-shadow: 0 0 25px var(--neon-pink);
     }
 
-    .content-area {
-      background: rgba(26, 10, 46, 0.7);
-      border: 2px solid rgba(244, 199, 204, 0.25);
-      backdrop-filter: blur(8px);
+    .brand-text {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 1.5rem;
+      letter-spacing: 5px;
+      text-transform: uppercase;
+      background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple), var(--neon-pink));
+      background-size: 300% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 8s linear infinite;
+      filter: drop-shadow(0 0 15px var(--neon-pink));
+    }
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      100% { background-position: 300% 50%; }
+    }
+
+    .content-card {
+      background: linear-gradient(135deg, rgba(26, 5, 51, 0.9), rgba(13, 2, 33, 0.95));
+      border: 2px solid rgba(199, 116, 232, 0.5);
+      border-radius: 24px;
+      backdrop-filter: blur(20px);
+      box-shadow: 0 0 40px rgba(199, 116, 232, 0.15);
     }
 
     .source-info {
       display: inline-flex;
       align-items: center;
-      gap: 12px;
-      background: rgba(244, 199, 204, 0.1);
-      border: 2px solid var(--pink-soft);
-      padding: 12px 24px;
+      gap: 15px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 2px solid var(--neon-cyan);
+      padding: 14px 28px;
       border-radius: 60px;
-      box-shadow: 4px 4px 0 #000;
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
     }
 
     .control-bar {
-      background: rgba(0, 0, 0, 0.5);
-      border-top: 3px solid rgba(244, 199, 204, 0.4);
-      backdrop-filter: blur(15px);
+      background: linear-gradient(90deg, rgba(26, 5, 51, 0.98), rgba(13, 2, 33, 0.95), rgba(26, 5, 51, 0.98));
+      border-top: 3px solid var(--neon-pink);
+      box-shadow: 0 0 30px rgba(255, 106, 213, 0.4);
     }
 
     .slide-btn {
-      width: 56px;
-      height: 56px;
-      border-radius: 12px;
+      width: 60px;
+      height: 60px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
       font-size: 1.1rem;
       transition: all 0.3s ease;
-      border: 2px solid transparent;
-      background: rgba(244, 199, 204, 0.1);
-      color: rgba(244, 199, 204, 0.6);
+      border: 2px solid rgba(199, 116, 232, 0.3);
+      background: rgba(26, 5, 51, 0.8);
+      color: var(--soft-lavender);
     }
     .slide-btn:hover {
-      background: rgba(244, 199, 204, 0.2);
-      border-color: var(--pink-soft);
+      border-color: var(--neon-cyan);
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
     }
     .slide-btn.active {
-      background: var(--pink-soft);
-      color: #000;
-      box-shadow: 4px 4px 0 #000;
-      transform: translate(-2px, -2px);
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      border-color: transparent;
+      color: #fff;
+      box-shadow: 0 0 25px var(--neon-pink);
+      transform: scale(1.05);
     }
 
     .play-btn {
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       border-radius: 50%;
-      background: var(--pink-soft);
-      color: #000;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      border: none;
+      color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      box-shadow: 5px 5px 0 #000;
+      box-shadow: 0 0 30px var(--neon-pink);
       transition: all 0.2s ease;
+      cursor: pointer;
     }
     .play-btn:hover {
-      transform: translate(-2px, -2px);
-      box-shadow: 7px 7px 0 #000;
+      transform: scale(1.1);
+      box-shadow: 0 0 40px var(--neon-pink);
     }
 
     .nav-btn {
-      width: 48px;
-      height: 48px;
+      width: 50px;
+      height: 50px;
       border-radius: 50%;
-      background: rgba(244, 199, 204, 0.15);
-      border: 2px solid var(--pink-soft);
-      color: var(--pink-soft);
+      background: rgba(0, 212, 255, 0.15);
+      border: 2px solid var(--neon-cyan);
+      color: var(--neon-cyan);
       display: flex;
       align-items: center;
       justify-content: center;
       transition: all 0.2s ease;
+      cursor: pointer;
     }
     .nav-btn:hover {
-      background: rgba(244, 199, 204, 0.3);
+      background: rgba(0, 212, 255, 0.3);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
     }
 
     .progress-track {
-      height: 6px;
-      background: rgba(244, 199, 204, 0.2);
-      border-radius: 3px;
+      height: 8px;
+      background: rgba(199, 116, 232, 0.2);
+      border-radius: 4px;
       overflow: hidden;
     }
     .progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, var(--pink-soft), var(--pink-bright));
-      border-radius: 3px;
+      background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple));
+      background-size: 200% 100%;
+      border-radius: 4px;
       transition: width linear;
-      box-shadow: 0 0 10px var(--pink-bright);
+      box-shadow: 0 0 15px var(--neon-pink);
+      animation: progressGlow 2s ease-in-out infinite;
+    }
+    @keyframes progressGlow {
+      0%, 100% { filter: brightness(1); }
+      50% { filter: brightness(1.3); }
     }
 
-    .brand-logo {
-      font-weight: 700;
-      font-size: 1.4rem;
-      letter-spacing: 4px;
-      text-transform: uppercase;
-      color: var(--pink-soft);
-      text-shadow: 3px 3px 0 #000;
+    /* VHS scan effect */
+    .vhs-line {
+      position: fixed;
+      left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+      animation: vhs 5s linear infinite;
+      z-index: 100;
+      pointer-events: none;
     }
-
-    @keyframes glow {
-      0%, 100% { box-shadow: 12px 12px 0 #000, 0 0 10px var(--pink-soft); }
-      50% { box-shadow: 12px 12px 0 #000, 0 0 30px var(--pink-bright); }
-    }
-    .glow-border {
-      animation: glow 4s ease-in-out infinite;
+    @keyframes vhs {
+      0% { top: -4px; }
+      100% { top: 100%; }
     }
 
     @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(20px); }
+      from { opacity: 0; transform: translateY(30px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .slide.active .title-shadow { animation: fadeSlideIn 0.8s ease 0.2s both; }
+    .slide.active .neon-title { animation: fadeSlideIn 0.8s ease 0.2s both; }
     .slide.active .summary-text { animation: fadeSlideIn 0.8s ease 0.4s both; }
     .slide.active .source-info { animation: fadeSlideIn 0.8s ease 0.6s both; }
   </style>
 </head>
 
-<body class="text-white">
-  <!-- Decorative clouds -->
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
-  <div class="cloud cloud-4"></div>
-  <div class="cloud cloud-5"></div>
+<body>
+  <!-- Effects -->
+  <div class="synthwave-sun"></div>
+  <div class="grid-floor"></div>
+  <div class="matrix-rain"></div>
+  <div class="vhs-line"></div>
+
+  <!-- Stars -->
+  <div class="star star-1"></div>
+  <div class="star star-2"></div>
+  <div class="star star-3"></div>
+  <div class="star star-4"></div>
+  <div class="star star-5"></div>
+  <div class="star star-6"></div>
 
   <div id="news-container" class="h-full w-full relative flex flex-col">
     {% if articles %}
@@ -262,36 +361,36 @@
     <!-- Slides -->
     <div class="flex-1 relative">
       {% for article in articles %}
-      <div class="slide flex flex-col h-full p-12 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <div class="slide flex flex-col h-full p-10 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
 
-        <!-- Top: Category + Brand -->
-        <div class="flex justify-between items-center mb-8">
+        <!-- Top Bar -->
+        <div class="flex justify-between items-center mb-6">
           <div class="category-tag">{{ article.category or 'Technology' }}</div>
-          <div class="brand-logo">GenAI Popup Studio</div>
+          <div class="brand-text">AI News</div>
         </div>
 
-        <!-- Main Content: Side by side -->
-        <div class="flex-1 flex gap-12">
+        <!-- Main Content -->
+        <div class="flex-1 flex gap-10">
           <!-- Hero Image -->
-          <div class="hero-image w-1/2 rounded-2xl glow-border"
+          <div class="hero-image w-1/2 rounded-3xl"
             style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
           </div>
 
           <!-- Text Content -->
-          <div class="w-1/2 flex flex-col justify-center content-area rounded-2xl p-10">
-            <h1 class="title-shadow text-5xl font-bold leading-tight mb-8" data-text="{{ article.title[:90] }}{% if article.title|length > 90 %}...{% endif %}">
-              {{ article.title[:90] }}{% if article.title|length > 90 %}...{% endif %}
+          <div class="w-1/2 flex flex-col justify-center content-card p-10">
+            <h1 class="neon-title text-4xl font-bold leading-tight mb-8">
+              {{ article.title[:95] }}{% if article.title|length > 95 %}...{% endif %}
             </h1>
 
-            <p class="summary-text text-2xl leading-relaxed mb-10" style="color: rgba(244, 199, 204, 0.8);">
-              {{ article.summary[:350] }}{% if article.summary|length > 350 %}...{% endif %}
+            <p class="summary-text text-xl leading-relaxed mb-10" style="color: var(--soft-lavender); opacity: 0.9;">
+              {{ article.summary[:320] }}{% if article.summary|length > 320 %}...{% endif %}
             </p>
 
             <div class="source-info text-lg">
-              <span style="color: var(--pink-soft); font-weight: 700;">{{ article.source_name }}</span>
+              <span style="color: var(--neon-cyan); font-weight: 700;">{{ article.source_name }}</span>
               {% if article.published_date %}
-              <span style="color: rgba(244, 199, 204, 0.4);">&bull;</span>
-              <span style="color: rgba(244, 199, 204, 0.7);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
+              <span style="color: var(--neon-purple);">•</span>
+              <span style="color: var(--warm-peach);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
               {% endif %}
             </div>
           </div>
@@ -301,7 +400,7 @@
     </div>
 
     <!-- Control Bar -->
-    <div class="control-bar px-12 py-6">
+    <div class="control-bar px-10 py-5">
       <div class="flex items-center justify-between">
         <!-- Slide Numbers -->
         <div class="flex items-center gap-3">
@@ -315,13 +414,13 @@
         </div>
 
         <!-- Playback Controls -->
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-5">
           <button onclick="prevSlide()" class="nav-btn">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
           </button>
           <button onclick="togglePause()" class="play-btn">
-            <svg id="pauseIcon" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            <svg id="playIcon" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            <svg id="pauseIcon" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <svg id="playIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
           </button>
           <button onclick="nextSlide()" class="nav-btn">
             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
@@ -329,23 +428,23 @@
         </div>
 
         <!-- Week Info -->
-        <div class="text-right">
-          <div style="color: rgba(244, 199, 204, 0.5);" class="text-sm">Week {{ now().isocalendar()[1] }} &bull; {{ now().strftime('%Y') }}</div>
+        <div style="color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; font-size: 0.85rem;">
+          Week {{ now().isocalendar()[1] }} // {{ now().strftime('%Y') }}
         </div>
       </div>
 
       <!-- Progress Bar -->
-      <div class="progress-track mt-5">
+      <div class="progress-track mt-4">
         <div id="progressBar" class="progress-bar" style="width: 0%"></div>
       </div>
     </div>
 
     {% else %}
-    <div class="h-full flex items-center justify-center" style="z-index: 10; position: relative;">
-      <div class="text-center">
-        <div class="text-9xl mb-8" style="filter: drop-shadow(6px 6px 0 #000);">📰</div>
-        <h1 class="title-shadow text-5xl font-bold" data-text="No News Available">No News Available</h1>
-        <p class="mt-6 text-2xl" style="color: rgba(244, 199, 204, 0.6);">Check back later for updates</p>
+    <div class="h-full flex items-center justify-center relative z-10">
+      <div class="text-center content-card p-16 rounded-3xl">
+        <div class="text-8xl mb-8">✨</div>
+        <h1 class="neon-title text-5xl font-bold">No News Available</h1>
+        <p class="mt-6 text-xl" style="color: var(--soft-lavender);">Check back later for updates</p>
       </div>
     </div>
     {% endif %}
@@ -366,12 +465,8 @@
     let progress = 0;
 
     function showSlide(index) {
-      slides.forEach((slide, i) => {
-        slide.classList.toggle('active', i === index);
-      });
-      slideButtons.forEach((btn, i) => {
-        btn.classList.toggle('active', i === index);
-      });
+      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
+      slideButtons.forEach((btn, i) => btn.classList.toggle('active', i === index));
       resetProgress();
     }
 
@@ -394,12 +489,8 @@
       isPaused = !isPaused;
       pauseIcon.classList.toggle('hidden', isPaused);
       playIcon.classList.toggle('hidden', !isPaused);
-
-      if (isPaused) {
-        clearInterval(progressInterval);
-      } else {
-        startProgress();
-      }
+      if (isPaused) clearInterval(progressInterval);
+      else startProgress();
     }
 
     function resetProgress() {
@@ -418,33 +509,19 @@
         if (isPaused) return;
         progress += increment;
         if (progressBar) progressBar.style.width = progress + '%';
-
-        if (progress >= 100) {
-          nextSlide();
-        }
+        if (progress >= 100) nextSlide();
       }, stepMs);
     }
 
-    // Keyboard controls
     document.addEventListener('keydown', (e) => {
       switch(e.key) {
-        case 'ArrowRight':
-        case ' ':
-          nextSlide();
-          break;
-        case 'ArrowLeft':
-          prevSlide();
-          break;
-        case 'p':
-          togglePause();
-          break;
+        case 'ArrowRight': case ' ': nextSlide(); break;
+        case 'ArrowLeft': prevSlide(); break;
+        case 'p': togglePause(); break;
       }
     });
 
-    // Start
-    if (totalSlides > 0) {
-      startProgress();
-    }
+    if (totalSlides > 0) startProgress();
   </script>
 </body>
 </html>
