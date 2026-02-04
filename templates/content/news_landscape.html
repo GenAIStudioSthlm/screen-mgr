@@ -7,53 +7,116 @@
   <title>AI News</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
-      --pink-soft: #F4C7CC;
-      --pink-bright: #FF6B9D;
-      --purple-dark: #1a0a2e;
-      --purple-mid: #3d1a5c;
-      --magenta: #8B2D6B;
+      --neon-pink: #FF6AD5;
+      --neon-cyan: #00D4FF;
+      --neon-purple: #C774E8;
+      --warm-peach: #FFB086;
+      --soft-lavender: #E8D5F2;
+      --deep-purple: #0D0221;
+      --mid-purple: #1A0533;
     }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Space Grotesk', sans-serif;
-      background: radial-gradient(ellipse at center, var(--magenta) 0%, var(--purple-dark) 70%);
+      font-family: 'Quicksand', sans-serif;
+      background: linear-gradient(135deg, #1A0533 0%, #0D0221 40%, #000 100%);
     }
 
-    /* Techy grid overlay */
-    body::before {
-      content: '';
+    /* Synthwave sun */
+    .synthwave-sun {
       position: fixed;
-      inset: 0;
-      background-image:
-        linear-gradient(rgba(244, 199, 204, 0.03) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(244, 199, 204, 0.03) 1px, transparent 1px);
-      background-size: 50px 50px;
-      pointer-events: none;
-      z-index: 1;
+      bottom: 15%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 300px;
+      height: 150px;
+      background: linear-gradient(180deg, #FF6AD5 0%, #FFB086 50%, #FF6AD5 100%);
+      border-radius: 150px 150px 0 0;
+      opacity: 0.3;
+      z-index: 0;
     }
-
-    /* Scan line effect */
-    body::after {
+    .synthwave-sun::before {
       content: '';
-      position: fixed;
+      position: absolute;
       inset: 0;
       background: repeating-linear-gradient(
         0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.08) 2px,
-        rgba(0, 0, 0, 0.08) 4px
+        transparent 0px,
+        transparent 8px,
+        rgba(0,0,0,0.4) 8px,
+        rgba(0,0,0,0.4) 12px
       );
-      pointer-events: none;
-      z-index: 2;
     }
+
+    /* Synthwave grid floor */
+    .grid-floor {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 35%;
+      background:
+        linear-gradient(transparent 0%, rgba(255, 106, 213, 0.15) 100%),
+        repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(0, 212, 255, 0.4) 60px),
+        repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0, 212, 255, 0.3) 40px);
+      background-size: 100% 100%, 60px 60px, 60px 40px;
+      transform: perspective(300px) rotateX(65deg);
+      transform-origin: bottom;
+      z-index: 0;
+    }
+
+    /* Matrix rain - pink/cyan variant */
+    .matrix-rain {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='30' height='120'%3E%3Ctext x='8' y='20' fill='%23FF6AD518' font-family='monospace' font-size='12'%3E1%3C/text%3E%3Ctext x='8' y='45' fill='%2300D4FF12' font-family='monospace' font-size='12'%3E0%3C/text%3E%3Ctext x='8' y='70' fill='%23C774E815' font-family='monospace' font-size='12'%3E1%3C/text%3E%3Ctext x='8' y='95' fill='%23FF6AD510' font-family='monospace' font-size='12'%3E0%3C/text%3E%3C/svg%3E");
+      animation: rain 25s linear infinite;
+      opacity: 0.5;
+      z-index: 1;
+      pointer-events: none;
+    }
+    @keyframes rain {
+      from { background-position: 0 -100vh; }
+      to { background-position: 0 100vh; }
+    }
+
+    /* Steven Universe stars */
+    .star {
+      position: absolute;
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 16px solid var(--neon-pink);
+      opacity: 0.5;
+      z-index: 1;
+    }
+    .star::after {
+      content: '';
+      position: absolute;
+      top: 5px; left: -8px;
+      width: 0; height: 0;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-top: 16px solid var(--neon-pink);
+    }
+    .star-1 { top: 10%; left: 5%; transform: scale(0.7); }
+    .star-2 { top: 8%; right: 8%; transform: scale(0.9); border-bottom-color: var(--neon-cyan); }
+    .star-2::after { border-top-color: var(--neon-cyan); }
+    .star-3 { top: 20%; left: 15%; transform: scale(0.5); border-bottom-color: var(--warm-peach); }
+    .star-3::after { border-top-color: var(--warm-peach); }
+    .star-4 { top: 15%; right: 20%; transform: scale(0.6); border-bottom-color: var(--neon-purple); }
+    .star-4::after { border-top-color: var(--neon-purple); }
+    .star-5 { top: 5%; left: 40%; transform: scale(0.4); border-bottom-color: var(--soft-lavender); }
+    .star-5::after { border-top-color: var(--soft-lavender); }
 
     .slide {
       opacity: 0;
@@ -64,180 +127,181 @@
     }
     .slide.active { opacity: 1; }
 
-    /* Bold offset shadow text effect */
-    .title-shadow {
-      position: relative;
-      color: var(--pink-soft);
-      display: inline-block;
-    }
-    .title-shadow::before {
-      content: attr(data-text);
-      position: absolute;
-      left: 5px;
-      top: 5px;
-      color: #000;
-      z-index: -1;
+    /* Neon text */
+    .neon-title {
+      font-family: 'Orbitron', sans-serif;
+      color: var(--soft-lavender);
+      text-shadow:
+        0 0 5px var(--neon-pink),
+        0 0 15px var(--neon-pink),
+        0 0 30px var(--neon-purple);
     }
 
     .news-image {
       background-size: cover;
       background-position: center;
-      background-color: var(--purple-mid);
-      border: 4px solid var(--pink-soft);
-      box-shadow: 10px 10px 0 #000;
+      background-color: var(--mid-purple);
+      border: 3px solid var(--neon-cyan);
+      box-shadow:
+        0 0 20px var(--neon-cyan),
+        0 0 40px rgba(0, 212, 255, 0.2),
+        inset 0 0 50px rgba(0, 0, 0, 0.5);
     }
-
-    /* Pink cloud decorations */
-    .cloud {
-      position: absolute;
-      background: var(--pink-soft);
-      border-radius: 100px;
-      opacity: 0.12;
-      z-index: 0;
-    }
-    .cloud-1 { width: 200px; height: 60px; top: 8%; right: 5%; }
-    .cloud-2 { width: 140px; height: 45px; top: 12%; right: 12%; }
-    .cloud-3 { width: 160px; height: 50px; bottom: 20%; left: -40px; }
-    .cloud-4 { width: 120px; height: 40px; bottom: 25%; left: 20px; }
 
     .header-bar {
-      background: rgba(0, 0, 0, 0.4);
-      border-bottom: 2px solid rgba(244, 199, 204, 0.3);
-      backdrop-filter: blur(10px);
+      background: linear-gradient(90deg, rgba(26, 5, 51, 0.95), rgba(13, 2, 33, 0.9), rgba(26, 5, 51, 0.95));
+      border-bottom: 2px solid var(--neon-pink);
+      box-shadow: 0 0 20px rgba(255, 106, 213, 0.3);
     }
 
     .brand-text {
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      letter-spacing: 3px;
+      letter-spacing: 4px;
       text-transform: uppercase;
-      color: var(--pink-soft);
-      text-shadow: 2px 2px 0 #000;
+      background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 10px var(--neon-pink));
     }
 
     .category-tag {
       display: inline-block;
-      background: var(--pink-soft);
-      color: #000;
+      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
+      color: #fff;
       padding: 8px 20px;
+      font-family: 'Orbitron', sans-serif;
       font-weight: 700;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       letter-spacing: 2px;
       text-transform: uppercase;
-      box-shadow: 4px 4px 0 #000;
+      border-radius: 25px;
+      box-shadow: 0 0 20px var(--neon-pink);
     }
 
     .content-card {
-      background: rgba(26, 10, 46, 0.6);
-      border: 2px solid rgba(244, 199, 204, 0.2);
-      backdrop-filter: blur(5px);
+      background: linear-gradient(135deg, rgba(26, 5, 51, 0.85), rgba(13, 2, 33, 0.9));
+      border: 1px solid rgba(199, 116, 232, 0.4);
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      box-shadow: 0 0 30px rgba(199, 116, 232, 0.1);
     }
 
     .source-pill {
       display: inline-flex;
       align-items: center;
-      gap: 10px;
-      background: rgba(244, 199, 204, 0.1);
-      border: 1px solid var(--pink-soft);
+      gap: 12px;
+      background: rgba(0, 212, 255, 0.1);
+      border: 1px solid var(--neon-cyan);
       padding: 10px 20px;
       border-radius: 50px;
+      box-shadow: 0 0 15px rgba(0, 212, 255, 0.2);
+    }
+
+    .footer-bar {
+      background: linear-gradient(90deg, rgba(26, 5, 51, 0.95), rgba(13, 2, 33, 0.9), rgba(26, 5, 51, 0.95));
+      border-top: 2px solid var(--neon-cyan);
+      box-shadow: 0 0 20px rgba(0, 212, 255, 0.3);
     }
 
     .dot {
       width: 14px;
       height: 14px;
-      border: 2px solid var(--pink-soft);
+      border: 2px solid var(--neon-pink);
+      border-radius: 50%;
       background: transparent;
       transition: all 0.3s ease;
     }
     .dot.active {
-      background: var(--pink-soft);
-      box-shadow: 0 0 15px var(--pink-bright);
+      background: var(--neon-pink);
+      box-shadow: 0 0 15px var(--neon-pink), 0 0 30px var(--neon-pink);
     }
 
-    .footer-bar {
-      background: rgba(0, 0, 0, 0.4);
-      border-top: 2px solid rgba(244, 199, 204, 0.3);
-      backdrop-filter: blur(10px);
+    /* VHS effect */
+    .vhs-line {
+      position: fixed;
+      left: 0; right: 0;
+      height: 3px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      animation: vhs 6s linear infinite;
+      z-index: 100;
+      pointer-events: none;
     }
-
-    @keyframes glow {
-      0%, 100% { box-shadow: 10px 10px 0 #000, 0 0 5px var(--pink-soft); }
-      50% { box-shadow: 10px 10px 0 #000, 0 0 25px var(--pink-bright); }
-    }
-    .glow-border {
-      animation: glow 4s ease-in-out infinite;
-    }
-
-    @keyframes pulse-text {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.7; }
-    }
-    .pulse-text {
-      animation: pulse-text 2s ease-in-out infinite;
+    @keyframes vhs {
+      0% { top: -3px; }
+      100% { top: 100%; }
     }
   </style>
 </head>
 
-<body class="text-white">
-  <!-- Decorative clouds -->
-  <div class="cloud cloud-1"></div>
-  <div class="cloud cloud-2"></div>
-  <div class="cloud cloud-3"></div>
-  <div class="cloud cloud-4"></div>
+<body>
+  <!-- Effects -->
+  <div class="synthwave-sun"></div>
+  <div class="grid-floor"></div>
+  <div class="matrix-rain"></div>
+  <div class="vhs-line"></div>
+
+  <!-- Stars -->
+  <div class="star star-1"></div>
+  <div class="star star-2"></div>
+  <div class="star star-3"></div>
+  <div class="star star-4"></div>
+  <div class="star star-5"></div>
 
   <div id="news-container" class="h-full w-full relative flex flex-col">
     {% if articles %}
     {% for article in articles %}
     <div class="slide flex flex-col h-full {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
 
-      <!-- Header Bar -->
+      <!-- Header -->
       <div class="header-bar flex justify-between items-center px-10 py-4">
-        <div class="brand-text text-lg">GenAI News Feed</div>
+        <div class="brand-text text-lg">AI News Feed</div>
         <div class="category-tag">{{ article.category or 'Technology' }}</div>
-        <div style="color: rgba(244, 199, 204, 0.6);" class="text-sm">
-          Week {{ now().isocalendar()[1] }} &bull; {{ now().strftime('%Y') }}
+        <div style="color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; font-size: 0.8rem;">
+          Week {{ now().isocalendar()[1] }} // {{ now().strftime('%Y') }}
         </div>
       </div>
 
       <!-- Main Content -->
-      <div class="flex-1 flex p-10 gap-10">
+      <div class="flex-1 flex p-8 gap-8">
         <!-- Image -->
-        <div class="news-image w-2/5 rounded-xl glow-border"
+        <div class="news-image w-2/5 rounded-2xl"
           style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
         </div>
 
-        <!-- Text Content -->
-        <div class="flex-1 flex flex-col justify-center content-card rounded-xl p-8">
-          <h1 class="title-shadow text-4xl font-bold leading-tight mb-6" data-text="{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}">
-            {{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}
+        <!-- Text -->
+        <div class="flex-1 flex flex-col justify-center content-card p-8">
+          <h1 class="neon-title text-3xl font-bold leading-tight mb-5">
+            {{ article.title[:85] }}{% if article.title|length > 85 %}...{% endif %}
           </h1>
-          <p class="text-xl leading-relaxed mb-8" style="color: rgba(244, 199, 204, 0.75);">
-            {{ article.summary[:280] }}{% if article.summary|length > 280 %}...{% endif %}
+          <p class="text-lg leading-relaxed mb-6" style="color: var(--soft-lavender); opacity: 0.85;">
+            {{ article.summary[:260] }}{% if article.summary|length > 260 %}...{% endif %}
           </p>
           <div class="source-pill">
-            <span style="color: var(--pink-soft); font-weight: 600;">{{ article.source_name }}</span>
+            <span style="color: var(--neon-cyan); font-weight: 600;">{{ article.source_name }}</span>
             {% if article.published_date %}
-            <span style="color: rgba(244, 199, 204, 0.4);">&bull;</span>
-            <span style="color: rgba(244, 199, 204, 0.6);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
+            <span style="color: var(--neon-purple);">•</span>
+            <span style="color: var(--warm-peach);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
             {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- Footer with pagination -->
+      <!-- Footer -->
       <div class="footer-bar flex justify-center items-center gap-4 py-4">
         {% for i in range(articles|length) %}
-        <div class="dot rounded-full {% if i == loop.index0 %}active{% endif %}"></div>
+        <div class="dot {% if i == loop.index0 %}active{% endif %}"></div>
         {% endfor %}
       </div>
     </div>
     {% endfor %}
     {% else %}
-    <div class="h-full flex items-center justify-center" style="z-index: 10; position: relative;">
-      <div class="text-center">
-        <div class="text-8xl mb-6" style="filter: drop-shadow(5px 5px 0 #000);">📰</div>
-        <h1 class="title-shadow text-4xl font-bold" data-text="No News Available">No News Available</h1>
-        <p class="mt-4 text-xl" style="color: rgba(244, 199, 204, 0.6);">Check back later for updates</p>
+    <div class="h-full flex items-center justify-center relative z-10">
+      <div class="text-center content-card p-12 rounded-2xl">
+        <div class="text-7xl mb-6">✨</div>
+        <h1 class="neon-title text-4xl font-bold">No News Available</h1>
+        <p class="mt-4 text-lg" style="color: var(--soft-lavender);">Check back later for updates</p>
       </div>
     </div>
     {% endif %}
@@ -253,9 +317,7 @@
       slides.forEach((slide, i) => {
         slide.classList.toggle('active', i === index);
         const dots = slide.querySelectorAll('.dot');
-        dots.forEach((dot, j) => {
-          dot.classList.toggle('active', j === index);
-        });
+        dots.forEach((dot, j) => dot.classList.toggle('active', j === index));
       });
     }
 
