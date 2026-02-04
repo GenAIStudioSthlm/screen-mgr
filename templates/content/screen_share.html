@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screen Sharing Receiver</title>
+    <style>
+        body,
+        html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+
+        .status {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: white;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 8px 12px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 14px;
+            z-index: 100;
+            max-width: 80%;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .connection-error {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            max-width: 80%;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+
+<body>
+    <video id="video" autoplay playsinline></video>
+    <div id="waiting-status" class="status">Waiting for screen share...</div>
+    <div id="connected-status" class="status hidden">Connected to screen share</div>
+    <div id="connection-error" class="connection-error hidden">
+        <h3>Connection Error</h3>
+        <p id="error-message">Unable to connect to the screen sharing session.</p>
+        <p>Attempting to reconnect automatically...</p>
+    </div>
+
+    <script>
+        // Room ID from the template
+        const roomId = "{{ room_id }}";
+        let peerConnection;
+        let ws;
+        let reconnectAttempts = 0;
+        let reconnectTimeout;
+        const maxReconnectAttempts = 20;  // Maximum number of reconnection attempts
+
+        // WebRTC configuration with multiple STUN servers for better connectivity
+        const configuration = {
+            iceServers: [
+                { urls: "stun:stun.l.google.com:19302" },
+                { urls: "stun:stun1.l.google.com:19302" },
+                { urls: "stun:stun2.l.google.com:19302" },
+                { urls: "stun:stun3.l.google.com:19302" },
+                { urls: "stun:stun4.l.google.com:19302" }
+            ]
+        };
+
+        // Update status displays
+        function updateStatus(isConnected, errorMsg = null) {
+            const waitingEl = document.getElementById("waiting-status");
+            const connectedEl = document.getElementById("connected-status");
+            const errorEl = document.getElementById("connection-error");
+            const errorMsgEl = document.getElementById("error-message");
+
+            if (isConnected) {
+                waitingEl.classList.add("hidden");
+                connectedEl.classList.remove("hidden");
+                errorEl.classList.add("hidden");
+            } else if (errorMsg) {
+                waitingEl.classList.add("hidden");
+                connectedEl.classList.add("hidden");
+                errorEl.classList.remove("hidden");
+                errorMsgEl.textContent = errorMsg;
+            } else {
+                waitingEl.classList.remove("hidden");
+                connectedEl.classList.add("hidden");
+                errorEl.classList.add("hidden");
+            }
+        }
+
+        // Connect to WebSocket signaling server
+        function connectSignaling() {
+            try {
+                const isSecure = window.location.protocol === 'https:';
+                const wsProtocol = isSecure ? 'wss' : 'ws';
+                const signalServer = `${wsProtocol}://${window.location.host}/ws-webrtc/${roomId}`;
+
+                console.log(`Connecting to ${signalServer}`);
+                updateStatus(false);
+                ws = new WebSocket(signalServer);
+
+                ws.onopen = () => {
+                    console.log("Connected to signaling server");
+                    reconnectAttempts = 0;  // Reset reconnect counter on successful connection
+                    // When joining as a viewer, send a "viewer" message
+                    ws.send(JSON.stringify({ type: "viewer" }));
+                };
+
+                ws.onmessage = async (event) => {
+                    try {
+                        const message = JSON.parse(event.data);
+                        console.log("Received message:", message);
+
+                        switch (message.type) {
+                            case "offer":
+                                await handleOffer(message);
+                                break;
+                            case "ice-candidate":
+                                await handleIceCandidate(message);
+                                break;
+                        }
+                    } catch (e) {
+                        console.error("Error processing message:", e);
+                    }
+                };
+
+                ws.onclose = () => {
+                    console.log("Disconnected from signaling server");
+
+                    // Clean up existing connection
+                    if (peerConnection) {
+                        peerConnection.close();
+                        peerConnection = null;
+                    }
+
+                    updateStatus(false);
+
+                    // Try to reconnect after a delay with exponential backoff
+                    reconnectAttempts++;
+                    if (reconnectAttempts <= maxReconnectAttempts) {
+                        const delay = Math.min(5000 * Math.pow(1.5, reconnectAttempts - 1), 30000);
+                        console.log(`Reconnecting in ${delay / 1000} seconds (attempt ${reconnectAttempts})`);
+                        clearTimeout(reconnectTimeout);
+                        reconnectTimeout = setTimeout(connectSignaling, delay);
+                    } else {
+                        updateStatus(false, "Failed to connect after multiple attempts. Please refresh the page to try again.");
+                    }
+                };
+
+                ws.onerror = (error) => {
+                    console.error("WebSocket error:", error);
+                    updateStatus(false, "Connection error. Attempting to reconnect...");
+                };
+            } catch (error) {
+                console.error("Error in connectSignaling:", error);
+                updateStatus(false, "Failed to establish connection");
+            }
+        }
+
+        // Handle incoming offer from broadcaster
+        async function handleOffer(message) {
+            console.log("Handling offer");
+            try {
+                // Create a new RTCPeerConnection
+                if (peerConnection) {
+                    peerConnection.close();
+                }
+
+                peerConnection = new RTCPeerConnection(configuration);
+
+                // Set up event handlers for the peer connection
+                peerConnection.ontrack = (event) => {
+                    console.log("Received remote track");
+                    const videoElement = document.getElementById("video");
+                    videoElement.srcObject = event.streams[0];
+                    updateStatus(true);
+
+                    // Handle track ending
+                    event.track.onended = () => {
+                        console.log("Remote track ended");
+                        updateStatus(false);
+                    };
+                };
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        ws.send(JSON.stringify({
+                            type: "ice-candidate",
+                            candidate: event.candidate,
+                        }));
+                    }
+                };
+
+                peerConnection.onconnectionstatechange = (event) => {
+                    console.log("Connection state changed:", peerConnection.connectionState);
+                    if (peerConnection.connectionState === "disconnected" ||
+                        peerConnection.connectionState === "failed" ||
+                        peerConnection.connectionState === "closed") {
+                        updateStatus(false);
+                    }
+                };
+
+                peerConnection.oniceconnectionstatechange = (event) => {
+                    console.log("ICE connection state:", peerConnection.iceConnectionState);
+                    if (peerConnection.iceConnectionState === "failed" ||
+                        peerConnection.iceConnectionState === "disconnected" ||
+                        peerConnection.iceConnectionState === "closed") {
+                        updateStatus(false);
+                    } else if (peerConnection.iceConnectionState === "connected") {
+                        updateStatus(true);
+                    }
+                };
+
+                // Set the remote description from the offer
+                await peerConnection.setRemoteDescription(new RTCSessionDescription(message.offer));
+
+                // Create and send answer
+                const answer = await peerConnection.createAnswer();
+                await peerConnection.setLocalDescription(answer);
+
+                ws.send(JSON.stringify({
+                    type: "answer",
+                    answer: answer
+                }));
+            } catch (error) {
+                console.error("Error in handleOffer:", error);
+                updateStatus(false, "Failed to establish connection: " + error.message);
+            }
+        }
+
+        // Handle ICE candidate
+        async function handleIceCandidate(message) {
+            if (peerConnection) {
+                try {
+                    await peerConnection.addIceCandidate(message.candidate);
+                } catch (e) {
+                    console.error("Error adding received ice candidate", e);
+                }
+            }
+        }
+
+        // Handle page visibility changes to reconnect if needed
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // If the page becomes visible again and we're not connected, try to reconnect
+                if (!peerConnection ||
+                    peerConnection.iceConnectionState === "disconnected" ||
+                    peerConnection.iceConnectionState === "failed" ||
+                    peerConnection.iceConnectionState === "closed") {
+                    console.log("Page visible again, reconnecting...");
+                    connectSignaling();
+                }
+            }
+        });
+
+        // Start the connection when the page loads
+        connectSignaling();
+    </script>
+</body>
+
+</html>

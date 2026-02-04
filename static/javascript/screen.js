@@ -74,22 +74,24 @@ const connect = () => {
   };
 };
 
-const reloadContentWindow = (contentUrl) => {
-  console.log("Reloading content window with", contentUrl);
-  contentUrl = contentUrl || `{{content_url}}`;
+const reloadContentWindow = () => {
+  console.log("Reloading content window with", window.contentUrl);
 
   //update the div with id content_url
-  document.getElementById("content_url").innerText = contentUrl;
+  document.getElementById("content_url").innerText = window.contentUrl;
 
   // Close existing window if open
   if (contentWindow && !contentWindow.closed) {
     contentWindow.close();
   }
   // Open the new window with updated URL
-  contentWindow = window.open(contentUrl, "contentWindow");
+  contentWindow = window.open(window.contentUrl, "contentWindow");
 };
 
 connect();
+
 setTimeout(() => {
-  reloadContentWindow(window.content_url);
+  console.log("Reloading content window after 1 second");
+  console.log("Content URL:", window.contentUrl);
+  reloadContentWindow();
 }, 1000);
