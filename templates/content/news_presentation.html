@@ -5,14 +5,56 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI News - Presentation</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --pink-soft: #F4C7CC;
+      --pink-bright: #FF6B9D;
+      --purple-dark: #1a0a2e;
+      --purple-mid: #3d1a5c;
+      --magenta: #8B2D6B;
+    }
+
     html, body {
       height: 100%;
       overflow: hidden;
-      background: linear-gradient(180deg, #0a0a1a 0%, #1a1a3a 50%, #0a0a1a 100%);
+      font-family: 'Space Grotesk', sans-serif;
+      background: radial-gradient(ellipse at 30% 50%, var(--magenta) 0%, var(--purple-dark) 60%);
     }
+
+    /* Techy grid overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(244, 199, 204, 0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(244, 199, 204, 0.04) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* Subtle scan line effect */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.05) 3px,
+        rgba(0, 0, 0, 0.05) 6px
+      );
+      pointer-events: none;
+      z-index: 2;
+    }
+
     .slide {
       opacity: 0;
       transform: scale(0.98);
@@ -20,38 +62,200 @@
       position: absolute;
       inset: 0;
       pointer-events: none;
+      z-index: 10;
     }
     .slide.active {
       opacity: 1;
       transform: scale(1);
       pointer-events: auto;
     }
+
+    /* Bold offset shadow text effect */
+    .title-shadow {
+      position: relative;
+      color: var(--pink-soft);
+      display: inline-block;
+    }
+    .title-shadow::before {
+      content: attr(data-text);
+      position: absolute;
+      left: 6px;
+      top: 6px;
+      color: #000;
+      z-index: -1;
+    }
+
     .hero-image {
       background-size: cover;
       background-position: center;
-      background-color: #1a1a3a;
+      background-color: var(--purple-mid);
+      border: 5px solid var(--pink-soft);
+      box-shadow: 12px 12px 0 #000;
+      position: relative;
     }
-    .slide-number {
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to bottom, transparent 50%, rgba(26, 10, 46, 0.9));
+    }
+
+    /* Pink cloud decorations */
+    .cloud {
+      position: absolute;
+      background: var(--pink-soft);
+      border-radius: 100px;
+      opacity: 0.1;
+      z-index: 0;
+    }
+    .cloud-1 { width: 300px; height: 80px; top: 5%; right: 10%; }
+    .cloud-2 { width: 200px; height: 60px; top: 10%; right: 25%; }
+    .cloud-3 { width: 250px; height: 70px; bottom: 25%; left: -60px; }
+    .cloud-4 { width: 180px; height: 55px; bottom: 30%; left: 50px; }
+    .cloud-5 { width: 150px; height: 45px; top: 40%; right: -30px; }
+
+    .category-tag {
+      display: inline-block;
+      background: var(--pink-soft);
+      color: #000;
+      padding: 10px 24px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      box-shadow: 5px 5px 0 #000;
+    }
+
+    .content-area {
+      background: rgba(26, 10, 46, 0.7);
+      border: 2px solid rgba(244, 199, 204, 0.25);
+      backdrop-filter: blur(8px);
+    }
+
+    .source-info {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      background: rgba(244, 199, 204, 0.1);
+      border: 2px solid var(--pink-soft);
+      padding: 12px 24px;
+      border-radius: 60px;
+      box-shadow: 4px 4px 0 #000;
+    }
+
+    .control-bar {
+      background: rgba(0, 0, 0, 0.5);
+      border-top: 3px solid rgba(244, 199, 204, 0.4);
+      backdrop-filter: blur(15px);
+    }
+
+    .slide-btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1.1rem;
       transition: all 0.3s ease;
+      border: 2px solid transparent;
+      background: rgba(244, 199, 204, 0.1);
+      color: rgba(244, 199, 204, 0.6);
     }
-    .slide-number.active {
-      background: linear-gradient(135deg, #ec4899 0%, #8b5cf6 100%);
-      transform: scale(1.1);
+    .slide-btn:hover {
+      background: rgba(244, 199, 204, 0.2);
+      border-color: var(--pink-soft);
+    }
+    .slide-btn.active {
+      background: var(--pink-soft);
+      color: #000;
+      box-shadow: 4px 4px 0 #000;
+      transform: translate(-2px, -2px);
+    }
+
+    .play-btn {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: var(--pink-soft);
+      color: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 5px 5px 0 #000;
+      transition: all 0.2s ease;
+    }
+    .play-btn:hover {
+      transform: translate(-2px, -2px);
+      box-shadow: 7px 7px 0 #000;
+    }
+
+    .nav-btn {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: rgba(244, 199, 204, 0.15);
+      border: 2px solid var(--pink-soft);
+      color: var(--pink-soft);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .nav-btn:hover {
+      background: rgba(244, 199, 204, 0.3);
+    }
+
+    .progress-track {
+      height: 6px;
+      background: rgba(244, 199, 204, 0.2);
+      border-radius: 3px;
+      overflow: hidden;
     }
     .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pink-soft), var(--pink-bright));
+      border-radius: 3px;
       transition: width linear;
+      box-shadow: 0 0 10px var(--pink-bright);
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
+
+    .brand-logo {
+      font-weight: 700;
+      font-size: 1.4rem;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: var(--pink-soft);
+      text-shadow: 3px 3px 0 #000;
+    }
+
+    @keyframes glow {
+      0%, 100% { box-shadow: 12px 12px 0 #000, 0 0 10px var(--pink-soft); }
+      50% { box-shadow: 12px 12px 0 #000, 0 0 30px var(--pink-bright); }
+    }
+    .glow-border {
+      animation: glow 4s ease-in-out infinite;
+    }
+
+    @keyframes fadeSlideIn {
+      from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .slide.active h1 { animation: fadeIn 0.8s ease 0.2s both; }
-    .slide.active .summary { animation: fadeIn 0.8s ease 0.4s both; }
-    .slide.active .source { animation: fadeIn 0.8s ease 0.6s both; }
+    .slide.active .title-shadow { animation: fadeSlideIn 0.8s ease 0.2s both; }
+    .slide.active .summary-text { animation: fadeSlideIn 0.8s ease 0.4s both; }
+    .slide.active .source-info { animation: fadeSlideIn 0.8s ease 0.6s both; }
   </style>
 </head>
 
 <body class="text-white">
+  <!-- Decorative clouds -->
+  <div class="cloud cloud-1"></div>
+  <div class="cloud cloud-2"></div>
+  <div class="cloud cloud-3"></div>
+  <div class="cloud cloud-4"></div>
+  <div class="cloud cloud-5"></div>
+
   <div id="news-container" class="h-full w-full relative flex flex-col">
     {% if articles %}
 
@@ -59,82 +263,89 @@
     <div class="flex-1 relative">
       {% for article in articles %}
       <div class="slide flex flex-col h-full p-12 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-        <!-- Hero Image -->
-        <div class="hero-image h-2/5 rounded-2xl mb-8 shadow-2xl"
-          style="background-image: linear-gradient(to bottom, transparent 60%, rgba(0,0,0,0.8)), url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
+
+        <!-- Top: Category + Brand -->
+        <div class="flex justify-between items-center mb-8">
+          <div class="category-tag">{{ article.category or 'Technology' }}</div>
+          <div class="brand-logo">GenAI Popup Studio</div>
         </div>
 
-        <!-- Content -->
-        <div class="flex-1 flex flex-col items-center justify-center text-center max-w-5xl mx-auto">
-          <h1 class="text-5xl font-bold leading-tight mb-6">{{ article.title }}</h1>
+        <!-- Main Content: Side by side -->
+        <div class="flex-1 flex gap-12">
+          <!-- Hero Image -->
+          <div class="hero-image w-1/2 rounded-2xl glow-border"
+            style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
+          </div>
 
-          <p class="summary text-gray-300 text-2xl leading-relaxed mb-8 max-w-4xl">
-            {{ article.summary[:400] }}{% if article.summary|length > 400 %}...{% endif %}
-          </p>
+          <!-- Text Content -->
+          <div class="w-1/2 flex flex-col justify-center content-area rounded-2xl p-10">
+            <h1 class="title-shadow text-5xl font-bold leading-tight mb-8" data-text="{{ article.title[:90] }}{% if article.title|length > 90 %}...{% endif %}">
+              {{ article.title[:90] }}{% if article.title|length > 90 %}...{% endif %}
+            </h1>
 
-          <div class="w-24 h-1 bg-gradient-to-r from-pink-500 to-purple-500 rounded mb-6"></div>
+            <p class="summary-text text-2xl leading-relaxed mb-10" style="color: rgba(244, 199, 204, 0.8);">
+              {{ article.summary[:350] }}{% if article.summary|length > 350 %}...{% endif %}
+            </p>
 
-          <div class="source text-xl text-gray-400">
-            {{ article.source_name }}
-            {% if article.published_date %}
-            &bull; {{ article.published_date.strftime('%B %d, %Y') }}
-            {% endif %}
+            <div class="source-info text-lg">
+              <span style="color: var(--pink-soft); font-weight: 700;">{{ article.source_name }}</span>
+              {% if article.published_date %}
+              <span style="color: rgba(244, 199, 204, 0.4);">&bull;</span>
+              <span style="color: rgba(244, 199, 204, 0.7);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
+              {% endif %}
+            </div>
           </div>
         </div>
       </div>
       {% endfor %}
     </div>
 
-    <!-- Bottom Bar -->
-    <div class="bg-black/50 backdrop-blur px-12 py-6">
+    <!-- Control Bar -->
+    <div class="control-bar px-12 py-6">
       <div class="flex items-center justify-between">
         <!-- Slide Numbers -->
         <div class="flex items-center gap-3">
           {% for i in range(articles|length) %}
           <button onclick="goToSlide({{ i }})"
-            class="slide-number w-12 h-12 rounded-lg flex items-center justify-center font-bold text-lg
-            {% if i == 0 %}active{% else %}bg-white/10 hover:bg-white/20{% endif %}"
+            class="slide-btn {% if i == 0 %}active{% endif %}"
             data-slide="{{ i }}">
             {{ "%02d"|format(i + 1) }}
           </button>
           {% endfor %}
         </div>
 
-        <!-- Branding & Controls -->
-        <div class="flex items-center gap-8">
-          <div class="text-right">
-            <div class="text-pink-400 font-bold text-xl tracking-wider">AI NEWS WEEKLY</div>
-            <div class="text-gray-500">Week {{ now().isocalendar()[1] }} &bull; {{ now().strftime('%Y') }}</div>
-          </div>
+        <!-- Playback Controls -->
+        <div class="flex items-center gap-4">
+          <button onclick="prevSlide()" class="nav-btn">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+          </button>
+          <button onclick="togglePause()" class="play-btn">
+            <svg id="pauseIcon" class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+            <svg id="playIcon" class="w-7 h-7 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+          </button>
+          <button onclick="nextSlide()" class="nav-btn">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+          </button>
+        </div>
 
-          <!-- Playback Controls -->
-          <div class="flex items-center gap-2">
-            <button onclick="prevSlide()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-            </button>
-            <button onclick="togglePause()" id="pauseBtn" class="w-12 h-12 rounded-full bg-pink-600 hover:bg-pink-700 flex items-center justify-center">
-              <svg id="pauseIcon" class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-              <svg id="playIcon" class="w-6 h-6 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-            </button>
-            <button onclick="nextSlide()" class="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center">
-              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-            </button>
-          </div>
+        <!-- Week Info -->
+        <div class="text-right">
+          <div style="color: rgba(244, 199, 204, 0.5);" class="text-sm">Week {{ now().isocalendar()[1] }} &bull; {{ now().strftime('%Y') }}</div>
         </div>
       </div>
 
       <!-- Progress Bar -->
-      <div class="mt-4 h-1 bg-white/10 rounded-full overflow-hidden">
-        <div id="progressBar" class="progress-bar h-full bg-gradient-to-r from-pink-500 to-purple-500 rounded-full" style="width: 0%"></div>
+      <div class="progress-track mt-5">
+        <div id="progressBar" class="progress-bar" style="width: 0%"></div>
       </div>
     </div>
 
     {% else %}
-    <div class="h-full flex items-center justify-center">
+    <div class="h-full flex items-center justify-center" style="z-index: 10; position: relative;">
       <div class="text-center">
-        <div class="text-9xl mb-8">📰</div>
-        <h1 class="text-5xl font-bold">No News Available</h1>
-        <p class="text-gray-400 mt-6 text-2xl">Check back later for updates</p>
+        <div class="text-9xl mb-8" style="filter: drop-shadow(6px 6px 0 #000);">📰</div>
+        <h1 class="title-shadow text-5xl font-bold" data-text="No News Available">No News Available</h1>
+        <p class="mt-6 text-2xl" style="color: rgba(244, 199, 204, 0.6);">Check back later for updates</p>
       </div>
     </div>
     {% endif %}
@@ -142,7 +353,7 @@
 
   <script>
     const slides = document.querySelectorAll('.slide');
-    const slideNumbers = document.querySelectorAll('.slide-number');
+    const slideButtons = document.querySelectorAll('.slide-btn');
     const progressBar = document.getElementById('progressBar');
     const pauseIcon = document.getElementById('pauseIcon');
     const playIcon = document.getElementById('playIcon');
@@ -158,9 +369,8 @@
       slides.forEach((slide, i) => {
         slide.classList.toggle('active', i === index);
       });
-      slideNumbers.forEach((btn, i) => {
+      slideButtons.forEach((btn, i) => {
         btn.classList.toggle('active', i === index);
-        btn.classList.toggle('bg-white/10', i !== index);
       });
       resetProgress();
     }
