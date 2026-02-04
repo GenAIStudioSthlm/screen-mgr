@@ -1,273 +1,523 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI News</title>
+  <title>AI.NEWS // FEED</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --neon-pink: #FF6AD5;
-      --neon-cyan: #00D4FF;
-      --neon-purple: #C774E8;
-      --warm-peach: #FFB086;
-      --soft-lavender: #E8D5F2;
-      --deep-purple: #0D0221;
-      --mid-purple: #1A0533;
+      --void: #0a0a0c;
+      --surface: #12141a;
+      --surface-raised: #181a22;
+      --border-dim: #1e2028;
+      --border-active: #2a2d38;
+      --text-primary: #e8e8e8;
+      --text-muted: #6b7280;
+      --text-dim: #3d4150;
+      --accent-cyan: #00ffd0;
+      --accent-magenta: #ff006e;
+      --accent-amber: #fbbf24;
+      --accent-blue: #0ea5e9;
+      --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Quicksand', sans-serif;
-      background: linear-gradient(180deg, #1A0533 0%, #0D0221 50%, #000 100%);
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--void);
+      color: var(--text-primary);
     }
 
-    /* Synthwave grid floor */
-    .grid-floor {
+    /* Noise texture overlay */
+    body::before {
+      content: '';
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 40%;
-      background:
-        linear-gradient(transparent 0%, rgba(255, 106, 213, 0.1) 100%),
-        repeating-linear-gradient(90deg, transparent, transparent 49px, rgba(0, 212, 255, 0.3) 50px),
-        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0, 212, 255, 0.2) 50px);
-      background-size: 100% 100%, 50px 50px, 50px 50px;
-      transform: perspective(200px) rotateX(60deg);
-      transform-origin: bottom;
-      z-index: 0;
+      inset: 0;
+      background: var(--noise);
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 1000;
     }
 
-    /* Matrix-style code rain */
-    .matrix-rain {
+    /* CRT scan lines */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+      );
+      pointer-events: none;
+      z-index: 999;
+    }
+
+    /* Scan line animation */
+    .scanline {
+      position: fixed;
+      left: 0; right: 0;
+      height: 4px;
+      background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(0, 255, 208, 0.1) 50%,
+        transparent 100%
+      );
+      animation: scanMove 8s linear infinite;
+      z-index: 998;
+      pointer-events: none;
+    }
+    @keyframes scanMove {
+      0% { top: -4px; opacity: 0; }
+      10% { opacity: 1; }
+      90% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
+    }
+
+    /* Header bar */
+    .header {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='100'%3E%3Ctext x='5' y='20' fill='%23FF6AD520' font-family='monospace' font-size='10'%3E1%3C/text%3E%3Ctext x='5' y='40' fill='%2300D4FF15' font-family='monospace' font-size='10'%3E0%3C/text%3E%3Ctext x='5' y='60' fill='%23C774E820' font-family='monospace' font-size='10'%3E1%3C/text%3E%3Ctext x='5' y='80' fill='%23FF6AD515' font-family='monospace' font-size='10'%3E0%3C/text%3E%3C/svg%3E");
-      animation: rain 20s linear infinite;
-      opacity: 0.4;
-      z-index: 1;
-      pointer-events: none;
-    }
-    @keyframes rain {
-      from { background-position: 0 -100vh; }
-      to { background-position: 0 100vh; }
+      height: 48px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      z-index: 100;
     }
 
-    /* Steven Universe stars */
-    .star {
-      position: absolute;
-      width: 0; height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-bottom: 12px solid var(--neon-pink);
-      opacity: 0.6;
-      filter: blur(0.5px);
-      z-index: 1;
-    }
-    .star::after {
+    .header::after {
       content: '';
       position: absolute;
-      top: 4px; left: -6px;
-      width: 0; height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 12px solid var(--neon-pink);
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent,
+        var(--accent-cyan) 20%,
+        var(--accent-magenta) 80%,
+        transparent
+      );
+      opacity: 0.5;
     }
-    .star-1 { top: 8%; left: 10%; transform: scale(0.6); }
-    .star-2 { top: 15%; right: 15%; transform: scale(0.8); border-bottom-color: var(--neon-cyan); }
-    .star-2::after { border-top-color: var(--neon-cyan); }
-    .star-3 { top: 5%; right: 30%; transform: scale(0.5); border-bottom-color: var(--warm-peach); }
-    .star-3::after { border-top-color: var(--warm-peach); }
-    .star-4 { bottom: 45%; left: 5%; transform: scale(0.7); border-bottom-color: var(--neon-purple); }
-    .star-4::after { border-top-color: var(--neon-purple); }
+
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 14px;
+      letter-spacing: 2px;
+      color: var(--accent-cyan);
+      text-shadow: 0 0 10px rgba(0, 255, 208, 0.5);
+    }
+    .logo span { color: var(--text-dim); }
+
+    .status-cluster {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 10px;
+      color: var(--text-muted);
+    }
+
+    .status-live {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .status-live::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--accent-cyan);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.8); }
+    }
+
+    /* Main content area */
+    .feed-container {
+      position: absolute;
+      top: 48px;
+      bottom: 56px;
+      left: 0;
+      right: 0;
+      overflow: hidden;
+    }
 
     .slide {
-      opacity: 0;
-      transition: opacity 0.8s ease-in-out;
       position: absolute;
       inset: 0;
-      z-index: 10;
+      padding: 12px;
+      opacity: 0;
+      transform: translateY(10px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
-    .slide.active { opacity: 1; }
-
-    /* Neon text glow */
-    .neon-title {
-      font-family: 'Orbitron', sans-serif;
-      color: var(--soft-lavender);
-      text-shadow:
-        0 0 5px var(--neon-pink),
-        0 0 10px var(--neon-pink),
-        0 0 20px var(--neon-pink),
-        0 0 40px var(--neon-purple);
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0);
     }
 
-    .news-image {
+    /* News card */
+    .news-card {
+      background: var(--surface);
+      border: 1px solid var(--border-dim);
+      position: relative;
+      overflow: hidden;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .news-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+    }
+
+    /* Glitch corner accents */
+    .news-card::after {
+      content: '';
+      position: absolute;
+      top: 8px;
+      right: 8px;
+      width: 24px;
+      height: 24px;
+      border-top: 2px solid var(--accent-cyan);
+      border-right: 2px solid var(--accent-cyan);
+      opacity: 0.6;
+    }
+
+    .card-image {
+      height: 35%;
+      min-height: 120px;
       background-size: cover;
       background-position: center;
-      background-color: var(--mid-purple);
-      border: 2px solid var(--neon-cyan);
-      box-shadow:
-        0 0 10px var(--neon-cyan),
-        0 0 20px rgba(0, 212, 255, 0.3),
-        inset 0 0 30px rgba(0, 0, 0, 0.5);
+      background-color: var(--surface-raised);
+      position: relative;
+      border-bottom: 1px solid var(--border-dim);
     }
 
-    .category-tag {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
-      color: #fff;
-      padding: 6px 16px;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 0.65rem;
-      letter-spacing: 2px;
+    .card-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg,
+        transparent 60%,
+        var(--surface) 100%
+      );
+    }
+
+    /* Source badge */
+    .source-badge {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      background: rgba(10, 10, 12, 0.9);
+      border: 1px solid var(--border-active);
+      padding: 4px 8px;
+      font-size: 9px;
+      font-weight: 500;
+      letter-spacing: 1px;
       text-transform: uppercase;
-      border-radius: 20px;
-      box-shadow: 0 0 15px var(--neon-pink);
+      color: var(--accent-cyan);
+      backdrop-filter: blur(4px);
+      z-index: 2;
     }
 
-    .content-card {
-      background: linear-gradient(135deg, rgba(26, 5, 51, 0.9), rgba(13, 2, 33, 0.95));
-      border: 1px solid rgba(199, 116, 232, 0.3);
-      border-radius: 16px;
-      backdrop-filter: blur(10px);
+    /* Category tag */
+    .category-tag {
+      position: absolute;
+      bottom: 8px;
+      left: 8px;
+      background: var(--accent-magenta);
+      color: white;
+      padding: 2px 8px;
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      z-index: 2;
     }
 
-    .source-pill {
-      display: inline-flex;
+    .card-content {
+      flex: 1;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .card-meta {
+      display: flex;
       align-items: center;
       gap: 8px;
-      background: rgba(0, 212, 255, 0.1);
-      border: 1px solid var(--neon-cyan);
-      padding: 8px 16px;
-      border-radius: 50px;
-      box-shadow: 0 0 10px rgba(0, 212, 255, 0.2);
+      margin-bottom: 12px;
+      font-size: 10px;
+      color: var(--text-dim);
     }
 
-    .dot {
-      width: 10px;
-      height: 10px;
-      border: 2px solid var(--neon-pink);
-      border-radius: 50%;
+    .meta-divider {
+      color: var(--border-active);
+    }
+
+    .timestamp {
+      color: var(--accent-amber);
+      font-weight: 500;
+    }
+
+    .card-headline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 16px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+      flex-shrink: 0;
+    }
+
+    .card-summary {
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--text-muted);
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .card-footer {
+      margin-top: auto;
+      padding-top: 12px;
+      border-top: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .article-id {
+      font-size: 9px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+
+    .read-indicator {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 10px;
+      color: var(--accent-cyan);
+    }
+    .read-indicator::after {
+      content: '→';
+      font-size: 12px;
+    }
+
+    /* Bottom navigation */
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: var(--surface);
+      border-top: 1px solid var(--border-dim);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 0 16px;
+      z-index: 100;
+    }
+
+    .nav-bar::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg,
+        transparent,
+        var(--accent-cyan) 50%,
+        transparent
+      );
+      opacity: 0.3;
+    }
+
+    .nav-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      border: 1px solid var(--border-active);
       background: transparent;
       transition: all 0.3s ease;
     }
-    .dot.active {
-      background: var(--neon-pink);
-      box-shadow: 0 0 10px var(--neon-pink), 0 0 20px var(--neon-pink);
+    .nav-dot.active {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
     }
 
-    /* VHS scan line */
-    .vhs-line {
-      position: fixed;
-      left: 0; right: 0;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.1);
-      animation: vhs 8s linear infinite;
-      z-index: 100;
-      pointer-events: none;
+    .nav-count {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-left: 12px;
     }
-    @keyframes vhs {
-      0% { top: -2px; }
-      100% { top: 100%; }
+    .nav-count span {
+      color: var(--accent-cyan);
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .empty-glitch {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--accent-magenta);
+      margin-bottom: 16px;
+      animation: glitch 3s infinite;
+    }
+    @keyframes glitch {
+      0%, 90%, 100% { transform: translate(0); }
+      92% { transform: translate(-2px, 1px); }
+      94% { transform: translate(2px, -1px); }
+      96% { transform: translate(-1px, -1px); }
+      98% { transform: translate(1px, 1px); }
+    }
+
+    .empty-text {
+      font-size: 12px;
+      color: var(--text-muted);
+      max-width: 200px;
+    }
+
+    /* Chromatic aberration on hover/focus */
+    @keyframes chromatic {
+      0%, 100% { text-shadow: none; }
+      25% { text-shadow: -1px 0 var(--accent-magenta), 1px 0 var(--accent-cyan); }
+      75% { text-shadow: 1px 0 var(--accent-magenta), -1px 0 var(--accent-cyan); }
     }
   </style>
 </head>
-
 <body>
-  <!-- Effects -->
-  <div class="grid-floor"></div>
-  <div class="matrix-rain"></div>
-  <div class="vhs-line"></div>
+  <div class="scanline"></div>
 
-  <!-- Stars -->
-  <div class="star star-1"></div>
-  <div class="star star-2"></div>
-  <div class="star star-3"></div>
-  <div class="star star-4"></div>
+  <!-- Header -->
+  <header class="header">
+    <div class="logo">AI<span>.</span>NEWS</div>
+    <div class="status-cluster">
+      <div class="status-live">LIVE</div>
+      <span>{{ now().strftime('%H:%M') }}</span>
+    </div>
+  </header>
 
-  <div id="news-container" class="h-full w-full relative">
+  <!-- Feed -->
+  <main class="feed-container">
     {% if articles %}
     {% for article in articles %}
-    <div class="slide flex flex-col h-full p-5 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-
-      <!-- Category -->
-      <div class="text-center mb-4 relative z-10">
-        <div class="category-tag">{{ article.category or 'AI News' }}</div>
-      </div>
-
-      <!-- Image -->
-      <div class="news-image flex-shrink-0 h-1/3 rounded-2xl mb-4"
-        style="background-image: url('{{ article.image_url or '/static/pictures/default_portrait.png' }}')">
-      </div>
-
-      <!-- Content -->
-      <div class="flex-1 flex flex-col justify-center content-card p-5">
-        <h1 class="neon-title text-xl font-bold leading-tight mb-3">
-          {{ article.title[:65] }}{% if article.title|length > 65 %}...{% endif %}
-        </h1>
-        <p class="text-sm leading-relaxed mb-4" style="color: var(--soft-lavender); opacity: 0.8;">
-          {{ article.summary[:150] }}{% if article.summary|length > 150 %}...{% endif %}
-        </p>
-        <div class="source-pill text-xs">
-          <span style="color: var(--neon-cyan);">{{ article.source_name }}</span>
-          {% if article.published_date %}
-          <span style="color: var(--neon-purple);">{{ article.published_date.strftime('%b %d') }}</span>
-          {% endif %}
+    <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <article class="news-card">
+        <div class="card-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_portrait.png' }}')">
+          <div class="source-badge">{{ article.source_name[:12] }}</div>
+          <div class="category-tag">{{ article.category or 'INTEL' }}</div>
         </div>
-      </div>
-
-      <!-- Dots -->
-      <div class="flex justify-center gap-3 py-3">
-        {% for i in range(articles|length) %}
-        <div class="dot {% if i == loop.index0 %}active{% endif %}"></div>
-        {% endfor %}
-      </div>
+        <div class="card-content">
+          <div class="card-meta">
+            <span class="timestamp">
+              {% if article.published_date %}
+              {{ article.published_date.strftime('%Y.%m.%d') }}
+              {% else %}
+              --.--.--
+              {% endif %}
+            </span>
+            <span class="meta-divider">//</span>
+            <span>WEEK.{{ now().isocalendar()[1] }}</span>
+          </div>
+          <h2 class="card-headline">{{ article.title[:80] }}{% if article.title|length > 80 %}...{% endif %}</h2>
+          <p class="card-summary">{{ article.summary[:180] }}{% if article.summary|length > 180 %}...{% endif %}</p>
+          <div class="card-footer">
+            <span class="article-id">ID:{{ "%04d"|format(loop.index) }}</span>
+            <span class="read-indicator">STREAM</span>
+          </div>
+        </div>
+      </article>
     </div>
     {% endfor %}
     {% else %}
-    <div class="h-full flex items-center justify-center relative z-10">
-      <div class="text-center content-card p-8 rounded-2xl">
-        <div class="text-5xl mb-4">✨</div>
-        <h1 class="neon-title text-2xl font-bold">No News Available</h1>
-        <p class="mt-3 text-sm" style="color: var(--soft-lavender);">Check back later</p>
-      </div>
+    <div class="empty-state">
+      <div class="empty-glitch">NO_SIGNAL</div>
+      <p class="empty-text">Feed disconnected. Awaiting upstream data transmission.</p>
     </div>
     {% endif %}
-  </div>
+  </main>
+
+  <!-- Navigation -->
+  {% if articles %}
+  <nav class="nav-bar">
+    <div class="nav-indicator">
+      {% for i in range(articles|length) %}
+      <div class="nav-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
+      {% endfor %}
+    </div>
+    <div class="nav-count"><span id="currentSlide">1</span>/{{ articles|length }}</div>
+  </nav>
+  {% endif %}
 
   <script>
     const slides = document.querySelectorAll('.slide');
-    const totalSlides = slides.length;
-    let currentSlide = 0;
-    const rotationSeconds = {{ rotation_seconds }};
+    const dots = document.querySelectorAll('.nav-dot');
+    const counter = document.getElementById('currentSlide');
+    const total = slides.length;
+    let current = 0;
+    const interval = {{ rotation_seconds }} * 1000;
 
-    function showSlide(index) {
-      slides.forEach((slide, i) => {
-        slide.classList.toggle('active', i === index);
-        const dots = slide.querySelectorAll('.dot');
-        dots.forEach((dot, j) => dot.classList.toggle('active', j === index));
-      });
+    function show(index) {
+      slides.forEach((s, i) => s.classList.toggle('active', i === index));
+      dots.forEach((d, i) => d.classList.toggle('active', i === index));
+      if (counter) counter.textContent = index + 1;
     }
 
-    function nextSlide() {
-      currentSlide = (currentSlide + 1) % totalSlides;
-      showSlide(currentSlide);
+    function next() {
+      current = (current + 1) % total;
+      show(current);
     }
 
-    if (totalSlides > 1) {
-      setInterval(nextSlide, rotationSeconds * 1000);
-    }
+    if (total > 1) setInterval(next, interval);
   </script>
 </body>
 </html>

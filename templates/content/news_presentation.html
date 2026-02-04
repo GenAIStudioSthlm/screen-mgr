@@ -1,527 +1,640 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI News - Presentation</title>
+  <title>AI.NEWS // DISPLAY</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Quicksand:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --neon-pink: #FF6AD5;
-      --neon-cyan: #00D4FF;
-      --neon-purple: #C774E8;
-      --warm-peach: #FFB086;
-      --soft-lavender: #E8D5F2;
-      --deep-purple: #0D0221;
-      --mid-purple: #1A0533;
+      --void: #0a0a0c;
+      --surface: #0f1115;
+      --surface-raised: #181a22;
+      --border-dim: #1a1d24;
+      --border-active: #2a2d38;
+      --text-primary: #f0f0f0;
+      --text-muted: #8b919d;
+      --text-dim: #4a5060;
+      --accent-cyan: #00ffd0;
+      --accent-magenta: #ff006e;
+      --accent-amber: #fbbf24;
+      --glow-cyan: rgba(0, 255, 208, 0.15);
+      --glow-magenta: rgba(255, 0, 110, 0.15);
     }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Quicksand', sans-serif;
-      background: linear-gradient(160deg, #1A0533 0%, #0D0221 30%, #050010 70%, #000 100%);
+      font-family: 'JetBrains Mono', monospace;
+      background: var(--void);
+      color: var(--text-primary);
     }
 
-    /* Large synthwave sun */
-    .synthwave-sun {
-      position: fixed;
-      bottom: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 500px;
-      height: 250px;
-      background: linear-gradient(180deg, #FF6AD5 0%, #FFB086 40%, #FF6AD5 80%, #C774E8 100%);
-      border-radius: 250px 250px 0 0;
-      opacity: 0.25;
-      z-index: 0;
-    }
-    .synthwave-sun::before {
+    /* Subtle noise texture */
+    body::before {
       content: '';
-      position: absolute;
+      position: fixed;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.02;
+      pointer-events: none;
+      z-index: 1000;
+    }
+
+    /* CRT scan lines - very subtle for presentation */
+    body::after {
+      content: '';
+      position: fixed;
       inset: 0;
       background: repeating-linear-gradient(
         0deg,
-        transparent 0px,
-        transparent 12px,
-        rgba(0,0,0,0.5) 12px,
-        rgba(0,0,0,0.5) 18px
+        transparent,
+        transparent 3px,
+        rgba(0, 0, 0, 0.08) 3px,
+        rgba(0, 0, 0, 0.08) 6px
       );
+      pointer-events: none;
+      z-index: 999;
     }
 
-    /* Synthwave grid */
-    .grid-floor {
+    /* Ambient scan line */
+    .scanline {
       position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 40%;
-      background:
-        linear-gradient(transparent 0%, rgba(255, 106, 213, 0.2) 100%),
-        repeating-linear-gradient(90deg, transparent, transparent 79px, rgba(0, 212, 255, 0.5) 80px),
-        repeating-linear-gradient(0deg, transparent, transparent 49px, rgba(0, 212, 255, 0.4) 50px);
-      background-size: 100% 100%, 80px 80px, 80px 50px;
-      transform: perspective(400px) rotateX(70deg);
-      transform-origin: bottom;
-      z-index: 0;
-      animation: gridMove 20s linear infinite;
+      left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(0, 255, 208, 0.06),
+        transparent
+      );
+      animation: ambientScan 12s linear infinite;
+      z-index: 998;
+      pointer-events: none;
     }
-    @keyframes gridMove {
-      from { background-position: 0 0, 0 0, 0 0; }
-      to { background-position: 0 0, 0 0, 0 500px; }
+    @keyframes ambientScan {
+      0% { top: -2px; opacity: 0; }
+      5% { opacity: 1; }
+      95% { opacity: 1; }
+      100% { top: 100%; opacity: 0; }
     }
 
-    /* Matrix digital rain */
-    .matrix-rain {
+    /* Corner frame elements */
+    .frame-corner {
+      position: fixed;
+      width: 60px;
+      height: 60px;
+      z-index: 50;
+      opacity: 0.4;
+    }
+    .frame-corner::before,
+    .frame-corner::after {
+      content: '';
+      position: absolute;
+      background: var(--accent-cyan);
+    }
+    .frame-corner.tl { top: 20px; left: 20px; }
+    .frame-corner.tl::before { width: 40px; height: 2px; top: 0; left: 0; }
+    .frame-corner.tl::after { width: 2px; height: 40px; top: 0; left: 0; }
+    .frame-corner.tr { top: 20px; right: 20px; }
+    .frame-corner.tr::before { width: 40px; height: 2px; top: 0; right: 0; }
+    .frame-corner.tr::after { width: 2px; height: 40px; top: 0; right: 0; }
+    .frame-corner.bl { bottom: 20px; left: 20px; }
+    .frame-corner.bl::before { width: 40px; height: 2px; bottom: 0; left: 0; }
+    .frame-corner.bl::after { width: 2px; height: 40px; bottom: 0; left: 0; }
+    .frame-corner.br { bottom: 20px; right: 20px; }
+    .frame-corner.br::before { width: 40px; height: 2px; bottom: 0; right: 0; }
+    .frame-corner.br::after { width: 2px; height: 40px; bottom: 0; right: 0; }
+
+    /* Top status bar */
+    .status-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      bottom: 0;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='150'%3E%3Ctext x='12' y='25' fill='%23FF6AD515' font-family='monospace' font-size='14'%3E1%3C/text%3E%3Ctext x='12' y='55' fill='%2300D4FF10' font-family='monospace' font-size='14'%3E0%3C/text%3E%3Ctext x='12' y='85' fill='%23C774E812' font-family='monospace' font-size='14'%3E1%3C/text%3E%3Ctext x='12' y='115' fill='%23FF6AD508' font-family='monospace' font-size='14'%3E0%3C/text%3E%3C/svg%3E");
-      animation: rain 30s linear infinite;
-      opacity: 0.4;
-      z-index: 1;
-      pointer-events: none;
-    }
-    @keyframes rain {
-      from { background-position: 0 -100vh; }
-      to { background-position: 0 100vh; }
+      height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 32px;
+      background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+      z-index: 100;
     }
 
-    /* Steven Universe inspired stars */
-    .star {
-      position: absolute;
-      width: 0; height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-bottom: 20px solid var(--neon-pink);
-      opacity: 0.4;
-      z-index: 1;
-      animation: twinkle 3s ease-in-out infinite;
+    .logo {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 900;
+      font-size: 18px;
+      letter-spacing: 4px;
+      color: var(--accent-cyan);
+      text-shadow: 0 0 20px var(--glow-cyan);
+      animation: breathe 4s ease-in-out infinite;
     }
-    .star::after {
+    @keyframes breathe {
+      0%, 100% { text-shadow: 0 0 20px var(--glow-cyan); }
+      50% { text-shadow: 0 0 30px var(--accent-cyan), 0 0 60px var(--glow-cyan); }
+    }
+
+    .clock {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 14px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
+    .clock-time {
+      color: var(--accent-amber);
+      font-weight: 700;
+    }
+
+    .status-indicator {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    .status-indicator::before {
       content: '';
-      position: absolute;
-      top: 7px; left: -10px;
-      width: 0; height: 0;
-      border-left: 10px solid transparent;
-      border-right: 10px solid transparent;
-      border-top: 20px solid var(--neon-pink);
+      width: 8px;
+      height: 8px;
+      background: var(--accent-cyan);
+      animation: pulse 2s ease-in-out infinite;
+      box-shadow: 0 0 10px var(--accent-cyan);
     }
-    @keyframes twinkle {
-      0%, 100% { opacity: 0.4; transform: scale(1); }
-      50% { opacity: 0.7; transform: scale(1.1); }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(0.85); }
     }
-    .star-1 { top: 8%; left: 3%; transform: scale(0.8); animation-delay: 0s; }
-    .star-2 { top: 5%; right: 5%; transform: scale(1); border-bottom-color: var(--neon-cyan); animation-delay: 0.5s; }
-    .star-2::after { border-top-color: var(--neon-cyan); }
-    .star-3 { top: 15%; left: 12%; transform: scale(0.5); border-bottom-color: var(--warm-peach); animation-delay: 1s; }
-    .star-3::after { border-top-color: var(--warm-peach); }
-    .star-4 { top: 10%; right: 15%; transform: scale(0.7); border-bottom-color: var(--neon-purple); animation-delay: 1.5s; }
-    .star-4::after { border-top-color: var(--neon-purple); }
-    .star-5 { top: 3%; left: 35%; transform: scale(0.4); border-bottom-color: var(--soft-lavender); animation-delay: 2s; }
-    .star-5::after { border-top-color: var(--soft-lavender); }
-    .star-6 { top: 12%; right: 35%; transform: scale(0.6); animation-delay: 2.5s; }
 
-    .slide {
-      opacity: 0;
-      transform: scale(0.98);
-      transition: all 1s ease-in-out;
+    /* Main slide container */
+    .presentation {
       position: absolute;
       inset: 0;
-      pointer-events: none;
-      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 60px 40px;
+      opacity: 0;
+      transform: scale(0.96);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      display: grid;
+      grid-template-columns: 55% 45%;
+      gap: 40px;
+      padding: 20px;
     }
     .slide.active {
       opacity: 1;
       transform: scale(1);
-      pointer-events: auto;
     }
 
-    /* Neon glow title */
-    .neon-title {
-      font-family: 'Orbitron', sans-serif;
-      color: var(--soft-lavender);
-      text-shadow:
-        0 0 5px var(--neon-pink),
-        0 0 15px var(--neon-pink),
-        0 0 35px var(--neon-pink),
-        0 0 50px var(--neon-purple);
-    }
-
-    .hero-image {
+    /* Image panel */
+    .image-panel {
+      position: relative;
       background-size: cover;
       background-position: center;
-      background-color: var(--mid-purple);
-      border: 4px solid var(--neon-cyan);
-      box-shadow:
-        0 0 30px var(--neon-cyan),
-        0 0 60px rgba(0, 212, 255, 0.2),
-        inset 0 0 60px rgba(0, 0, 0, 0.5);
-      position: relative;
+      background-color: var(--surface-raised);
     }
-    .hero-image::after {
+
+    .image-panel::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(to right, rgba(13, 2, 33, 0.8) 0%, transparent 30%);
+      background: linear-gradient(
+        135deg,
+        transparent 60%,
+        rgba(0, 0, 0, 0.6) 100%
+      );
     }
 
-    .category-tag {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
-      color: #fff;
-      padding: 10px 28px;
-      font-family: 'Orbitron', sans-serif;
+    .image-panel::after {
+      content: '';
+      position: absolute;
+      inset: 16px;
+      border: 1px solid rgba(0, 255, 208, 0.15);
+      pointer-events: none;
+    }
+
+    .image-badges {
+      position: absolute;
+      top: 24px;
+      left: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 2;
+    }
+
+    .badge-category {
+      background: var(--accent-magenta);
+      color: white;
+      padding: 8px 20px;
+      font-size: 12px;
       font-weight: 700;
-      font-size: 0.85rem;
       letter-spacing: 3px;
       text-transform: uppercase;
-      border-radius: 30px;
-      box-shadow: 0 0 25px var(--neon-pink);
+      width: fit-content;
+      box-shadow: 0 0 20px var(--glow-magenta);
     }
 
-    .brand-text {
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 900;
-      font-size: 1.5rem;
-      letter-spacing: 5px;
+    .badge-source {
+      background: rgba(10, 10, 12, 0.85);
+      border: 1px solid var(--border-active);
+      color: var(--accent-cyan);
+      padding: 6px 16px;
+      font-size: 11px;
+      letter-spacing: 2px;
       text-transform: uppercase;
-      background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple), var(--neon-pink));
-      background-size: 300% 100%;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      animation: gradientShift 8s linear infinite;
-      filter: drop-shadow(0 0 15px var(--neon-pink));
-    }
-    @keyframes gradientShift {
-      0% { background-position: 0% 50%; }
-      100% { background-position: 300% 50%; }
+      backdrop-filter: blur(8px);
+      width: fit-content;
     }
 
-    .content-card {
-      background: linear-gradient(135deg, rgba(26, 5, 51, 0.9), rgba(13, 2, 33, 0.95));
-      border: 2px solid rgba(199, 116, 232, 0.5);
-      border-radius: 24px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 0 40px rgba(199, 116, 232, 0.15);
+    /* Content panel */
+    .content-panel {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px 0;
     }
 
-    .source-info {
-      display: inline-flex;
+    .content-meta {
+      display: flex;
       align-items: center;
-      gap: 15px;
-      background: rgba(0, 212, 255, 0.1);
-      border: 2px solid var(--neon-cyan);
-      padding: 14px 28px;
-      border-radius: 60px;
-      box-shadow: 0 0 20px rgba(0, 212, 255, 0.25);
+      gap: 16px;
+      margin-bottom: 24px;
+      font-size: 12px;
     }
 
+    .meta-label {
+      color: var(--text-dim);
+      letter-spacing: 2px;
+      text-transform: uppercase;
+    }
+
+    .meta-timestamp {
+      color: var(--accent-amber);
+      font-weight: 500;
+    }
+
+    .meta-divider {
+      color: var(--border-active);
+    }
+
+    .headline {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 36px;
+      font-weight: 500;
+      line-height: 1.25;
+      color: var(--text-primary);
+      margin-bottom: 28px;
+      animation: fadeSlideUp 0.6s ease both;
+      animation-delay: 0.2s;
+    }
+    @keyframes fadeSlideUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .summary {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      animation: fadeSlideUp 0.6s ease both;
+      animation-delay: 0.4s;
+    }
+
+    .content-footer {
+      margin-top: auto;
+      padding-top: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border-dim);
+    }
+
+    .article-ref {
+      font-size: 11px;
+      color: var(--text-dim);
+      letter-spacing: 2px;
+    }
+
+    /* Bottom control bar */
     .control-bar {
-      background: linear-gradient(90deg, rgba(26, 5, 51, 0.98), rgba(13, 2, 33, 0.95), rgba(26, 5, 51, 0.98));
-      border-top: 3px solid var(--neon-pink);
-      box-shadow: 0 0 30px rgba(255, 106, 213, 0.4);
-    }
-
-    .slide-btn {
-      width: 60px;
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
       height: 60px;
-      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-family: 'Orbitron', sans-serif;
-      font-weight: 700;
-      font-size: 1.1rem;
-      transition: all 0.3s ease;
-      border: 2px solid rgba(199, 116, 232, 0.3);
-      background: rgba(26, 5, 51, 0.8);
-      color: var(--soft-lavender);
-    }
-    .slide-btn:hover {
-      border-color: var(--neon-cyan);
-      box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
-    }
-    .slide-btn.active {
-      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
-      border-color: transparent;
-      color: #fff;
-      box-shadow: 0 0 25px var(--neon-pink);
-      transform: scale(1.05);
+      background: linear-gradient(0deg, var(--surface) 0%, transparent 100%);
+      z-index: 100;
     }
 
-    .play-btn {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--neon-pink), var(--neon-purple));
-      border: none;
-      color: #fff;
+    .progress-container {
       display: flex;
       align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 30px var(--neon-pink);
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    .play-btn:hover {
-      transform: scale(1.1);
-      box-shadow: 0 0 40px var(--neon-pink);
-    }
-
-    .nav-btn {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      background: rgba(0, 212, 255, 0.15);
-      border: 2px solid var(--neon-cyan);
-      color: var(--neon-cyan);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: all 0.2s ease;
-      cursor: pointer;
-    }
-    .nav-btn:hover {
-      background: rgba(0, 212, 255, 0.3);
-      box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+      gap: 24px;
     }
 
     .progress-track {
-      height: 8px;
-      background: rgba(199, 116, 232, 0.2);
-      border-radius: 4px;
+      width: 300px;
+      height: 3px;
+      background: var(--border-dim);
+      position: relative;
       overflow: hidden;
     }
+
     .progress-bar {
       height: 100%;
-      background: linear-gradient(90deg, var(--neon-pink), var(--neon-cyan), var(--neon-purple));
-      background-size: 200% 100%;
-      border-radius: 4px;
+      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
+      width: 0%;
       transition: width linear;
-      box-shadow: 0 0 15px var(--neon-pink);
-      animation: progressGlow 2s ease-in-out infinite;
-    }
-    @keyframes progressGlow {
-      0%, 100% { filter: brightness(1); }
-      50% { filter: brightness(1.3); }
+      box-shadow: 0 0 10px var(--accent-cyan);
     }
 
-    /* VHS scan effect */
-    .vhs-line {
+    .progress-dots {
+      display: flex;
+      gap: 10px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border: 1px solid var(--border-active);
+      background: transparent;
+      transition: all 0.3s ease;
+    }
+    .dot.active {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 12px var(--accent-cyan);
+    }
+
+    .progress-counter {
+      font-size: 12px;
+      color: var(--text-dim);
+      letter-spacing: 1px;
+    }
+    .progress-counter span {
+      color: var(--accent-cyan);
+      font-weight: 500;
+    }
+
+    /* Controls */
+    .controls {
       position: fixed;
-      left: 0; right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
-      animation: vhs 5s linear infinite;
+      bottom: 70px;
+      right: 40px;
+      display: flex;
+      gap: 12px;
       z-index: 100;
-      pointer-events: none;
-    }
-    @keyframes vhs {
-      0% { top: -4px; }
-      100% { top: 100%; }
     }
 
-    @keyframes fadeSlideIn {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
+    .ctrl-btn {
+      width: 44px;
+      height: 44px;
+      border: 1px solid var(--border-active);
+      background: rgba(15, 17, 21, 0.8);
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      backdrop-filter: blur(8px);
     }
-    .slide.active .neon-title { animation: fadeSlideIn 0.8s ease 0.2s both; }
-    .slide.active .summary-text { animation: fadeSlideIn 0.8s ease 0.4s both; }
-    .slide.active .source-info { animation: fadeSlideIn 0.8s ease 0.6s both; }
+    .ctrl-btn:hover {
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 15px var(--glow-cyan);
+    }
+    .ctrl-btn svg {
+      width: 18px;
+      height: 18px;
+      fill: currentColor;
+    }
+
+    /* Empty state */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+    }
+
+    .empty-glitch {
+      font-family: 'Orbitron', sans-serif;
+      font-size: 72px;
+      font-weight: 900;
+      color: var(--accent-magenta);
+      text-shadow: 0 0 40px var(--glow-magenta);
+      animation: glitchText 4s infinite;
+    }
+    @keyframes glitchText {
+      0%, 92%, 100% { transform: translate(0); text-shadow: 0 0 40px var(--glow-magenta); }
+      93% { transform: translate(-4px, 2px); text-shadow: 4px 0 var(--accent-cyan), -2px 0 var(--accent-magenta); }
+      95% { transform: translate(4px, -2px); text-shadow: -4px 0 var(--accent-cyan), 2px 0 var(--accent-magenta); }
+      97% { transform: translate(-2px, -2px); }
+      99% { transform: translate(2px, 2px); }
+    }
+
+    .empty-sub {
+      margin-top: 24px;
+      font-size: 16px;
+      color: var(--text-muted);
+      letter-spacing: 2px;
+    }
   </style>
 </head>
-
 <body>
-  <!-- Effects -->
-  <div class="synthwave-sun"></div>
-  <div class="grid-floor"></div>
-  <div class="matrix-rain"></div>
-  <div class="vhs-line"></div>
+  <div class="scanline"></div>
 
-  <!-- Stars -->
-  <div class="star star-1"></div>
-  <div class="star star-2"></div>
-  <div class="star star-3"></div>
-  <div class="star star-4"></div>
-  <div class="star star-5"></div>
-  <div class="star star-6"></div>
+  <!-- Frame corners -->
+  <div class="frame-corner tl"></div>
+  <div class="frame-corner tr"></div>
+  <div class="frame-corner bl"></div>
+  <div class="frame-corner br"></div>
 
-  <div id="news-container" class="h-full w-full relative flex flex-col">
-    {% if articles %}
-
-    <!-- Slides -->
-    <div class="flex-1 relative">
-      {% for article in articles %}
-      <div class="slide flex flex-col h-full p-10 {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-
-        <!-- Top Bar -->
-        <div class="flex justify-between items-center mb-6">
-          <div class="category-tag">{{ article.category or 'Technology' }}</div>
-          <div class="brand-text">AI News</div>
-        </div>
-
-        <!-- Main Content -->
-        <div class="flex-1 flex gap-10">
-          <!-- Hero Image -->
-          <div class="hero-image w-1/2 rounded-3xl"
-            style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
-          </div>
-
-          <!-- Text Content -->
-          <div class="w-1/2 flex flex-col justify-center content-card p-10">
-            <h1 class="neon-title text-4xl font-bold leading-tight mb-8">
-              {{ article.title[:95] }}{% if article.title|length > 95 %}...{% endif %}
-            </h1>
-
-            <p class="summary-text text-xl leading-relaxed mb-10" style="color: var(--soft-lavender); opacity: 0.9;">
-              {{ article.summary[:320] }}{% if article.summary|length > 320 %}...{% endif %}
-            </p>
-
-            <div class="source-info text-lg">
-              <span style="color: var(--neon-cyan); font-weight: 700;">{{ article.source_name }}</span>
-              {% if article.published_date %}
-              <span style="color: var(--neon-purple);">•</span>
-              <span style="color: var(--warm-peach);">{{ article.published_date.strftime('%B %d, %Y') }}</span>
-              {% endif %}
-            </div>
-          </div>
-        </div>
-      </div>
-      {% endfor %}
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="logo">AI.NEWS</div>
+    <div class="status-indicator">LIVE FEED</div>
+    <div class="clock">
+      <span class="clock-time" id="clock">{{ now().strftime('%H:%M:%S') }}</span>
+      <span> // WEEK {{ now().isocalendar()[1] }}</span>
     </div>
-
-    <!-- Control Bar -->
-    <div class="control-bar px-10 py-5">
-      <div class="flex items-center justify-between">
-        <!-- Slide Numbers -->
-        <div class="flex items-center gap-3">
-          {% for i in range(articles|length) %}
-          <button onclick="goToSlide({{ i }})"
-            class="slide-btn {% if i == 0 %}active{% endif %}"
-            data-slide="{{ i }}">
-            {{ "%02d"|format(i + 1) }}
-          </button>
-          {% endfor %}
-        </div>
-
-        <!-- Playback Controls -->
-        <div class="flex items-center gap-5">
-          <button onclick="prevSlide()" class="nav-btn">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
-          </button>
-          <button onclick="togglePause()" class="play-btn">
-            <svg id="pauseIcon" class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-            <svg id="playIcon" class="w-8 h-8 hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
-          </button>
-          <button onclick="nextSlide()" class="nav-btn">
-            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
-          </button>
-        </div>
-
-        <!-- Week Info -->
-        <div style="color: var(--neon-cyan); font-family: 'Orbitron', sans-serif; font-size: 0.85rem;">
-          Week {{ now().isocalendar()[1] }} // {{ now().strftime('%Y') }}
-        </div>
-      </div>
-
-      <!-- Progress Bar -->
-      <div class="progress-track mt-4">
-        <div id="progressBar" class="progress-bar" style="width: 0%"></div>
-      </div>
-    </div>
-
-    {% else %}
-    <div class="h-full flex items-center justify-center relative z-10">
-      <div class="text-center content-card p-16 rounded-3xl">
-        <div class="text-8xl mb-8">✨</div>
-        <h1 class="neon-title text-5xl font-bold">No News Available</h1>
-        <p class="mt-6 text-xl" style="color: var(--soft-lavender);">Check back later for updates</p>
-      </div>
-    </div>
-    {% endif %}
   </div>
 
+  {% if articles %}
+  <!-- Presentation slides -->
+  <main class="presentation">
+    {% for article in articles %}
+    <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <div class="image-panel" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
+        <div class="image-badges">
+          <div class="badge-category">{{ article.category or 'INTEL' }}</div>
+          <div class="badge-source">{{ article.source_name }}</div>
+        </div>
+      </div>
+      <div class="content-panel">
+        <div class="content-meta">
+          <span class="meta-label">// ARTICLE</span>
+          <span class="meta-divider">|</span>
+          <span class="meta-timestamp">
+            {% if article.published_date %}
+            {{ article.published_date.strftime('%Y.%m.%d') }}
+            {% else %}
+            --.--.--
+            {% endif %}
+          </span>
+        </div>
+        <h1 class="headline">{{ article.title[:120] }}{% if article.title|length > 120 %}...{% endif %}</h1>
+        <p class="summary">{{ article.summary[:350] }}{% if article.summary|length > 350 %}...{% endif %}</p>
+        <div class="content-footer">
+          <span class="article-ref">REF:{{ "%04d"|format(loop.index) }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </main>
+
+  <!-- Control bar -->
+  <div class="control-bar">
+    <div class="progress-container">
+      <div class="progress-dots">
+        {% for i in range(articles|length) %}
+        <div class="dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
+        {% endfor %}
+      </div>
+      <div class="progress-track">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-counter">
+        <span id="currentNum">1</span>/{{ articles|length }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="ctrl-btn" onclick="prev()">
+      <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
+    </button>
+    <button class="ctrl-btn" onclick="togglePause()" id="pauseBtn">
+      <svg id="pauseIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+      <svg id="playIcon" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <button class="ctrl-btn" onclick="next()">
+      <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
+    </button>
+  </div>
+
+  {% else %}
+  <main class="empty-state">
+    <div class="empty-glitch">NO_SIGNAL</div>
+    <p class="empty-sub">AWAITING UPSTREAM DATA TRANSMISSION</p>
+  </main>
+  {% endif %}
+
   <script>
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      const h = String(now.getHours()).padStart(2, '0');
+      const m = String(now.getMinutes()).padStart(2, '0');
+      const s = String(now.getSeconds()).padStart(2, '0');
+      const el = document.getElementById('clock');
+      if (el) el.textContent = `${h}:${m}:${s}`;
+    }
+    setInterval(updateClock, 1000);
+
+    // Slides
     const slides = document.querySelectorAll('.slide');
-    const slideButtons = document.querySelectorAll('.slide-btn');
+    const dots = document.querySelectorAll('.dot');
     const progressBar = document.getElementById('progressBar');
+    const counter = document.getElementById('currentNum');
     const pauseIcon = document.getElementById('pauseIcon');
     const playIcon = document.getElementById('playIcon');
 
-    const totalSlides = slides.length;
-    let currentSlide = 0;
-    const rotationSeconds = {{ rotation_seconds }};
+    const total = slides.length;
+    let current = 0;
+    const duration = {{ rotation_seconds }} * 1000;
     let isPaused = false;
-    let progressInterval = null;
     let progress = 0;
+    let animFrame;
+    let lastTime;
 
-    function showSlide(index) {
-      slides.forEach((slide, i) => slide.classList.toggle('active', i === index));
-      slideButtons.forEach((btn, i) => btn.classList.toggle('active', i === index));
-      resetProgress();
+    function show(i) {
+      slides.forEach((s, idx) => {
+        s.classList.toggle('active', idx === i);
+        // Re-trigger animations
+        if (idx === i) {
+          const headline = s.querySelector('.headline');
+          const summary = s.querySelector('.summary');
+          if (headline) { headline.style.animation = 'none'; headline.offsetHeight; headline.style.animation = ''; }
+          if (summary) { summary.style.animation = 'none'; summary.offsetHeight; summary.style.animation = ''; }
+        }
+      });
+      dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+      if (counter) counter.textContent = i + 1;
+      progress = 0;
     }
 
-    function nextSlide() {
-      currentSlide = (currentSlide + 1) % totalSlides;
-      showSlide(currentSlide);
+    function next() {
+      current = (current + 1) % total;
+      show(current);
     }
 
-    function prevSlide() {
-      currentSlide = (currentSlide - 1 + totalSlides) % totalSlides;
-      showSlide(currentSlide);
-    }
-
-    function goToSlide(index) {
-      currentSlide = index;
-      showSlide(currentSlide);
+    function prev() {
+      current = (current - 1 + total) % total;
+      show(current);
     }
 
     function togglePause() {
       isPaused = !isPaused;
-      pauseIcon.classList.toggle('hidden', isPaused);
-      playIcon.classList.toggle('hidden', !isPaused);
-      if (isPaused) clearInterval(progressInterval);
-      else startProgress();
+      pauseIcon.style.display = isPaused ? 'none' : 'block';
+      playIcon.style.display = isPaused ? 'block' : 'none';
+      if (!isPaused) lastTime = performance.now();
     }
 
-    function resetProgress() {
-      progress = 0;
-      if (progressBar) progressBar.style.width = '0%';
-      if (!isPaused) startProgress();
-    }
+    function animate(time) {
+      if (!lastTime) lastTime = time;
+      const delta = time - lastTime;
+      lastTime = time;
 
-    function startProgress() {
-      clearInterval(progressInterval);
-      const stepMs = 50;
-      const steps = (rotationSeconds * 1000) / stepMs;
-      const increment = 100 / steps;
+      if (!isPaused && total > 1) {
+        progress += delta;
+        const pct = Math.min((progress / duration) * 100, 100);
+        if (progressBar) progressBar.style.width = pct + '%';
 
-      progressInterval = setInterval(() => {
-        if (isPaused) return;
-        progress += increment;
-        if (progressBar) progressBar.style.width = progress + '%';
-        if (progress >= 100) nextSlide();
-      }, stepMs);
-    }
-
-    document.addEventListener('keydown', (e) => {
-      switch(e.key) {
-        case 'ArrowRight': case ' ': nextSlide(); break;
-        case 'ArrowLeft': prevSlide(); break;
-        case 'p': togglePause(); break;
+        if (progress >= duration) {
+          next();
+        }
       }
-    });
 
-    if (totalSlides > 0) startProgress();
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    if (total > 0) {
+      lastTime = performance.now();
+      animFrame = requestAnimationFrame(animate);
+    }
+
+    // Keyboard
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') next();
+      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'p') togglePause();
+    });
   </script>
 </body>
 </html>
