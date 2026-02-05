@@ -536,8 +536,9 @@
             </div>
             <div class="progress-section">
               <div class="nav-dots">
+                {% set slide_index = loop.index0 %}
                 {% for i in range(articles|length) %}
-                <div class="nav-dot {% if i == loop.parent.index0 %}active{% endif %}" data-index="{{ i }}"></div>
+                <div class="nav-dot {% if i == slide_index %}active{% endif %}" data-index="{{ i }}"></div>
                 {% endfor %}
               </div>
               <div class="progress-track">
