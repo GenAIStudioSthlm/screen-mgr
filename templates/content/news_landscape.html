@@ -6,468 +6,392 @@
   <title>AI News | GenAI Popup Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
     :root {
-      /* Foundations */
-      --void-black: #0a0a0a;
-      --surface-dark: #121214;
-      --surface-elevated: #1a1a1e;
-      --surface-card: #202024;
-      --surface-glass: rgba(26, 26, 30, 0.85);
-
-      /* Signature Pastels */
-      --pastel-pink: #e8b4b8;
-      --pastel-pink-soft: #f5d5d8;
-      --pastel-pink-muted: #c49498;
-      --pastel-blue: #b8d4e8;
-      --pastel-lavender: #d4b8e8;
-      --pastel-mint: #b8e8d4;
-
-      /* Text */
-      --text-primary: #f0f0f0;
-      --text-muted: #888892;
-      --text-dim: #555560;
-      --text-on-pastel: #0a0a0a;
-
-      /* Effects */
-      --glow-pink: rgba(232, 180, 184, 0.25);
-      --glow-blue: rgba(184, 212, 232, 0.2);
-      --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
-      --shadow-lifted: 0 8px 32px rgba(0, 0, 0, 0.5);
-      --radius-sm: 8px;
-      --radius-md: 12px;
-      --radius-lg: 16px;
-      --radius-xl: 20px;
-      --radius-full: 9999px;
+      --bg-deep: #0a0a0f;
+      --bg-surface: #12121a;
+      --bg-raised: #1a1a25;
+      --bg-card: #1e1e2a;
+      --accent: #00ff88;
+      --accent-secondary: #00d4ff;
+      --accent-gradient: linear-gradient(135deg, #00ff88, #00d4ff);
+      --accent-glow: rgba(0, 255, 136, 0.15);
+      --accent-glow-strong: rgba(0, 255, 136, 0.3);
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898a8;
+      --text-dim: #5a5a6e;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(0, 255, 136, 0.2);
     }
-
-    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'Outfit', -apple-system, sans-serif;
-      background: var(--void-black);
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-weight: 300;
+      background: var(--bg-deep);
       color: var(--text-primary);
       -webkit-font-smoothing: antialiased;
     }
 
-    /* Subtle noise texture */
+    /* Grid pattern overlay */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      opacity: 0.015;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
       pointer-events: none;
-      z-index: 1000;
+      z-index: 0;
     }
 
-    /* Dashboard Layout */
-    .dashboard {
-      display: grid;
-      grid-template-rows: 56px 1fr;
-      grid-template-columns: 260px 1fr;
-      height: 100%;
-      gap: 1px;
-      background: var(--surface-dark);
+    /* Background gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 90%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 10%, rgba(0, 212, 255, 0.02) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+      pointer-events: none;
+      z-index: -1;
     }
 
-    /* Header */
-    .header {
-      grid-column: span 2;
-      background: var(--surface-glass);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      position: fixed;
+      top: 24px;
+      right: 32px;
       display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 24px;
-      border-bottom: 1px solid rgba(232, 180, 184, 0.1);
-    }
-
-    .logo-section {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .logo {
-      font-weight: 900;
-      font-size: 20px;
-      letter-spacing: -0.5px;
-      color: var(--pastel-pink);
-    }
-
-    .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: var(--surface-elevated);
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--pastel-mint);
-      border-radius: 50%;
-      animation: pulse 2s ease-in-out infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(0.9); }
-    }
-
-    .header-meta {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
-    .meta-value {
-      color: var(--pastel-pink);
-      font-weight: 500;
-    }
-
-    /* Sidebar */
-    .sidebar {
-      background: var(--surface-elevated);
-      display: flex;
-      flex-direction: column;
+      z-index: 200;
+      border: 1px solid var(--border);
+      border-radius: 6px;
       overflow: hidden;
+      backdrop-filter: blur(16px);
+      background: rgba(18, 18, 26, 0.8);
     }
-
-    .sidebar-header {
-      padding: 20px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .sidebar-title {
-      font-size: 11px;
-      font-weight: 700;
+    .mode-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
       color: var(--text-dim);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-
-    .sidebar-count {
-      font-family: 'JetBrains Mono', monospace;
+      font-family: 'Space Mono', monospace;
       font-size: 11px;
-      color: var(--pastel-pink);
-    }
-
-    .source-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 8px;
-    }
-
-    .source-item {
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      text-decoration: none;
       display: flex;
       align-items: center;
-      gap: 12px;
-      padding: 12px;
-      border-radius: var(--radius-md);
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn:hover { color: var(--text-secondary); background: rgba(255, 255, 255, 0.03); }
+    .mode-btn.active { color: var(--bg-deep); background: var(--accent); font-weight: 700; }
+
+    /* ===== SCROLLBAR ===== */
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+    .scroll-area { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+
+    /* ===== SHARED TEXT ===== */
+    .meta-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-secondary {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .body-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.85;
+    }
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bg-deep);
+      flex-shrink: 0;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: none;
+      border-radius: 4px;
       cursor: pointer;
       transition: all 0.2s ease;
     }
-
-    .source-item:hover {
-      background: rgba(232, 180, 184, 0.08);
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--accent-glow-strong);
+    }
+    .cta-button .arrow {
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+    .cta-button:hover .arrow {
+      transform: translate(2px, -2px);
     }
 
-    .source-item.active {
-      background: rgba(232, 180, 184, 0.12);
-    }
-
-    .source-dot {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      flex-shrink: 0;
-    }
-    .source-dot.pink { background: var(--pastel-pink); }
-    .source-dot.blue { background: var(--pastel-blue); }
-    .source-dot.lavender { background: var(--pastel-lavender); }
-    .source-dot.mint { background: var(--pastel-mint); }
-
-    .source-info {
-      flex: 1;
-      min-width: 0;
-    }
-
-    .source-name {
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text-primary);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .source-category {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-
-    .source-time {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 10px;
-      color: var(--text-dim);
-    }
-
-    /* Main Content */
-    .main-content {
-      background: var(--surface-dark);
-      padding: 20px;
-      overflow: hidden;
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-    }
-
-    /* Featured Card */
-    .featured-section {
-      flex: 1;
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-color: var(--bg-raised);
       position: relative;
-      min-height: 0;
+    }
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
     }
 
+    /* Corner accents */
+    .corner-accent {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 10;
+    }
+    .corner-accent::before,
+    .corner-accent::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+    .corner-accent.tl { top: 24px; left: 24px; }
+    .corner-accent.tl::before { width: 24px; height: 2px; top: 0; left: 0; }
+    .corner-accent.tl::after { width: 2px; height: 24px; top: 0; left: 0; }
+
+    .article-paragraphs p {
+      margin-bottom: 1.5em;
+    }
+    .article-paragraphs p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ===== SLIDE TRANSITIONS ===== */
+    .slides-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
     .slide {
       position: absolute;
       inset: 0;
       opacity: 0;
-      transform: translateY(8px);
-      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
     }
     .slide.active {
       opacity: 1;
-      transform: translateY(0);
+      visibility: visible;
     }
 
-    .featured-card {
-      height: 100%;
-      background: var(--surface-elevated);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
+    /* ===== HORIZONTAL LAYOUT ===== */
+    .h-view {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      border: 1px solid rgba(255, 255, 255, 0.04);
-      transition: all 0.3s ease;
-      box-shadow: var(--shadow-soft);
+      grid-template-columns: 45% 55%;
+      height: 100%;
     }
 
-    .featured-card:hover {
-      box-shadow: var(--shadow-lifted), 0 0 40px var(--glow-pink);
-      border-color: rgba(232, 180, 184, 0.15);
+    .h-left {
+      display: flex;
+      flex-direction: column;
+      padding: 48px;
+      overflow: hidden;
+      position: relative;
+      border-right: 1px solid var(--border);
     }
 
-    .featured-image {
-      background-size: cover;
-      background-position: center;
-      background-color: var(--surface-card);
+    .h-source-badge {
+      margin-bottom: 28px;
+    }
+
+    .h-headline {
+      font-size: clamp(28px, 3.5vw, 44px);
+      margin-bottom: 20px;
+    }
+
+    .h-subtitle {
+      font-size: clamp(14px, 1.5vw, 17px);
+      margin-bottom: 28px;
+    }
+
+    .h-author-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .h-author-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .h-author-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .h-author-date {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .h-image-block {
+      margin-top: auto;
+      height: 180px;
+      border-radius: 8px;
+      overflow: hidden;
       position: relative;
     }
-
-    .featured-image::after {
-      content: '';
+    .h-image-block .hero-image {
       position: absolute;
       inset: 0;
-      background: linear-gradient(90deg, transparent 60%, var(--surface-elevated) 100%);
+    }
+    .h-image-block .hero-image::after {
+      background: linear-gradient(0deg, rgba(10, 10, 15, 0.5) 0%, transparent 60%);
     }
 
-    .image-badges {
-      position: absolute;
-      top: 20px;
-      left: 20px;
+    .h-right {
       display: flex;
       flex-direction: column;
-      gap: 8px;
-      z-index: 2;
+      overflow: hidden;
     }
 
-    .badge {
-      padding: 6px 12px;
-      border-radius: var(--radius-full);
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      width: fit-content;
-    }
-
-    .badge-source {
-      background: var(--surface-glass);
-      backdrop-filter: blur(8px);
-      color: var(--pastel-pink);
-      border: 1px solid rgba(232, 180, 184, 0.2);
-    }
-
-    .badge-category {
-      background: var(--pastel-pink);
-      color: var(--text-on-pastel);
-    }
-    .badge-category.tech { background: var(--pastel-blue); }
-    .badge-category.research { background: var(--pastel-lavender); }
-    .badge-category.health { background: var(--pastel-mint); }
-
-    .featured-content {
-      padding: 32px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .content-meta {
+    .h-right-header {
+      padding: 48px 48px 0;
+      flex-shrink: 0;
       display: flex;
       align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
-      color: var(--text-dim);
+      justify-content: space-between;
+      margin-bottom: 24px;
     }
 
-    .meta-dot {
-      width: 4px;
-      height: 4px;
-      background: var(--pastel-pink-muted);
-      border-radius: 50%;
-    }
-
-    .featured-headline {
-      font-size: 28px;
-      font-weight: 800;
-      line-height: 1.25;
-      color: var(--text-primary);
-      margin-bottom: 16px;
-      letter-spacing: -0.5px;
-    }
-
-    .featured-summary {
-      font-size: 15px;
-      line-height: 1.7;
-      color: var(--text-muted);
+    .h-scroll-content {
       flex: 1;
       overflow-y: auto;
+      padding: 0 48px;
+      min-height: 0;
     }
 
-    .featured-footer {
-      margin-top: auto;
-      padding-top: 24px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    .h-body {
+      font-size: clamp(15px, 1.3vw, 17px);
+    }
+
+    .h-right-footer {
+      flex-shrink: 0;
+      padding: 20px 48px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
     }
 
-    .author-info {
+    .nav-section {
       display: flex;
       align-items: center;
       gap: 12px;
     }
-
-    .author-avatar {
-      width: 36px;
-      height: 36px;
-      background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lavender));
-      border-radius: var(--radius-md);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 800;
-      color: var(--text-on-pastel);
-    }
-
-    .author-name {
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-primary);
-    }
-
-    .author-role {
-      font-size: 12px;
-      color: var(--text-dim);
-    }
-
-    .read-action {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 20px;
-      background: var(--pastel-pink);
-      color: var(--text-on-pastel);
-      border-radius: var(--radius-full);
-      font-size: 12px;
-      font-weight: 700;
-      transition: all 0.2s ease;
-    }
-
-    .read-action:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px var(--glow-pink);
-    }
-
-    /* Navigation Bar */
-    .nav-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 16px 20px;
-      background: var(--surface-elevated);
-      border-radius: var(--radius-lg);
-    }
-
-    .nav-dots {
-      display: flex;
-      gap: 8px;
-    }
-
+    .nav-dots { display: flex; gap: 6px; }
     .nav-dot {
-      width: 10px;
-      height: 10px;
-      background: var(--surface-dark);
+      width: 8px;
+      height: 8px;
+      background: var(--bg-surface);
       border: 1px solid var(--text-dim);
       border-radius: 50%;
-      transition: all 0.3s ease;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       cursor: pointer;
     }
-    .nav-dot:hover {
-      border-color: var(--pastel-pink);
-    }
+    .nav-dot:hover { border-color: var(--accent); }
     .nav-dot.active {
-      width: 32px;
-      background: var(--pastel-pink);
-      border-color: var(--pastel-pink);
-      border-radius: var(--radius-full);
-      box-shadow: 0 0 16px var(--glow-pink);
+      width: 20px;
+      background: var(--accent);
+      border-color: var(--accent);
+      border-radius: 9999px;
+      box-shadow: 0 0 12px var(--accent-glow);
     }
-
-    .nav-info {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+    .nav-counter {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
       color: var(--text-dim);
     }
+    .nav-counter span { color: var(--accent); font-weight: 700; }
 
-    .nav-counter span {
-      color: var(--pastel-pink);
-      font-weight: 500;
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .h-view {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .h-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 32px;
+      }
+      .h-image-block { display: none; }
+      .h-right-header { padding: 32px 32px 0; }
+      .h-scroll-content { padding: 0 32px; }
+      .h-right-footer { padding: 16px 32px; }
+      .mode-toggle { top: 12px; right: 12px; }
     }
 
-    /* Empty State */
+    /* ===== EMPTY STATE ===== */
     .empty-state {
       display: flex;
       flex-direction: column;
@@ -475,162 +399,129 @@
       justify-content: center;
       height: 100%;
       text-align: center;
-      padding: 48px;
-      background: var(--surface-elevated);
-      border-radius: var(--radius-xl);
+      padding: 32px;
     }
-
-    .empty-icon {
-      font-size: 64px;
-      margin-bottom: 24px;
-      opacity: 0.8;
-    }
-
+    .empty-icon { font-size: 80px; margin-bottom: 28px; opacity: 0.7; }
     .empty-title {
-      font-size: 32px;
-      font-weight: 800;
-      color: var(--pastel-pink);
-      margin-bottom: 12px;
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
     }
-
     .empty-text {
-      font-size: 16px;
-      color: var(--text-muted);
-      max-width: 320px;
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 380px;
     }
   </style>
 </head>
 <body>
-  <div class="dashboard">
-    <!-- Header -->
-    <header class="header">
-      <div class="logo-section">
-        <div class="logo">AI News</div>
-        <div class="status-pill">
-          <span class="status-dot"></span>
-          <span>LIVE</span>
-        </div>
-      </div>
-      <div class="header-meta">
-        <span>Week <span class="meta-value">{{ now().isocalendar()[1] }}</span></span>
-        <span>{{ now().strftime('%B %d, %Y') }}</span>
-        <span><span class="meta-value">{{ articles|length if articles else 0 }}</span> stories</span>
-      </div>
-    </header>
 
-    {% if articles %}
-    <!-- Sidebar -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-title">News Feed</div>
-        <div class="sidebar-count">{{ articles|length }} stories</div>
-      </div>
-      <div class="source-list">
-        {% for article in articles[:8] %}
-        <div class="source-item {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-          <div class="source-dot {% if loop.index % 4 == 1 %}pink{% elif loop.index % 4 == 2 %}blue{% elif loop.index % 4 == 3 %}lavender{% else %}mint{% endif %}"></div>
-          <div class="source-info">
-            <div class="source-name">{{ article.title[:35] }}{% if article.title|length > 35 %}...{% endif %}</div>
-            <div class="source-category">{{ article.source_name }}</div>
-          </div>
-          <div class="source-time">
-            {% if article.published_date %}
-            {{ article.published_date.strftime('%H:%M') }}
-            {% endif %}
-          </div>
-        </div>
-        {% endfor %}
-      </div>
-    </aside>
-
-    <!-- Main Content -->
-    <main class="main-content">
-      <div class="featured-section">
-        {% for article in articles[:5] %}
-        <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-          <article class="featured-card">
-            <div class="featured-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
-              <div class="image-badges">
-                <span class="badge badge-source">{{ article.source_name[:12] }}</span>
-                <span class="badge badge-category {% if 'tech' in (article.category or '')|lower %}tech{% elif 'research' in (article.category or '')|lower %}research{% elif 'health' in (article.category or '')|lower %}health{% endif %}">
-                  {{ article.category or 'News' }}
-                </span>
-              </div>
-            </div>
-            <div class="featured-content">
-              <div class="content-meta">
-                {% if article.published_date %}
-                <span>{{ article.published_date.strftime('%B %d, %Y') }}</span>
-                {% else %}
-                <span>Just now</span>
-                {% endif %}
-                <span class="meta-dot"></span>
-                <span>{{ article.category or 'General' }}</span>
-              </div>
-              <h1 class="featured-headline">{{ article.title[:120] }}{% if article.title|length > 120 %}...{% endif %}</h1>
-              <p class="featured-summary">{{ article.summary[:600] }}{% if article.summary|length > 600 %}...{% endif %}</p>
-              <div class="featured-footer">
-                <div class="author-info">
-                  <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
-                  <div>
-                    <div class="author-name">{{ article.source_name }}</div>
-                    <div class="author-role">News Source</div>
-                  </div>
-                </div>
-                <a href="/news/article/{{ article.id }}" class="read-action" style="text-decoration:none;">Read Story</a>
-              </div>
-            </div>
-          </article>
-        </div>
-        {% endfor %}
-      </div>
-
-      <!-- Navigation -->
-      <nav class="nav-bar">
-        <div class="nav-dots">
-          {% for i in range(articles[:5]|length) %}
-          <div class="nav-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
-          {% endfor %}
-        </div>
-        <div class="nav-info">
-          <span class="nav-counter"><span id="current">1</span> / {{ articles[:5]|length }}</span>
-          <span>Auto-refresh: {{ rotation_seconds }}s</span>
-        </div>
-      </nav>
-    </main>
-
-    {% else %}
-    <!-- Empty State -->
-    <aside class="sidebar">
-      <div class="sidebar-header">
-        <div class="sidebar-title">News Feed</div>
-        <div class="sidebar-count">0 stories</div>
-      </div>
-    </aside>
-    <main class="main-content">
-      <div class="empty-state">
-        <div class="empty-icon">📡</div>
-        <h2 class="empty-title">No Signal</h2>
-        <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
-      </div>
-    </main>
-    {% endif %}
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <a class="mode-btn" id="mode-portrait">Portrait</a>
+    <a class="mode-btn active" id="mode-landscape">Landscape</a>
+    <a class="mode-btn" id="mode-present">Present</a>
   </div>
 
+  {% if articles %}
+  <div class="slides-container">
+    {% for article in articles %}
+    <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <div class="h-view">
+        <div class="h-left">
+          <div class="corner-accent tl"></div>
+          <div class="h-source-badge">
+            <span class="meta-text">{{ article.source_name }}</span>
+          </div>
+          <h1 class="headline h-headline">{{ article.title }}</h1>
+          {% if article.summary %}
+          <p class="subtitle h-subtitle">{{ article.summary[:160] }}{% if article.summary|length > 160 %}...{% endif %}</p>
+          {% endif %}
+          <div class="h-author-row">
+            <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+            <div class="h-author-details">
+              <span class="h-author-name">{{ article.source_name }}</span>
+              <span class="h-author-date">
+                {% if article.published_date %}
+                {{ article.published_date.strftime('%B %d, %Y') }}
+                {% else %}
+                Recent
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="h-image-block">
+            <div class="hero-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+          </div>
+        </div>
+
+        <div class="h-right">
+          <div class="h-right-header">
+            <span class="meta-secondary">{{ article.category or 'General' }}</span>
+          </div>
+          <div class="h-scroll-content scroll-area">
+            <div class="body-text h-body article-paragraphs">
+              <p>{{ article.summary }}</p>
+            </div>
+          </div>
+          <div class="h-right-footer">
+            <div class="nav-section">
+              <div class="nav-dots">
+                {% set slide_index = loop.index0 %}
+                {% for i in range(articles|length) %}
+                <div class="nav-dot {% if i == slide_index %}active{% endif %}" data-index="{{ i }}"></div>
+                {% endfor %}
+              </div>
+              <div class="nav-counter"><span class="current-num">{{ loop.index }}</span> / {{ articles|length }}</div>
+            </div>
+            <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
+              Read Full Article <span class="arrow">&nearr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">&#x1F4E1;</div>
+    <h2 class="empty-title">No Signal</h2>
+    <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
+  </div>
+  {% endif %}
+
   <script>
+    // Mode toggle navigation
+    (function() {
+      const path = window.location.pathname;
+      const m = path.match(/\/news\/(portrait|landscape|presentation)(\/.*)?/);
+      const suffix = m ? (m[2] || '') : '';
+      document.getElementById('mode-portrait').href = '/news/portrait' + suffix;
+      document.getElementById('mode-landscape').href = '/news/landscape' + suffix;
+      document.getElementById('mode-present').href = '/news/presentation' + suffix;
+    })();
+
     const slides = document.querySelectorAll('.slide');
-    const dots = document.querySelectorAll('.nav-dot');
-    const sourceItems = document.querySelectorAll('.source-item');
-    const counter = document.getElementById('current');
+    const allDots = document.querySelectorAll('.nav-dot');
     const total = slides.length;
     let current = 0;
     const interval = {{ rotation_seconds }} * 1000;
 
     function show(i) {
       slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
-      dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
-      sourceItems.forEach((s, idx) => s.classList.toggle('active', idx === i));
-      if (counter) counter.textContent = i + 1;
+      // Update all nav dots across all slides
+      allDots.forEach(d => {
+        const dotIdx = parseInt(d.dataset.index);
+        d.classList.toggle('active', dotIdx === i);
+      });
+      // Update counters
+      document.querySelectorAll('.current-num').forEach(el => el.textContent = i + 1);
     }
 
     function next() {
@@ -638,21 +529,11 @@
       show(current);
     }
 
-    // Click on nav dots
-    dots.forEach((dot, i) => {
+    // Click nav dots
+    allDots.forEach(dot => {
       dot.addEventListener('click', () => {
-        current = i;
+        current = parseInt(dot.dataset.index);
         show(current);
-      });
-    });
-
-    // Click on source items
-    sourceItems.forEach((item, i) => {
-      item.addEventListener('click', () => {
-        if (i < total) {
-          current = i;
-          show(current);
-        }
       });
     });
 
