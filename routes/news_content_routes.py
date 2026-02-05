@@ -59,6 +59,33 @@ async def news_presentation(request: Request, playlist_id: str = None):
     )
 
 
+@router.get("/article/{article_id}", response_class=HTMLResponse)
+async def news_article_reader(request: Request, article_id: str, mode: str = "vertical"):
+    """Display a single article in the tech-noir reader with 3 viewing modes"""
+    article = news_manager.get_article(article_id)
+    if not article:
+        return HTMLResponse("<h1>Article not found</h1>", status_code=404)
+
+    # Build readable content from summary (full article text lives at article_url)
+    content_text = article.summary or ""
+
+    # Estimate read time (~200 words per minute)
+    word_count = len(content_text.split())
+    minutes = max(1, round(word_count / 200))
+    read_time = f"{minutes} min read"
+
+    return templates.TemplateResponse(
+        "content/news_article_reader.html",
+        {
+            "request": request,
+            "article": article,
+            "content_text": content_text,
+            "read_time": read_time,
+            "mode": mode,
+        },
+    )
+
+
 @router.get("/api/articles", response_class=JSONResponse)
 async def get_news_articles(playlist_id: str = None):
     """Get articles as JSON for dynamic updates"""
