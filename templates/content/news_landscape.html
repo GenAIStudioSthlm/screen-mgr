@@ -3,25 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI.NEWS // DASHBOARD</title>
+  <title>AI News | GenAI Popup Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --void: #0a0a0c;
-      --surface: #12141a;
-      --surface-raised: #181a22;
-      --border-dim: #1e2028;
-      --border-active: #2a2d38;
-      --text-primary: #e8e8e8;
-      --text-muted: #6b7280;
-      --text-dim: #3d4150;
-      --accent-cyan: #00ffd0;
-      --accent-magenta: #ff006e;
-      --accent-amber: #fbbf24;
-      --accent-blue: #0ea5e9;
-      --noise: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      /* Foundations */
+      --void-black: #0a0a0a;
+      --surface-dark: #121214;
+      --surface-elevated: #1a1a1e;
+      --surface-card: #202024;
+      --surface-glass: rgba(26, 26, 30, 0.85);
+
+      /* Signature Pastels */
+      --pastel-pink: #e8b4b8;
+      --pastel-pink-soft: #f5d5d8;
+      --pastel-pink-muted: #c49498;
+      --pastel-blue: #b8d4e8;
+      --pastel-lavender: #d4b8e8;
+      --pastel-mint: #b8e8d4;
+
+      /* Text */
+      --text-primary: #f0f0f0;
+      --text-muted: #888892;
+      --text-dim: #555560;
+      --text-on-pastel: #0a0a0a;
+
+      /* Effects */
+      --glow-pink: rgba(232, 180, 184, 0.25);
+      --glow-blue: rgba(184, 212, 232, 0.2);
+      --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --shadow-lifted: 0 8px 32px rgba(0, 0, 0, 0.5);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 20px;
+      --radius-full: 9999px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,80 +47,44 @@
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      background: var(--void);
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: var(--void-black);
       color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* Noise overlay */
+    /* Subtle noise texture */
     body::before {
       content: '';
       position: fixed;
       inset: 0;
-      background: var(--noise);
-      opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.015;
       pointer-events: none;
       z-index: 1000;
     }
 
-    /* CRT lines */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 2px,
-        rgba(0, 0, 0, 0.1) 2px,
-        rgba(0, 0, 0, 0.1) 4px
-      );
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    .scanline {
-      position: fixed;
-      left: 0; right: 0;
-      height: 3px;
-      background: linear-gradient(90deg, transparent, rgba(0, 255, 208, 0.08), transparent);
-      animation: scan 10s linear infinite;
-      z-index: 998;
-      pointer-events: none;
-    }
-    @keyframes scan {
-      0% { top: -3px; }
-      100% { top: 100%; }
-    }
-
-    /* Layout */
+    /* Dashboard Layout */
     .dashboard {
       display: grid;
-      grid-template-rows: 44px 1fr 40px;
+      grid-template-rows: 56px 1fr;
+      grid-template-columns: 260px 1fr;
       height: 100%;
       gap: 1px;
-      background: var(--border-dim);
+      background: var(--surface-dark);
     }
 
     /* Header */
     .header {
-      background: var(--surface);
+      grid-column: span 2;
+      background: var(--surface-glass);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
-      position: relative;
-    }
-
-    .header::after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta), var(--accent-cyan));
-      opacity: 0.4;
+      padding: 0 24px;
+      border-bottom: 1px solid rgba(232, 180, 184, 0.1);
     }
 
     .logo-section {
@@ -112,510 +94,533 @@
     }
 
     .logo {
-      font-family: 'Orbitron', sans-serif;
       font-weight: 900;
-      font-size: 16px;
-      letter-spacing: 3px;
-      color: var(--accent-cyan);
-      text-shadow: 0 0 15px rgba(0, 255, 208, 0.4);
+      font-size: 20px;
+      letter-spacing: -0.5px;
+      color: var(--pastel-pink);
     }
 
-    .system-status {
+    .status-pill {
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 10px;
-      color: var(--text-dim);
-      padding: 4px 10px;
-      border: 1px solid var(--border-dim);
-      background: var(--void);
+      background: var(--surface-elevated);
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
     }
 
     .status-dot {
       width: 6px;
       height: 6px;
-      background: var(--accent-cyan);
-      animation: blink 2s ease-in-out infinite;
-      box-shadow: 0 0 6px var(--accent-cyan);
+      background: var(--pastel-mint);
+      border-radius: 50%;
+      animation: pulse 2s ease-in-out infinite;
     }
-    @keyframes blink {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.3; }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.6; transform: scale(0.9); }
     }
 
     .header-meta {
       display: flex;
       align-items: center;
       gap: 24px;
-      font-size: 11px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
       color: var(--text-muted);
-    }
-
-    .meta-item {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .meta-label {
-      color: var(--text-dim);
-      font-size: 9px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
     }
 
     .meta-value {
-      color: var(--accent-amber);
-    }
-
-    /* Main content */
-    .main-content {
-      display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 1px;
-      background: var(--border-dim);
-      overflow: hidden;
-    }
-
-    /* Primary panel - Featured news */
-    .primary-panel {
-      background: var(--surface);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .slide {
-      position: absolute;
-      inset: 0;
-      opacity: 0;
-      transform: scale(0.98);
-      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1px;
-      background: var(--border-dim);
-    }
-    .slide.active {
-      opacity: 1;
-      transform: scale(1);
-    }
-
-    .featured-image {
-      background-size: cover;
-      background-position: center;
-      background-color: var(--surface-raised);
-      position: relative;
-    }
-
-    .featured-image::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(90deg, transparent 70%, var(--surface) 100%);
-    }
-
-    .featured-image::after {
-      content: '';
-      position: absolute;
-      top: 12px;
-      left: 12px;
-      right: 12px;
-      bottom: 12px;
-      border: 1px solid rgba(0, 255, 208, 0.2);
-      pointer-events: none;
-    }
-
-    .image-overlay {
-      position: absolute;
-      top: 16px;
-      left: 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 2;
-    }
-
-    .category-badge {
-      background: var(--accent-magenta);
-      color: white;
-      padding: 4px 12px;
-      font-size: 10px;
-      font-weight: 700;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      width: fit-content;
-    }
-
-    .source-tag {
-      background: rgba(10, 10, 12, 0.9);
-      border: 1px solid var(--border-active);
-      color: var(--accent-cyan);
-      padding: 4px 10px;
-      font-size: 9px;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      backdrop-filter: blur(4px);
-      width: fit-content;
-    }
-
-    .featured-content {
-      background: var(--surface);
-      padding: 24px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .content-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-dim);
-    }
-
-    .content-label {
-      font-size: 9px;
-      color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-    }
-
-    .article-timestamp {
-      font-size: 11px;
-      color: var(--accent-amber);
-    }
-
-    .featured-headline {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 22px;
+      color: var(--pastel-pink);
       font-weight: 500;
-      line-height: 1.35;
-      color: var(--text-primary);
-      margin-bottom: 16px;
-    }
-
-    .featured-summary {
-      font-size: 13px;
-      line-height: 1.7;
-      color: var(--text-muted);
-      flex: 1;
-    }
-
-    .content-footer {
-      margin-top: auto;
-      padding-top: 16px;
-      border-top: 1px solid var(--border-dim);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .article-id {
-      font-size: 10px;
-      color: var(--text-dim);
-      letter-spacing: 1px;
-    }
-
-    .read-more {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 11px;
-      color: var(--accent-cyan);
-    }
-    .read-more::after {
-      content: '→';
     }
 
     /* Sidebar */
     .sidebar {
-      background: var(--surface);
+      background: var(--surface-elevated);
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     .sidebar-header {
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border-dim);
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
+      padding: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     }
 
     .sidebar-title {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+
+    .sidebar-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--pastel-pink);
+    }
+
+    .source-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 8px;
+    }
+
+    .source-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .source-item:hover {
+      background: rgba(232, 180, 184, 0.08);
+    }
+
+    .source-item.active {
+      background: rgba(232, 180, 184, 0.12);
+    }
+
+    .source-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .source-dot.pink { background: var(--pastel-pink); }
+    .source-dot.blue { background: var(--pastel-blue); }
+    .source-dot.lavender { background: var(--pastel-lavender); }
+    .source-dot.mint { background: var(--pastel-mint); }
+
+    .source-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .source-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .source-category {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+
+    .source-time {
+      font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
       color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
     }
 
-    .feed-count {
-      font-size: 10px;
-      color: var(--accent-cyan);
-    }
-
-    .feed-list {
-      flex: 1;
+    /* Main Content */
+    .main-content {
+      background: var(--surface-dark);
+      padding: 20px;
       overflow: hidden;
       display: flex;
       flex-direction: column;
+      gap: 20px;
     }
 
-    .feed-item {
-      padding: 14px 16px;
-      border-bottom: 1px solid var(--border-dim);
+    /* Featured Card */
+    .featured-section {
+      flex: 1;
+      position: relative;
+      min-height: 0;
+    }
+
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .slide.active {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .featured-card {
+      height: 100%;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      transition: all 0.3s ease;
+      box-shadow: var(--shadow-soft);
+    }
+
+    .featured-card:hover {
+      box-shadow: var(--shadow-lifted), 0 0 40px var(--glow-pink);
+      border-color: rgba(232, 180, 184, 0.15);
+    }
+
+    .featured-image {
+      background-size: cover;
+      background-position: center;
+      background-color: var(--surface-card);
+      position: relative;
+    }
+
+    .featured-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(90deg, transparent 60%, var(--surface-elevated) 100%);
+    }
+
+    .image-badges {
+      position: absolute;
+      top: 20px;
+      left: 20px;
       display: flex;
       flex-direction: column;
       gap: 8px;
-      transition: background 0.2s;
+      z-index: 2;
     }
 
-    .feed-item:hover {
-      background: var(--surface-raised);
+    .badge {
+      padding: 6px 12px;
+      border-radius: var(--radius-full);
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      width: fit-content;
     }
 
-    .feed-item-header {
+    .badge-source {
+      background: var(--surface-glass);
+      backdrop-filter: blur(8px);
+      color: var(--pastel-pink);
+      border: 1px solid rgba(232, 180, 184, 0.2);
+    }
+
+    .badge-category {
+      background: var(--pastel-pink);
+      color: var(--text-on-pastel);
+    }
+    .badge-category.tech { background: var(--pastel-blue); }
+    .badge-category.research { background: var(--pastel-lavender); }
+    .badge-category.health { background: var(--pastel-mint); }
+
+    .featured-content {
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .content-meta {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-    }
-
-    .feed-source {
-      font-size: 9px;
-      color: var(--accent-cyan);
-      letter-spacing: 1px;
-      text-transform: uppercase;
-    }
-
-    .feed-time {
-      font-size: 9px;
+      gap: 12px;
+      margin-bottom: 20px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
       color: var(--text-dim);
     }
 
-    .feed-title {
-      font-size: 12px;
-      font-weight: 500;
-      line-height: 1.4;
+    .meta-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--pastel-pink-muted);
+      border-radius: 50%;
+    }
+
+    .featured-headline {
+      font-size: 28px;
+      font-weight: 800;
+      line-height: 1.25;
       color: var(--text-primary);
+      margin-bottom: 16px;
+      letter-spacing: -0.5px;
     }
 
-    .feed-category {
-      font-size: 9px;
-      color: var(--accent-magenta);
-      text-transform: uppercase;
-      letter-spacing: 1px;
+    .featured-summary {
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      flex: 1;
+      overflow-y: auto;
     }
 
-    /* Footer */
-    .footer {
-      background: var(--surface);
+    .featured-footer {
+      margin-top: auto;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 16px;
     }
 
-    .footer::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--accent-cyan) 50%, transparent);
-      opacity: 0.3;
-    }
-
-    .nav-controls {
+    .author-info {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
+    .author-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lavender));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--text-on-pastel);
+    }
+
+    .author-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .author-role {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .read-action {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--pastel-pink);
+      color: var(--text-on-pastel);
+      border-radius: var(--radius-full);
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.2s ease;
+    }
+
+    .read-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px var(--glow-pink);
+    }
+
+    /* Navigation Bar */
+    .nav-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-lg);
+    }
+
     .nav-dots {
       display: flex;
-      gap: 6px;
+      gap: 8px;
     }
 
     .nav-dot {
-      width: 8px;
-      height: 8px;
-      border: 1px solid var(--border-active);
-      background: transparent;
-      transition: all 0.3s;
+      width: 10px;
+      height: 10px;
+      background: var(--surface-dark);
+      border: 1px solid var(--text-dim);
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .nav-dot:hover {
+      border-color: var(--pastel-pink);
     }
     .nav-dot.active {
-      background: var(--accent-cyan);
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 8px var(--accent-cyan);
+      width: 32px;
+      background: var(--pastel-pink);
+      border-color: var(--pastel-pink);
+      border-radius: var(--radius-full);
+      box-shadow: 0 0 16px var(--glow-pink);
     }
 
-    .nav-counter {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-    .nav-counter span { color: var(--accent-cyan); }
-
-    .footer-info {
-      font-size: 10px;
-      color: var(--text-dim);
+    .nav-info {
       display: flex;
       align-items: center;
-      gap: 16px;
+      gap: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--text-dim);
     }
 
-    /* Empty state */
+    .nav-counter span {
+      color: var(--pastel-pink);
+      font-weight: 500;
+    }
+
+    /* Empty State */
     .empty-state {
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       height: 100%;
-      background: var(--surface);
+      text-align: center;
+      padding: 48px;
+      background: var(--surface-elevated);
+      border-radius: var(--radius-xl);
     }
 
-    .empty-glitch {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 48px;
-      font-weight: 900;
-      color: var(--accent-magenta);
-      animation: glitch 3s infinite;
-    }
-    @keyframes glitch {
-      0%, 90%, 100% { transform: translate(0); text-shadow: none; }
-      92% { transform: translate(-3px, 1px); text-shadow: 2px 0 var(--accent-cyan); }
-      94% { transform: translate(3px, -1px); text-shadow: -2px 0 var(--accent-magenta); }
-      96% { transform: translate(-2px, -2px); }
-      98% { transform: translate(2px, 2px); }
+    .empty-icon {
+      font-size: 64px;
+      margin-bottom: 24px;
+      opacity: 0.8;
     }
 
-    .empty-sub {
-      margin-top: 16px;
-      font-size: 13px;
+    .empty-title {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--pastel-pink);
+      margin-bottom: 12px;
+    }
+
+    .empty-text {
+      font-size: 16px;
       color: var(--text-muted);
+      max-width: 320px;
     }
   </style>
 </head>
 <body>
-  <div class="scanline"></div>
-
   <div class="dashboard">
     <!-- Header -->
     <header class="header">
       <div class="logo-section">
-        <div class="logo">AI.NEWS</div>
-        <div class="system-status">
-          <div class="status-dot"></div>
-          <span>LIVE FEED</span>
+        <div class="logo">AI News</div>
+        <div class="status-pill">
+          <span class="status-dot"></span>
+          <span>LIVE</span>
         </div>
       </div>
       <div class="header-meta">
-        <div class="meta-item">
-          <span class="meta-label">UTC</span>
-          <span class="meta-value">{{ now().strftime('%H:%M:%S') }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">WEEK</span>
-          <span>{{ now().isocalendar()[1] }}</span>
-        </div>
-        <div class="meta-item">
-          <span class="meta-label">FEED</span>
-          <span>{{ articles|length if articles else 0 }} ITEMS</span>
-        </div>
+        <span>Week <span class="meta-value">{{ now().isocalendar()[1] }}</span></span>
+        <span>{{ now().strftime('%B %d, %Y') }}</span>
+        <span><span class="meta-value">{{ articles|length if articles else 0 }}</span> stories</span>
       </div>
     </header>
 
-    <!-- Main -->
     {% if articles %}
-    <main class="main-content">
-      <!-- Primary Panel -->
-      <div class="primary-panel">
-        {% for article in articles[:5] %}
-        <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
-          <div class="featured-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
-            <div class="image-overlay">
-              <div class="category-badge">{{ article.category or 'INTEL' }}</div>
-              <div class="source-tag">{{ article.source_name }}</div>
-            </div>
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">News Feed</div>
+        <div class="sidebar-count">{{ articles|length }} stories</div>
+      </div>
+      <div class="source-list">
+        {% for article in articles[:8] %}
+        <div class="source-item {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+          <div class="source-dot {% if loop.index % 4 == 1 %}pink{% elif loop.index % 4 == 2 %}blue{% elif loop.index % 4 == 3 %}lavender{% else %}mint{% endif %}"></div>
+          <div class="source-info">
+            <div class="source-name">{{ article.title[:35] }}{% if article.title|length > 35 %}...{% endif %}</div>
+            <div class="source-category">{{ article.source_name }}</div>
           </div>
-          <div class="featured-content">
-            <div class="content-header">
-              <span class="content-label">// FEATURED.ARTICLE</span>
-              <span class="article-timestamp">
-                {% if article.published_date %}
-                {{ article.published_date.strftime('%Y.%m.%d // %H:%M') }}
-                {% else %}
-                --.--.-- // --:--
-                {% endif %}
-              </span>
-            </div>
-            <h1 class="featured-headline">{{ article.title[:100] }}{% if article.title|length > 100 %}...{% endif %}</h1>
-            <p class="featured-summary">{{ article.summary[:280] }}{% if article.summary|length > 280 %}...{% endif %}</p>
-            <div class="content-footer">
-              <span class="article-id">ID:{{ "%04d"|format(loop.index) }}</span>
-              <span class="read-more">EXPAND</span>
-            </div>
+          <div class="source-time">
+            {% if article.published_date %}
+            {{ article.published_date.strftime('%H:%M') }}
+            {% endif %}
           </div>
         </div>
         {% endfor %}
       </div>
+    </aside>
 
-      <!-- Sidebar -->
-      <aside class="sidebar">
-        <div class="sidebar-header">
-          <span class="sidebar-title">QUEUE</span>
-          <span class="feed-count">{{ articles|length }} ITEMS</span>
-        </div>
-        <div class="feed-list">
-          {% for article in articles[:6] %}
-          <div class="feed-item">
-            <div class="feed-item-header">
-              <span class="feed-source">{{ article.source_name[:15] }}</span>
-              <span class="feed-time">
-                {% if article.published_date %}
-                {{ article.published_date.strftime('%H:%M') }}
-                {% endif %}
-              </span>
+    <!-- Main Content -->
+    <main class="main-content">
+      <div class="featured-section">
+        {% for article in articles[:5] %}
+        <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+          <article class="featured-card">
+            <div class="featured-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
+              <div class="image-badges">
+                <span class="badge badge-source">{{ article.source_name[:12] }}</span>
+                <span class="badge badge-category {% if 'tech' in (article.category or '')|lower %}tech{% elif 'research' in (article.category or '')|lower %}research{% elif 'health' in (article.category or '')|lower %}health{% endif %}">
+                  {{ article.category or 'News' }}
+                </span>
+              </div>
             </div>
-            <div class="feed-title">{{ article.title[:60] }}{% if article.title|length > 60 %}...{% endif %}</div>
-            <div class="feed-category">{{ article.category or 'GENERAL' }}</div>
-          </div>
-          {% endfor %}
+            <div class="featured-content">
+              <div class="content-meta">
+                {% if article.published_date %}
+                <span>{{ article.published_date.strftime('%B %d, %Y') }}</span>
+                {% else %}
+                <span>Just now</span>
+                {% endif %}
+                <span class="meta-dot"></span>
+                <span>{{ article.category or 'General' }}</span>
+              </div>
+              <h1 class="featured-headline">{{ article.title[:120] }}{% if article.title|length > 120 %}...{% endif %}</h1>
+              <p class="featured-summary">{{ article.summary[:600] }}{% if article.summary|length > 600 %}...{% endif %}</p>
+              <div class="featured-footer">
+                <div class="author-info">
+                  <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+                  <div>
+                    <div class="author-name">{{ article.source_name }}</div>
+                    <div class="author-role">News Source</div>
+                  </div>
+                </div>
+                <div class="read-action">Read Story</div>
+              </div>
+            </div>
+          </article>
         </div>
-      </aside>
-    </main>
+        {% endfor %}
+      </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-      <div class="nav-controls">
+      <!-- Navigation -->
+      <nav class="nav-bar">
         <div class="nav-dots">
           {% for i in range(articles[:5]|length) %}
           <div class="nav-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
           {% endfor %}
         </div>
-        <div class="nav-counter"><span id="current">1</span>/{{ articles[:5]|length }}</div>
-      </div>
-      <div class="footer-info">
-        <span>REFRESH: {{ rotation_seconds }}s</span>
-        <span>MODE: LANDSCAPE</span>
-      </div>
-    </footer>
-    {% else %}
-    <main class="empty-state" style="grid-column: span 2;">
-      <div class="empty-glitch">NO_SIGNAL</div>
-      <p class="empty-sub">Awaiting upstream data transmission...</p>
+        <div class="nav-info">
+          <span class="nav-counter"><span id="current">1</span> / {{ articles[:5]|length }}</span>
+          <span>Auto-refresh: {{ rotation_seconds }}s</span>
+        </div>
+      </nav>
     </main>
-    <footer class="footer">
-      <span class="footer-info">DISCONNECTED</span>
-    </footer>
+
+    {% else %}
+    <!-- Empty State -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-title">News Feed</div>
+        <div class="sidebar-count">0 stories</div>
+      </div>
+    </aside>
+    <main class="main-content">
+      <div class="empty-state">
+        <div class="empty-icon">📡</div>
+        <h2 class="empty-title">No Signal</h2>
+        <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
+      </div>
+    </main>
     {% endif %}
   </div>
 
   <script>
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.nav-dot');
+    const sourceItems = document.querySelectorAll('.source-item');
     const counter = document.getElementById('current');
     const total = slides.length;
     let current = 0;
@@ -624,6 +629,7 @@
     function show(i) {
       slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
       dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+      sourceItems.forEach((s, idx) => s.classList.toggle('active', idx === i));
       if (counter) counter.textContent = i + 1;
     }
 
@@ -631,6 +637,24 @@
       current = (current + 1) % total;
       show(current);
     }
+
+    // Click on nav dots
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        current = i;
+        show(current);
+      });
+    });
+
+    // Click on source items
+    sourceItems.forEach((item, i) => {
+      item.addEventListener('click', () => {
+        if (i < total) {
+          current = i;
+          show(current);
+        }
+      });
+    });
 
     if (total > 1) setInterval(next, interval);
   </script>

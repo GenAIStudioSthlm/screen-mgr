@@ -3,25 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI.NEWS // DISPLAY</title>
+  <title>AI News | GenAI Popup Studio</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700&family=Orbitron:wght@700;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <style>
     :root {
-      --void: #0a0a0c;
-      --surface: #0f1115;
-      --surface-raised: #181a22;
-      --border-dim: #1a1d24;
-      --border-active: #2a2d38;
+      /* Foundations */
+      --void-black: #0a0a0a;
+      --surface-dark: #121214;
+      --surface-elevated: #1a1a1e;
+      --surface-card: #202024;
+      --surface-glass: rgba(26, 26, 30, 0.85);
+
+      /* Signature Pastels */
+      --pastel-pink: #e8b4b8;
+      --pastel-pink-soft: #f5d5d8;
+      --pastel-pink-muted: #c49498;
+      --pastel-blue: #b8d4e8;
+      --pastel-lavender: #d4b8e8;
+      --pastel-mint: #b8e8d4;
+
+      /* Text */
       --text-primary: #f0f0f0;
-      --text-muted: #8b919d;
-      --text-dim: #4a5060;
-      --accent-cyan: #00ffd0;
-      --accent-magenta: #ff006e;
-      --accent-amber: #fbbf24;
-      --glow-cyan: rgba(0, 255, 208, 0.15);
-      --glow-magenta: rgba(255, 0, 110, 0.15);
+      --text-muted: #888892;
+      --text-dim: #555560;
+      --text-on-pastel: #0a0a0a;
+
+      /* Effects */
+      --glow-pink: rgba(232, 180, 184, 0.25);
+      --glow-blue: rgba(184, 212, 232, 0.2);
+      --shadow-soft: 0 4px 24px rgba(0, 0, 0, 0.4);
+      --shadow-lifted: 0 12px 48px rgba(0, 0, 0, 0.6);
+      --radius-sm: 8px;
+      --radius-md: 12px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+      --radius-full: 9999px;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -29,9 +47,21 @@
     html, body {
       height: 100%;
       overflow: hidden;
-      font-family: 'JetBrains Mono', monospace;
-      background: var(--void);
+      font-family: 'Outfit', -apple-system, sans-serif;
+      background: var(--void-black);
       color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Subtle ambient gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background: radial-gradient(ellipse at 20% 80%, rgba(232, 180, 184, 0.04) 0%, transparent 50%),
+                  radial-gradient(ellipse at 80% 20%, rgba(184, 212, 232, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
     }
 
     /* Subtle noise texture */
@@ -39,137 +69,74 @@
       content: '';
       position: fixed;
       inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-      opacity: 0.02;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      opacity: 0.012;
       pointer-events: none;
       z-index: 1000;
     }
 
-    /* CRT scan lines - very subtle for presentation */
-    body::after {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 0, 0, 0.08) 3px,
-        rgba(0, 0, 0, 0.08) 6px
-      );
-      pointer-events: none;
-      z-index: 999;
-    }
-
-    /* Ambient scan line */
-    .scanline {
-      position: fixed;
-      left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg,
-        transparent,
-        rgba(0, 255, 208, 0.06),
-        transparent
-      );
-      animation: ambientScan 12s linear infinite;
-      z-index: 998;
-      pointer-events: none;
-    }
-    @keyframes ambientScan {
-      0% { top: -2px; opacity: 0; }
-      5% { opacity: 1; }
-      95% { opacity: 1; }
-      100% { top: 100%; opacity: 0; }
-    }
-
-    /* Corner frame elements */
-    .frame-corner {
-      position: fixed;
-      width: 60px;
-      height: 60px;
-      z-index: 50;
-      opacity: 0.4;
-    }
-    .frame-corner::before,
-    .frame-corner::after {
-      content: '';
-      position: absolute;
-      background: var(--accent-cyan);
-    }
-    .frame-corner.tl { top: 20px; left: 20px; }
-    .frame-corner.tl::before { width: 40px; height: 2px; top: 0; left: 0; }
-    .frame-corner.tl::after { width: 2px; height: 40px; top: 0; left: 0; }
-    .frame-corner.tr { top: 20px; right: 20px; }
-    .frame-corner.tr::before { width: 40px; height: 2px; top: 0; right: 0; }
-    .frame-corner.tr::after { width: 2px; height: 40px; top: 0; right: 0; }
-    .frame-corner.bl { bottom: 20px; left: 20px; }
-    .frame-corner.bl::before { width: 40px; height: 2px; bottom: 0; left: 0; }
-    .frame-corner.bl::after { width: 2px; height: 40px; bottom: 0; left: 0; }
-    .frame-corner.br { bottom: 20px; right: 20px; }
-    .frame-corner.br::before { width: 40px; height: 2px; bottom: 0; right: 0; }
-    .frame-corner.br::after { width: 2px; height: 40px; bottom: 0; right: 0; }
-
-    /* Top status bar */
-    .status-bar {
+    /* Top bar */
+    .top-bar {
       position: fixed;
       top: 0;
       left: 0;
       right: 0;
-      height: 50px;
+      height: 56px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 32px;
-      background: linear-gradient(180deg, var(--surface) 0%, transparent 100%);
+      padding: 0 40px;
+      background: linear-gradient(180deg, rgba(10, 10, 10, 0.9) 0%, transparent 100%);
       z-index: 100;
     }
 
     .logo {
-      font-family: 'Orbitron', sans-serif;
       font-weight: 900;
-      font-size: 18px;
-      letter-spacing: 4px;
-      color: var(--accent-cyan);
-      text-shadow: 0 0 20px var(--glow-cyan);
-      animation: breathe 4s ease-in-out infinite;
-    }
-    @keyframes breathe {
-      0%, 100% { text-shadow: 0 0 20px var(--glow-cyan); }
-      50% { text-shadow: 0 0 30px var(--accent-cyan), 0 0 60px var(--glow-cyan); }
+      font-size: 22px;
+      letter-spacing: -0.5px;
+      color: var(--pastel-pink);
     }
 
-    .clock {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 14px;
-      color: var(--text-muted);
-      letter-spacing: 2px;
-    }
-    .clock-time {
-      color: var(--accent-amber);
-      font-weight: 700;
+    .top-meta {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      color: var(--text-dim);
     }
 
-    .status-indicator {
+    .live-indicator {
       display: flex;
       align-items: center;
       gap: 8px;
-      font-size: 11px;
-      color: var(--text-dim);
+      background: var(--surface-elevated);
+      padding: 6px 14px;
+      border-radius: var(--radius-full);
+      font-family: 'Outfit', sans-serif;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-muted);
     }
-    .status-indicator::before {
-      content: '';
-      width: 8px;
-      height: 8px;
-      background: var(--accent-cyan);
+
+    .live-dot {
+      width: 7px;
+      height: 7px;
+      background: var(--pastel-mint);
+      border-radius: 50%;
       animation: pulse 2s ease-in-out infinite;
-      box-shadow: 0 0 10px var(--accent-cyan);
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; transform: scale(1); }
       50% { opacity: 0.5; transform: scale(0.85); }
     }
 
-    /* Main slide container */
+    .clock-display {
+      color: var(--pastel-pink);
+      font-weight: 500;
+    }
+
+    /* Main presentation area */
     .presentation {
       position: absolute;
       inset: 0;
@@ -180,18 +147,23 @@
 
     .slide {
       position: absolute;
-      inset: 60px 40px;
+      inset: 64px 48px 80px;
       opacity: 0;
-      transform: scale(0.96);
-      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      transform: scale(0.97) translateY(8px);
+      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
       display: grid;
-      grid-template-columns: 55% 45%;
-      gap: 40px;
-      padding: 20px;
+      grid-template-columns: 50% 50%;
+      gap: 0;
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      background: var(--surface-elevated);
+      border: 1px solid rgba(255, 255, 255, 0.04);
+      box-shadow: var(--shadow-soft);
     }
     .slide.active {
       opacity: 1;
-      transform: scale(1);
+      transform: scale(1) translateY(0);
+      box-shadow: var(--shadow-lifted);
     }
 
     /* Image panel */
@@ -199,165 +171,155 @@
       position: relative;
       background-size: cover;
       background-position: center;
-      background-color: var(--surface-raised);
+      background-color: var(--surface-card);
     }
 
     .image-panel::before {
       content: '';
       position: absolute;
       inset: 0;
-      background: linear-gradient(
-        135deg,
-        transparent 60%,
-        rgba(0, 0, 0, 0.6) 100%
-      );
-    }
-
-    .image-panel::after {
-      content: '';
-      position: absolute;
-      inset: 16px;
-      border: 1px solid rgba(0, 255, 208, 0.15);
-      pointer-events: none;
+      background: linear-gradient(90deg, transparent 50%, var(--surface-elevated) 100%);
+      z-index: 1;
     }
 
     .image-badges {
       position: absolute;
-      top: 24px;
-      left: 24px;
+      top: 28px;
+      left: 28px;
       display: flex;
       flex-direction: column;
       gap: 10px;
       z-index: 2;
     }
 
-    .badge-category {
-      background: var(--accent-magenta);
-      color: white;
-      padding: 8px 20px;
-      font-size: 12px;
+    .badge {
+      padding: 8px 16px;
+      border-radius: var(--radius-full);
+      font-size: 11px;
       font-weight: 700;
-      letter-spacing: 3px;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
       width: fit-content;
-      box-shadow: 0 0 20px var(--glow-magenta);
     }
 
     .badge-source {
-      background: rgba(10, 10, 12, 0.85);
-      border: 1px solid var(--border-active);
-      color: var(--accent-cyan);
-      padding: 6px 16px;
-      font-size: 11px;
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      backdrop-filter: blur(8px);
-      width: fit-content;
+      background: var(--surface-glass);
+      backdrop-filter: blur(12px);
+      color: var(--pastel-pink);
+      border: 1px solid rgba(232, 180, 184, 0.2);
     }
+
+    .badge-category {
+      background: var(--pastel-pink);
+      color: var(--text-on-pastel);
+    }
+    .badge-category.tech { background: var(--pastel-blue); }
+    .badge-category.research { background: var(--pastel-lavender); }
+    .badge-category.health { background: var(--pastel-mint); }
 
     /* Content panel */
     .content-panel {
+      padding: 40px 44px;
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      padding: 20px 0;
+      overflow: hidden;
     }
 
     .content-meta {
       display: flex;
       align-items: center;
-      gap: 16px;
-      margin-bottom: 24px;
-      font-size: 12px;
-    }
-
-    .meta-label {
+      gap: 12px;
+      margin-bottom: 28px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
       color: var(--text-dim);
-      letter-spacing: 2px;
-      text-transform: uppercase;
     }
 
-    .meta-timestamp {
-      color: var(--accent-amber);
-      font-weight: 500;
-    }
-
-    .meta-divider {
-      color: var(--border-active);
+    .meta-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--pastel-pink-muted);
+      border-radius: 50%;
     }
 
     .headline {
-      font-family: 'JetBrains Mono', monospace;
       font-size: 36px;
-      font-weight: 500;
-      line-height: 1.25;
+      font-weight: 800;
+      line-height: 1.2;
       color: var(--text-primary);
-      margin-bottom: 28px;
-      animation: fadeSlideUp 0.6s ease both;
-      animation-delay: 0.2s;
+      margin-bottom: 24px;
+      letter-spacing: -0.8px;
+      animation: fadeIn 0.5s ease both;
+      animation-delay: 0.15s;
     }
-    @keyframes fadeSlideUp {
-      from { opacity: 0; transform: translateY(20px); }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     .summary {
-      font-size: 18px;
-      line-height: 1.7;
+      font-size: 17px;
+      line-height: 1.75;
       color: var(--text-muted);
-      animation: fadeSlideUp 0.6s ease both;
-      animation-delay: 0.4s;
+      flex: 1;
+      overflow-y: auto;
+      animation: fadeIn 0.5s ease both;
+      animation-delay: 0.3s;
     }
 
     .content-footer {
       margin-top: auto;
-      padding-top: 32px;
+      padding-top: 28px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      border-top: 1px solid var(--border-dim);
     }
 
-    .article-ref {
-      font-size: 11px;
+    .source-info {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .source-avatar {
+      width: 40px;
+      height: 40px;
+      background: linear-gradient(135deg, var(--pastel-pink), var(--pastel-lavender));
+      border-radius: var(--radius-md);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--text-on-pastel);
+    }
+
+    .source-name {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+
+    .source-role {
+      font-size: 13px;
       color: var(--text-dim);
-      letter-spacing: 2px;
     }
 
-    /* Bottom control bar */
-    .control-bar {
+    /* Bottom progress bar */
+    .progress-bar-container {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      height: 60px;
+      height: 80px;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(0deg, var(--surface) 0%, transparent 100%);
+      gap: 32px;
+      background: linear-gradient(0deg, rgba(10, 10, 10, 0.95) 0%, transparent 100%);
       z-index: 100;
-    }
-
-    .progress-container {
-      display: flex;
-      align-items: center;
-      gap: 24px;
-    }
-
-    .progress-track {
-      width: 300px;
-      height: 3px;
-      background: var(--border-dim);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, var(--accent-cyan), var(--accent-magenta));
-      width: 0%;
-      transition: width linear;
-      box-shadow: 0 0 10px var(--accent-cyan);
+      padding: 0 48px;
     }
 
     .progress-dots {
@@ -366,60 +328,98 @@
     }
 
     .dot {
-      width: 10px;
-      height: 10px;
-      border: 1px solid var(--border-active);
-      background: transparent;
+      width: 12px;
+      height: 12px;
+      background: var(--surface-dark);
+      border: 1px solid var(--text-dim);
+      border-radius: 50%;
       transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    .dot:hover {
+      border-color: var(--pastel-pink);
     }
     .dot.active {
-      background: var(--accent-cyan);
-      border-color: var(--accent-cyan);
-      box-shadow: 0 0 12px var(--accent-cyan);
+      width: 40px;
+      background: var(--pastel-pink);
+      border-color: var(--pastel-pink);
+      border-radius: var(--radius-full);
+      box-shadow: 0 0 20px var(--glow-pink);
+    }
+
+    .progress-track {
+      width: 240px;
+      height: 4px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-full);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--pastel-pink), var(--pastel-lavender));
+      width: 0%;
+      border-radius: var(--radius-full);
+      transition: width 0.1s linear;
+      box-shadow: 0 0 12px var(--glow-pink);
     }
 
     .progress-counter {
-      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
       color: var(--text-dim);
-      letter-spacing: 1px;
     }
     .progress-counter span {
-      color: var(--accent-cyan);
+      color: var(--pastel-pink);
       font-weight: 500;
     }
 
     /* Controls */
     .controls {
       position: fixed;
-      bottom: 70px;
-      right: 40px;
+      bottom: 88px;
+      right: 48px;
       display: flex;
-      gap: 12px;
+      gap: 10px;
       z-index: 100;
     }
 
     .ctrl-btn {
       width: 44px;
       height: 44px;
-      border: 1px solid var(--border-active);
-      background: rgba(15, 17, 21, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: var(--surface-glass);
+      backdrop-filter: blur(12px);
       color: var(--text-muted);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      transition: all 0.2s;
-      backdrop-filter: blur(8px);
+      border-radius: var(--radius-md);
+      transition: all 0.2s ease;
     }
     .ctrl-btn:hover {
-      border-color: var(--accent-cyan);
-      color: var(--accent-cyan);
-      box-shadow: 0 0 15px var(--glow-cyan);
+      border-color: var(--pastel-pink);
+      color: var(--pastel-pink);
+      box-shadow: 0 0 20px var(--glow-pink);
     }
     .ctrl-btn svg {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       fill: currentColor;
+    }
+
+    /* Studio watermark */
+    .watermark {
+      position: fixed;
+      bottom: 88px;
+      left: 48px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      letter-spacing: 0.5px;
+      z-index: 100;
+      opacity: 0.5;
     }
 
     /* Empty state */
@@ -429,48 +429,40 @@
       align-items: center;
       justify-content: center;
       height: 100%;
+      text-align: center;
     }
 
-    .empty-glitch {
-      font-family: 'Orbitron', sans-serif;
-      font-size: 72px;
-      font-weight: 900;
-      color: var(--accent-magenta);
-      text-shadow: 0 0 40px var(--glow-magenta);
-      animation: glitchText 4s infinite;
-    }
-    @keyframes glitchText {
-      0%, 92%, 100% { transform: translate(0); text-shadow: 0 0 40px var(--glow-magenta); }
-      93% { transform: translate(-4px, 2px); text-shadow: 4px 0 var(--accent-cyan), -2px 0 var(--accent-magenta); }
-      95% { transform: translate(4px, -2px); text-shadow: -4px 0 var(--accent-cyan), 2px 0 var(--accent-magenta); }
-      97% { transform: translate(-2px, -2px); }
-      99% { transform: translate(2px, 2px); }
+    .empty-icon {
+      font-size: 80px;
+      margin-bottom: 28px;
+      opacity: 0.7;
     }
 
-    .empty-sub {
-      margin-top: 24px;
-      font-size: 16px;
+    .empty-title {
+      font-size: 40px;
+      font-weight: 800;
+      color: var(--pastel-pink);
+      margin-bottom: 16px;
+    }
+
+    .empty-text {
+      font-size: 18px;
       color: var(--text-muted);
-      letter-spacing: 2px;
+      max-width: 380px;
     }
   </style>
 </head>
 <body>
-  <div class="scanline"></div>
-
-  <!-- Frame corners -->
-  <div class="frame-corner tl"></div>
-  <div class="frame-corner tr"></div>
-  <div class="frame-corner bl"></div>
-  <div class="frame-corner br"></div>
-
-  <!-- Status bar -->
-  <div class="status-bar">
-    <div class="logo">AI.NEWS</div>
-    <div class="status-indicator">LIVE FEED</div>
-    <div class="clock">
-      <span class="clock-time" id="clock">{{ now().strftime('%H:%M:%S') }}</span>
-      <span> // WEEK {{ now().isocalendar()[1] }}</span>
+  <!-- Top bar -->
+  <div class="top-bar">
+    <div class="logo">AI News</div>
+    <div class="top-meta">
+      <div class="live-indicator">
+        <span class="live-dot"></span>
+        <span>LIVE</span>
+      </div>
+      <span>Week {{ now().isocalendar()[1] }}</span>
+      <span class="clock-display" id="clock">{{ now().strftime('%H:%M') }}</span>
     </div>
   </div>
 
@@ -481,67 +473,77 @@
     <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
       <div class="image-panel" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')">
         <div class="image-badges">
-          <div class="badge-category">{{ article.category or 'INTEL' }}</div>
-          <div class="badge-source">{{ article.source_name }}</div>
+          <span class="badge badge-source">{{ article.source_name }}</span>
+          <span class="badge badge-category {% if 'tech' in (article.category or '')|lower %}tech{% elif 'research' in (article.category or '')|lower %}research{% elif 'health' in (article.category or '')|lower %}health{% endif %}">
+            {{ article.category or 'News' }}
+          </span>
         </div>
       </div>
       <div class="content-panel">
         <div class="content-meta">
-          <span class="meta-label">// ARTICLE</span>
-          <span class="meta-divider">|</span>
-          <span class="meta-timestamp">
-            {% if article.published_date %}
-            {{ article.published_date.strftime('%Y.%m.%d') }}
-            {% else %}
-            --.--.--
-            {% endif %}
-          </span>
+          {% if article.published_date %}
+          <span>{{ article.published_date.strftime('%B %d, %Y') }}</span>
+          {% else %}
+          <span>Just now</span>
+          {% endif %}
+          <span class="meta-dot"></span>
+          <span>{{ article.category or 'General' }}</span>
         </div>
-        <h1 class="headline">{{ article.title[:120] }}{% if article.title|length > 120 %}...{% endif %}</h1>
-        <p class="summary">{{ article.summary[:350] }}{% if article.summary|length > 350 %}...{% endif %}</p>
+        <h1 class="headline">{{ article.title }}</h1>
+        <p class="summary">{{ article.summary[:800] }}{% if article.summary|length > 800 %}...{% endif %}</p>
         <div class="content-footer">
-          <span class="article-ref">REF:{{ "%04d"|format(loop.index) }}</span>
+          <div class="source-info">
+            <div class="source-avatar">{{ article.source_name[:2]|upper }}</div>
+            <div>
+              <div class="source-name">{{ article.source_name }}</div>
+              <div class="source-role">News Source</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
     {% endfor %}
   </main>
 
-  <!-- Control bar -->
-  <div class="control-bar">
-    <div class="progress-container">
-      <div class="progress-dots">
-        {% for i in range(articles|length) %}
-        <div class="dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
-        {% endfor %}
-      </div>
-      <div class="progress-track">
-        <div class="progress-bar" id="progressBar"></div>
-      </div>
-      <div class="progress-counter">
-        <span id="currentNum">1</span>/{{ articles|length }}
-      </div>
-    </div>
-  </div>
+  <!-- Studio watermark -->
+  <div class="watermark">GenAI Popup Studio</div>
 
   <!-- Controls -->
   <div class="controls">
-    <button class="ctrl-btn" onclick="prev()">
+    <button class="ctrl-btn" onclick="prevSlide()">
       <svg viewBox="0 0 24 24"><path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z"/></svg>
     </button>
     <button class="ctrl-btn" onclick="togglePause()" id="pauseBtn">
       <svg id="pauseIcon" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
       <svg id="playIcon" viewBox="0 0 24 24" style="display:none"><path d="M8 5v14l11-7z"/></svg>
     </button>
-    <button class="ctrl-btn" onclick="next()">
+    <button class="ctrl-btn" onclick="nextSlide()">
       <svg viewBox="0 0 24 24"><path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z"/></svg>
     </button>
   </div>
 
+  <!-- Progress bar -->
+  <div class="progress-bar-container">
+    <div class="progress-dots">
+      {% for i in range(articles|length) %}
+      <div class="dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
+      {% endfor %}
+    </div>
+    <div class="progress-track">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+    <div class="progress-counter">
+      <span id="currentNum">1</span> / {{ articles|length }}
+    </div>
+  </div>
+
   {% else %}
-  <main class="empty-state">
-    <div class="empty-glitch">NO_SIGNAL</div>
-    <p class="empty-sub">AWAITING UPSTREAM DATA TRANSMISSION</p>
+  <main class="presentation">
+    <div class="empty-state">
+      <div class="empty-icon">📡</div>
+      <h2 class="empty-title">No Signal</h2>
+      <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
+    </div>
   </main>
   {% endif %}
 
@@ -551,16 +553,15 @@
       const now = new Date();
       const h = String(now.getHours()).padStart(2, '0');
       const m = String(now.getMinutes()).padStart(2, '0');
-      const s = String(now.getSeconds()).padStart(2, '0');
       const el = document.getElementById('clock');
-      if (el) el.textContent = `${h}:${m}:${s}`;
+      if (el) el.textContent = `${h}:${m}`;
     }
-    setInterval(updateClock, 1000);
+    setInterval(updateClock, 30000);
 
     // Slides
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.dot');
-    const progressBar = document.getElementById('progressBar');
+    const progressFill = document.getElementById('progressFill');
     const counter = document.getElementById('currentNum');
     const pauseIcon = document.getElementById('pauseIcon');
     const playIcon = document.getElementById('playIcon');
@@ -576,7 +577,6 @@
     function show(i) {
       slides.forEach((s, idx) => {
         s.classList.toggle('active', idx === i);
-        // Re-trigger animations
         if (idx === i) {
           const headline = s.querySelector('.headline');
           const summary = s.querySelector('.summary');
@@ -589,22 +589,30 @@
       progress = 0;
     }
 
-    function next() {
+    function nextSlide() {
       current = (current + 1) % total;
       show(current);
     }
 
-    function prev() {
+    function prevSlide() {
       current = (current - 1 + total) % total;
       show(current);
     }
 
     function togglePause() {
       isPaused = !isPaused;
-      pauseIcon.style.display = isPaused ? 'none' : 'block';
-      playIcon.style.display = isPaused ? 'block' : 'none';
+      if (pauseIcon) pauseIcon.style.display = isPaused ? 'none' : 'block';
+      if (playIcon) playIcon.style.display = isPaused ? 'block' : 'none';
       if (!isPaused) lastTime = performance.now();
     }
+
+    // Click on dots
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        current = i;
+        show(current);
+      });
+    });
 
     function animate(time) {
       if (!lastTime) lastTime = time;
@@ -614,10 +622,10 @@
       if (!isPaused && total > 1) {
         progress += delta;
         const pct = Math.min((progress / duration) * 100, 100);
-        if (progressBar) progressBar.style.width = pct + '%';
+        if (progressFill) progressFill.style.width = pct + '%';
 
         if (progress >= duration) {
-          next();
+          nextSlide();
         }
       }
 
@@ -629,10 +637,10 @@
       animFrame = requestAnimationFrame(animate);
     }
 
-    // Keyboard
+    // Keyboard controls
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'ArrowRight' || e.key === ' ') next();
-      if (e.key === 'ArrowLeft') prev();
+      if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
       if (e.key === 'p') togglePause();
     });
   </script>
