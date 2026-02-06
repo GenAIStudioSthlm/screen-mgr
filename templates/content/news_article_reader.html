@@ -620,12 +620,6 @@
 </head>
 <body>
 
-  <!-- Mode Toggle -->
-  <div class="mode-toggle">
-    <button class="mode-btn active" data-mode="vertical">Vertical</button>
-    <button class="mode-btn" data-mode="horizontal">Horizontal</button>
-    <button class="mode-btn" data-mode="present">Present</button>
-  </div>
 
   <!-- ===== VERTICAL MODE ===== -->
   <div class="view-container active" id="view-vertical">
@@ -670,9 +664,6 @@
           <span class="meta-secondary">&middot;</span>
           <span class="meta-secondary">Scroll for more</span>
         </div>
-        <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
-          Read Full Article <span class="arrow">&nearr;</span>
-        </a>
       </div>
     </div>
   </div>
@@ -799,33 +790,15 @@
     renderContent('h-content');
     renderContent('p-content');
 
-    // Mode toggling
-    const modeButtons = document.querySelectorAll('.mode-btn');
+    // Default mode from URL param
     const views = {
       vertical: document.getElementById('view-vertical'),
       horizontal: document.getElementById('view-horizontal'),
       present: document.getElementById('view-present'),
     };
-
-    modeButtons.forEach(btn => {
-      btn.addEventListener('click', () => {
-        const mode = btn.dataset.mode;
-
-        // Update buttons
-        modeButtons.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-
-        // Update views
-        Object.values(views).forEach(v => v.classList.remove('active'));
-        if (views[mode]) views[mode].classList.add('active');
-      });
-    });
-
-    // Default mode from URL param
     const params = new URLSearchParams(window.location.search);
     const defaultMode = params.get('mode');
     if (defaultMode && views[defaultMode]) {
-      modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === defaultMode));
       Object.values(views).forEach(v => v.classList.remove('active'));
       views[defaultMode].classList.add('active');
     }

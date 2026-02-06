@@ -477,12 +477,6 @@
 </head>
 <body>
 
-  <!-- Mode Toggle -->
-  <div class="mode-toggle">
-    <a class="mode-btn" id="mode-portrait">Portrait</a>
-    <a class="mode-btn" id="mode-landscape">Landscape</a>
-    <a class="mode-btn active" id="mode-present">Present</a>
-  </div>
 
   {% if articles %}
   <div class="slides-container">
@@ -514,9 +508,6 @@
                 <div class="p-author-meta">{{ article.category or 'General' }}</div>
               </div>
             </div>
-            <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
-              Read Full Article <span class="arrow">&nearr;</span>
-            </a>
           </div>
 
           <div class="p-right">
@@ -574,16 +565,6 @@
   {% endif %}
 
   <script>
-    // Mode toggle navigation
-    (function() {
-      const path = window.location.pathname;
-      const m = path.match(/\/news\/(portrait|landscape|presentation)(\/.*)?/);
-      const suffix = m ? (m[2] || '') : '';
-      document.getElementById('mode-portrait').href = '/news/portrait' + suffix;
-      document.getElementById('mode-landscape').href = '/news/landscape' + suffix;
-      document.getElementById('mode-present').href = '/news/presentation' + suffix;
-    })();
-
     const slides = document.querySelectorAll('.slide');
     const allDots = document.querySelectorAll('.nav-dot');
     const allFills = document.querySelectorAll('.progress-fill');

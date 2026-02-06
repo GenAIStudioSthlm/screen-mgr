@@ -285,10 +285,16 @@
       overflow-y: auto;
       padding: 32px 48px 0;
       min-height: 0;
+      display: flex;
+      justify-content: center;
     }
     .body-scroll .body-text {
-      max-width: 720px;
+      max-width: 520px;
       font-size: clamp(15px, 1.5vw, 17px);
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px 40px;
     }
     .article-paragraphs p {
       margin-bottom: 1.5em;
@@ -383,12 +389,6 @@
 </head>
 <body>
 
-  <!-- Mode Toggle -->
-  <div class="mode-toggle">
-    <a class="mode-btn active" id="mode-portrait">Portrait</a>
-    <a class="mode-btn" id="mode-landscape">Landscape</a>
-    <a class="mode-btn" id="mode-present">Present</a>
-  </div>
 
   {% if articles %}
   <div class="slides-container">
@@ -435,9 +435,6 @@
             <span class="meta-secondary">&middot;</span>
             <span class="meta-secondary">Scroll for more</span>
           </div>
-          <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
-            Read Full Article <span class="arrow">&nearr;</span>
-          </a>
         </div>
       </div>
     </div>
@@ -462,16 +459,6 @@
   {% endif %}
 
   <script>
-    // Mode toggle navigation
-    (function() {
-      const path = window.location.pathname;
-      const m = path.match(/\/news\/(portrait|landscape|presentation)(\/.*)?/);
-      const suffix = m ? (m[2] || '') : '';
-      document.getElementById('mode-portrait').href = '/news/portrait' + suffix;
-      document.getElementById('mode-landscape').href = '/news/landscape' + suffix;
-      document.getElementById('mode-present').href = '/news/presentation' + suffix;
-    })();
-
     const slides = document.querySelectorAll('.slide');
     const dots = document.querySelectorAll('.nav-dot');
     const counter = document.getElementById('current');
