@@ -18,7 +18,9 @@ router = APIRouter()
 async def websocket_endpoint(websocket: WebSocket, screen_id: str):
     print(f"(/ws/{screen_id}) Screen {screen_id} connected to WebSocket")
 
-    await connection_manager.connect(screen_id, websocket)
+    result = await connection_manager.connect(screen_id, websocket)
+    if result is False:
+        return
 
     try:
         while True:
