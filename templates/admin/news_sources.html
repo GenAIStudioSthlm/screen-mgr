@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <title>News Sources - Admin</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+  <style>
+    body {
+      background: radial-gradient(circle, rgb(251, 63, 185) 0%, rgb(8, 5, 5) 100%);
+    }
+    h1 { color: #f6c6ce; text-shadow: black 3px 3px 1px; }
+  </style>
+</head>
+
+<body class="mx-auto p-4 w-full max-w-4xl">
+  <div class="flex flex-col gap-4">
+    <div class="w-full flex flex-col">
+      <img src="/static/genaistudio.png" alt="Genaistudio" class="max-w-sm mx-auto" />
+      <h1 class="text-3xl font-bold text-center mt-8 mb-3">News Sources</h1>
+    </div>
+
+    <!-- Navigation -->
+    <div class="flex gap-2 justify-center mb-4">
+      <a href="/admin" class="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700">&larr; Back to Admin</a>
+      <a href="/admin/news" class="bg-white text-gray-700 px-4 py-2 rounded hover:bg-gray-100">Dashboard</a>
+      <a href="/admin/news/sources" class="bg-pink-600 text-white px-4 py-2 rounded hover:bg-pink-700">Sources</a>
+      <a href="/admin/news/articles" class="bg-white text-gray-700 px-4 py-2 rounded hover:bg-gray-100">Articles</a>
+      <a href="/admin/news/playlists" class="bg-white text-gray-700 px-4 py-2 rounded hover:bg-gray-100">Playlists</a>
+    </div>
+
+    <!-- Add Source Form -->
+    <div class="bg-white rounded-lg p-4 shadow" x-data="{ showForm: false }">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-xl font-bold">News Sources</h2>
+        <button @click="showForm = !showForm" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">
+          + Add Source
+        </button>
+      </div>
+
+      <form x-show="showForm" action="/admin/news/sources/add" method="POST" class="mb-4 p-4 bg-gray-50 rounded">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Name</label>
+            <input type="text" name="name" required class="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Type</label>
+            <select name="source_type" class="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border">
+              <option value="rss">RSS Feed</option>
+              <option value="api">API</option>
+              <option value="manual">Manual</option>
+            </select>
+          </div>
+          <div class="col-span-2">
+            <label class="block text-sm font-medium text-gray-700">URL</label>
+            <input type="url" name="url" required class="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border"
+              placeholder="https://example.com/rss">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Category</label>
+            <input type="text" name="category" value="General" class="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Priority (1-10)</label>
+            <input type="number" name="priority" value="5" min="1" max="10" class="mt-1 block w-full rounded border-gray-300 shadow-sm p-2 border">
+          </div>
+        </div>
+        <div class="mt-4">
+          <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Add Source</button>
+          <button type="button" @click="showForm = false" class="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 ml-2">Cancel</button>
+        </div>
+      </form>
+
+      <!-- Sources List -->
+      {% if sources %}
+      <div class="space-y-2">
+        {% for source in sources %}
+        <div class="flex items-center justify-between p-3 border rounded {% if not source.enabled %}bg-gray-100 opacity-60{% endif %}">
+          <div class="flex-1">
+            <div class="flex items-center gap-2">
+              <span class="font-medium">{{ source.name }}</span>
+              <span class="text-xs px-2 py-1 bg-gray-200 rounded">{{ source.type }}</span>
+              <span class="text-xs px-2 py-1 bg-purple-100 text-purple-800 rounded">{{ source.category }}</span>
+              <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded">Priority: {{ source.priority }}</span>
+            </div>
+            <div class="text-sm text-gray-500 truncate">{{ source.url }}</div>
+            {% if source.last_fetched %}
+            <div class="text-xs text-gray-400">Last fetched: {{ source.last_fetched }}</div>
+            {% endif %}
+          </div>
+          <div class="flex gap-2">
+            <form action="/admin/news/sources/{{ source.id }}/toggle" method="POST">
+              <button type="submit" class="px-3 py-1 text-sm rounded {% if source.enabled %}bg-yellow-500 text-white{% else %}bg-green-500 text-white{% endif %}">
+                {% if source.enabled %}Disable{% else %}Enable{% endif %}
+              </button>
+            </form>
+            <form action="/admin/news/sources/{{ source.id }}/delete" method="POST"
+              onsubmit="return confirm('Delete this source?')">
+              <button type="submit" class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600">Delete</button>
+            </form>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-gray-500 text-center py-4">No sources configured. Add one above to get started.</p>
+      {% endif %}
+    </div>
+
+    <!-- Suggested Sources -->
+    <div class="bg-white rounded-lg p-4 shadow">
+      <h2 class="text-xl font-bold mb-4">Suggested AI News Sources</h2>
+      <div class="grid grid-cols-1 gap-2 text-sm">
+        <div class="p-2 bg-gray-50 rounded">
+          <strong>MIT Technology Review AI</strong>: https://www.technologyreview.com/feed/
+        </div>
+        <div class="p-2 bg-gray-50 rounded">
+          <strong>ArXiv AI</strong>: https://rss.arxiv.org/rss/cs.AI
+        </div>
+        <div class="p-2 bg-gray-50 rounded">
+          <strong>OpenAI Blog</strong>: https://openai.com/blog/rss/
+        </div>
+        <div class="p-2 bg-gray-50 rounded">
+          <strong>Google AI Blog</strong>: https://blog.google/technology/ai/rss/
+        </div>
+        <div class="p-2 bg-gray-50 rounded">
+          <strong>The Verge AI</strong>: https://www.theverge.com/rss/ai-artificial-intelligence/index.xml
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

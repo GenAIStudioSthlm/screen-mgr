@@ -25,6 +25,7 @@
                         <option value="pdf">PDF</option>
                         <option value="default">Studio logo</option>
                         <option value="slideshow">Slideshow</option>
+                        <option value="news">AI News</option>
                         <option value="screen_share">Screen Share</option>
                     </select>
                 </div>
@@ -82,6 +83,13 @@
                     <option value="{{ folder }}" {% if folder==screens[i].slideshow %}selected{% endif %}>{{ folder }}
                     </option>
                     {% endfor %}
+                </select>
+
+                <select name="screen{{i+1}}_news_mode" class="shadow border rounded w-full py-2 px-3"
+                    x-show="selectedType === 'news'">
+                    <option value="portrait" {% if screens[i].news_mode == 'portrait' %}selected{% endif %}>Portrait (Vertical)</option>
+                    <option value="landscape" {% if screens[i].news_mode == 'landscape' %}selected{% endif %}>Landscape (Horizontal)</option>
+                    <option value="presentation" {% if screens[i].news_mode == 'presentation' %}selected{% endif %}>Presentation (Meetings)</option>
                 </select>
 
             </div>

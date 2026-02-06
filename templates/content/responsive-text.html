@@ -32,15 +32,26 @@
         overflow: hidden;
       }
 
+      .text-container {
+        background: rgba(255, 255, 255, 0.05);
+        border-radius: 1.5rem;
+        padding: 3rem 4rem;
+        max-width: 60%;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+      }
+
       .responsive-text {
-        font-size: 10vw; /* Adjust font size relative to viewport width */
-        line-height: 1; /* Reduce line height */
+        font-size: 10vw;
+        line-height: 1;
         text-align: center;
-        max-width: 80%; /* Limit text width to 80% of the screen */
         word-wrap: break-word;
+        width: 100%;
       }
       .responsive-text.single-word {
-        font-size: 20vw; /* Larger font size for single words */
+        font-size: 20vw;
       }
     </style>
     <script>
@@ -56,6 +67,8 @@
     </script>
   </head>
   <body>
-    <div class="responsive-text animated-text">{{ text }}</div>
+    <div class="text-container">
+      <div class="responsive-text animated-text">{{ text }}</div>
+    </div>
   </body>
 </html>

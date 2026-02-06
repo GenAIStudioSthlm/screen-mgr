@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News | GenAI Popup Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-surface: #12121a;
+      --bg-raised: #1a1a25;
+      --bg-card: #1e1e2a;
+      --accent: #00ff88;
+      --accent-secondary: #00d4ff;
+      --accent-gradient: linear-gradient(135deg, #00ff88, #00d4ff);
+      --accent-glow: rgba(0, 255, 136, 0.15);
+      --accent-glow-strong: rgba(0, 255, 136, 0.3);
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898a8;
+      --text-dim: #5a5a6e;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(0, 255, 136, 0.2);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-weight: 300;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grid pattern overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Background gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 90%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 10%, rgba(0, 212, 255, 0.02) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      display: flex;
+      z-index: 200;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      background: rgba(18, 18, 26, 0.8);
+    }
+    .mode-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn:hover { color: var(--text-secondary); background: rgba(255, 255, 255, 0.03); }
+    .mode-btn.active { color: var(--bg-deep); background: var(--accent); font-weight: 700; }
+
+    /* ===== SCROLLBAR ===== */
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+    .scroll-area { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+
+    /* ===== SHARED TEXT ===== */
+    .meta-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-secondary {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .body-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.85;
+    }
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bg-deep);
+      flex-shrink: 0;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--accent-glow-strong);
+    }
+    .cta-button .arrow {
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+    .cta-button:hover .arrow {
+      transform: translate(2px, -2px);
+    }
+
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-color: var(--bg-raised);
+      position: relative;
+    }
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    /* ===== SLIDE TRANSITIONS ===== */
+    .slides-container {
+      position: absolute;
+      inset: 0;
+      bottom: 48px;
+      z-index: 1;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ===== VERTICAL ARTICLE LAYOUT ===== */
+    .article-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .article-header {
+      padding: 24px 48px 0;
+      flex-shrink: 0;
+    }
+
+    .meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .meta-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--text-dim);
+      border-radius: 50%;
+    }
+
+    .article-header .headline {
+      font-size: clamp(32px, 5vw, 56px);
+      margin-bottom: 16px;
+    }
+
+    .article-header .subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      margin-bottom: 24px;
+    }
+
+    .hero-container {
+      position: relative;
+      margin: 0 48px;
+      height: 280px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .hero-container .hero-image {
+      position: absolute;
+      inset: 0;
+    }
+    .hero-container .hero-image::after {
+      background: linear-gradient(180deg, transparent 40%, rgba(10, 10, 15, 0.8) 100%);
+    }
+
+    .hero-author {
+      position: absolute;
+      bottom: 16px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 5;
+    }
+    .hero-author-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .body-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 48px;
+      min-height: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .body-scroll .body-text {
+      max-width: 520px;
+      font-size: clamp(15px, 1.5vw, 17px);
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 32px 40px;
+      margin-bottom: 24px;
+    }
+    .article-paragraphs p {
+      margin-bottom: 1.5em;
+    }
+    .article-paragraphs p:last-child {
+      margin-bottom: 0;
+    }
+
+    .article-footer {
+      flex-shrink: 0;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+    .footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===== NAV BAR ===== */
+    .nav-bar {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      background: var(--bg-surface);
+      border-top: 1px solid var(--border);
+      z-index: 100;
+    }
+    .nav-dots { display: flex; gap: 8px; }
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--text-dim);
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .nav-dot:hover { border-color: var(--accent); }
+    .nav-dot.active {
+      width: 24px;
+      background: var(--accent);
+      border-color: var(--accent);
+      border-radius: 9999px;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .nav-counter {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-left: 8px;
+    }
+    .nav-counter span { color: var(--accent); font-weight: 700; }
+
+    /* ===== PLACEHOLDER IMAGE ===== */
+    .placeholder-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      background: var(--bg-raised);
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 32px;
+    }
+    .empty-icon { font-size: 80px; margin-bottom: 28px; opacity: 0.7; }
+    .empty-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .empty-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 380px;
+    }
+  </style>
+</head>
+<body>
+
+
+  {% if articles %}
+  <div class="slides-container">
+    {% for article in articles %}
+    <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <div class="article-view">
+        <div class="article-header">
+          <div class="meta-row">
+            <span class="meta-text">{{ article.source_name }}</span>
+            <span class="meta-dot"></span>
+            <span class="meta-secondary">
+              {% if article.published_date %}
+              {{ article.published_date.strftime('%B %d, %Y') }}
+              {% else %}
+              Recent
+              {% endif %}
+            </span>
+            <span class="meta-dot"></span>
+            <span class="meta-secondary">{{ article.category or 'General' }}</span>
+          </div>
+          <h1 class="headline">{{ article.title }}</h1>
+          {% if article.summary %}
+          <p class="subtitle">{{ article.summary[:120] }}{% if article.summary|length > 120 %}...{% endif %}</p>
+          {% endif %}
+        </div>
+
+        <div class="hero-container">
+          {% if article.image_url %}
+          <div class="hero-image" style="background-image: url('{{ article.image_url }}')"></div>
+          {% else %}
+          <canvas class="placeholder-canvas" data-pattern="{{ loop.index0 % 4 }}"></canvas>
+          {% endif %}
+          <div class="hero-author">
+            <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+            <span class="hero-author-name">{{ article.source_name }}</span>
+          </div>
+        </div>
+
+        <div class="body-scroll scroll-area">
+          <div class="body-text article-paragraphs">
+            <p>{{ article.summary }}</p>
+          </div>
+        </div>
+
+        <div class="article-footer">
+          <div class="footer-left">
+            <span class="meta-secondary">Preview</span>
+            <span class="meta-secondary">&middot;</span>
+            <span class="meta-secondary">Scroll for more</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <nav class="nav-bar">
+    <div class="nav-dots">
+      {% for i in range(articles|length) %}
+      <div class="nav-dot {% if i == 0 %}active{% endif %}" data-index="{{ i }}"></div>
+      {% endfor %}
+    </div>
+    <div class="nav-counter"><span id="current">1</span> / {{ articles|length }}</div>
+  </nav>
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">&#x1F4E1;</div>
+    <h2 class="empty-title">No Signal</h2>
+    <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
+  </div>
+  {% endif %}
+
+  <script>
+    const slides = document.querySelectorAll('.slide');
+    const dots = document.querySelectorAll('.nav-dot');
+    const counter = document.getElementById('current');
+    const total = slides.length;
+    let current = 0;
+    const interval = {{ rotation_seconds }} * 1000;
+
+    function show(i) {
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+      slides.forEach((s, idx) => {
+        if (idx === i) s.style.visibility = 'visible';
+        else s.style.visibility = 'hidden';
+      });
+      dots.forEach((d, idx) => d.classList.toggle('active', idx === i));
+      if (counter) counter.textContent = i + 1;
+    }
+
+    function next() {
+      current = (current + 1) % total;
+      show(current);
+    }
+
+    // Click nav dots
+    dots.forEach((dot, i) => {
+      dot.addEventListener('click', () => {
+        current = i;
+        show(current);
+      });
+    });
+
+    if (total > 1) setInterval(next, interval);
+
+    // Animated placeholder canvases
+    (function() {
+      const canvases = document.querySelectorAll('.placeholder-canvas');
+      if (!canvases.length) return;
+
+      const patterns = [
+        // Pattern 0: diagonal dots flowing right
+        (ctx, w, h, t) => {
+          const spacing = 24;
+          const drift = Math.sin(t * 0.3) * 8;
+          const driftY = Math.cos(t * 0.2) * 4;
+          for (let x = -spacing; x < w + spacing; x += spacing) {
+            for (let y = -spacing; y < h + spacing; y += spacing) {
+              const offset = (y / spacing) * 6;
+              const px = x + offset + drift;
+              const py = y + driftY;
+              const alpha = 0.12 + Math.sin((px + py) * 0.03 + t * 0.5) * 0.06;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(px % (w + spacing), py % (h + spacing), 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        // Pattern 1: concentric ripple dots
+        (ctx, w, h, t) => {
+          const cx = w / 2 + Math.sin(t * 0.2) * 30;
+          const cy = h / 2 + Math.cos(t * 0.15) * 20;
+          const spacing = 20;
+          for (let x = 0; x < w; x += spacing) {
+            for (let y = 0; y < h; y += spacing) {
+              const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+              const wave = Math.sin(dist * 0.04 - t * 0.8) * 0.5 + 0.5;
+              const alpha = 0.05 + wave * 0.12;
+              ctx.fillStyle = `rgba(0, 212, 255, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(x, y, 1.2 + wave, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        // Pattern 2: horizontal wave lines made of dots
+        (ctx, w, h, t) => {
+          const spacing = 18;
+          for (let y = 0; y < h; y += spacing) {
+            for (let x = 0; x < w; x += 8) {
+              const wave = Math.sin(x * 0.02 + y * 0.01 + t * 0.4) * 6;
+              const py = y + wave + Math.sin(t * 0.25) * 3;
+              const alpha = 0.08 + Math.sin(x * 0.01 + t * 0.3) * 0.05;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(x, py, 1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        // Pattern 3: cross-hatch grid that breathes
+        (ctx, w, h, t) => {
+          const spacing = 28;
+          const breathe = Math.sin(t * 0.3) * 4;
+          for (let x = 0; x < w; x += spacing) {
+            for (let y = 0; y < h; y += spacing) {
+              const px = x + Math.sin(y * 0.05 + t * 0.2) * breathe;
+              const py = y + Math.cos(x * 0.05 + t * 0.2) * breathe;
+              const alpha = 0.06 + Math.sin((x + y) * 0.02 + t * 0.4) * 0.06;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.fillRect(px - 3, py, 6, 1);
+              ctx.fillRect(px, py - 3, 1, 6);
+            }
+          }
+        }
+      ];
+
+      canvases.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        const patternIdx = parseInt(canvas.dataset.pattern) || 0;
+        const draw = patterns[patternIdx];
+        let start = performance.now();
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+        resize();
+
+        function animate(now) {
+          const t = (now - start) / 1000;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          draw(ctx, canvas.width, canvas.height, t);
+          requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+      });
+
+      window.addEventListener('resize', () => {
+        canvases.forEach(c => {
+          const rect = c.parentElement.getBoundingClientRect();
+          c.width = rect.width;
+          c.height = rect.height;
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

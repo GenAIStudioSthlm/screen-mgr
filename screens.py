@@ -12,8 +12,8 @@ class Screen(BaseModel):
     name: str = Field(..., description="Name of the screen")
     type: str = Field(
         ...,
-        pattern="^(text|url|default|video|picture|pdf|slideshow|screen_share)$",
-        description="Type of the screen content, either 'text' or 'url'",
+        pattern="^(text|url|default|video|picture|pdf|slideshow|news|screen_share)$",
+        description="Type of the screen content",
     )
     text: str = Field("", description="Text content for the screen")
     url: str = Field("", description="URL content for the screen")
@@ -24,6 +24,11 @@ class Screen(BaseModel):
     pdf: str = Field("", description="PDF content for the screen (if applicable)")
     slideshow: str = Field(
         "", description="Slideshow folder for the screen (if applicable)"
+    )
+    news_mode: str = Field(
+        "landscape",
+        pattern="^(portrait|landscape|presentation)$",
+        description="News display mode (portrait, landscape, or presentation)"
     )
     connected: bool = Field(
         False,
