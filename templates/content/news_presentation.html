@@ -449,6 +449,15 @@
       .mode-toggle { top: 12px; right: 12px; }
     }
 
+    /* ===== PLACEHOLDER IMAGE ===== */
+    .placeholder-canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 0;
+    }
+
     /* ===== EMPTY STATE ===== */
     .empty-state {
       display: flex;
@@ -483,7 +492,12 @@
     {% for article in articles %}
     <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
       <div class="present-view">
-        <div class="p-bg" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+        {% if article.image_url %}
+        <div class="p-bg" style="background-image: url('{{ article.image_url }}')"></div>
+        {% else %}
+        <div class="p-bg"></div>
+        <canvas class="placeholder-canvas" data-pattern="{{ loop.index0 % 4 }}"></canvas>
+        {% endif %}
         <div class="p-overlay"></div>
         <div class="p-content">
           <div class="p-left">
@@ -649,6 +663,106 @@
       if (e.key === 'ArrowLeft') prevSlide();
       if (e.key === 'p') togglePause();
     });
+
+    // Animated placeholder canvases
+    (function() {
+      const canvases = document.querySelectorAll('.placeholder-canvas');
+      if (!canvases.length) return;
+
+      const patterns = [
+        (ctx, w, h, t) => {
+          const spacing = 24;
+          const drift = Math.sin(t * 0.3) * 8;
+          const driftY = Math.cos(t * 0.2) * 4;
+          for (let x = -spacing; x < w + spacing; x += spacing) {
+            for (let y = -spacing; y < h + spacing; y += spacing) {
+              const offset = (y / spacing) * 6;
+              const px = x + offset + drift;
+              const py = y + driftY;
+              const alpha = 0.12 + Math.sin((px + py) * 0.03 + t * 0.5) * 0.06;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(px % (w + spacing), py % (h + spacing), 1.5, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        (ctx, w, h, t) => {
+          const cx = w / 2 + Math.sin(t * 0.2) * 30;
+          const cy = h / 2 + Math.cos(t * 0.15) * 20;
+          const spacing = 20;
+          for (let x = 0; x < w; x += spacing) {
+            for (let y = 0; y < h; y += spacing) {
+              const dist = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+              const wave = Math.sin(dist * 0.04 - t * 0.8) * 0.5 + 0.5;
+              const alpha = 0.05 + wave * 0.12;
+              ctx.fillStyle = `rgba(0, 212, 255, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(x, y, 1.2 + wave, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        (ctx, w, h, t) => {
+          const spacing = 18;
+          for (let y = 0; y < h; y += spacing) {
+            for (let x = 0; x < w; x += 8) {
+              const wave = Math.sin(x * 0.02 + y * 0.01 + t * 0.4) * 6;
+              const py = y + wave + Math.sin(t * 0.25) * 3;
+              const alpha = 0.08 + Math.sin(x * 0.01 + t * 0.3) * 0.05;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.beginPath();
+              ctx.arc(x, py, 1, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+        },
+        (ctx, w, h, t) => {
+          const spacing = 28;
+          const breathe = Math.sin(t * 0.3) * 4;
+          for (let x = 0; x < w; x += spacing) {
+            for (let y = 0; y < h; y += spacing) {
+              const px = x + Math.sin(y * 0.05 + t * 0.2) * breathe;
+              const py = y + Math.cos(x * 0.05 + t * 0.2) * breathe;
+              const alpha = 0.06 + Math.sin((x + y) * 0.02 + t * 0.4) * 0.06;
+              ctx.fillStyle = `rgba(0, 255, 136, ${alpha})`;
+              ctx.fillRect(px - 3, py, 6, 1);
+              ctx.fillRect(px, py - 3, 1, 6);
+            }
+          }
+        }
+      ];
+
+      canvases.forEach(canvas => {
+        const ctx = canvas.getContext('2d');
+        const patternIdx = parseInt(canvas.dataset.pattern) || 0;
+        const draw = patterns[patternIdx];
+        let start = performance.now();
+
+        function resize() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+        }
+        resize();
+
+        function animate(now) {
+          const t = (now - start) / 1000;
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+          draw(ctx, canvas.width, canvas.height, t);
+          requestAnimationFrame(animate);
+        }
+        requestAnimationFrame(animate);
+      });
+
+      window.addEventListener('resize', () => {
+        canvases.forEach(c => {
+          const rect = c.parentElement.getBoundingClientRect();
+          c.width = rect.width;
+          c.height = rect.height;
+        });
+      });
+    })();
   </script>
 </body>
 </html>
