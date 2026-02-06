@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{{ article.title }} | AI News Reader</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-surface: #12121a;
+      --bg-raised: #1a1a25;
+      --bg-card: #1e1e2a;
+      --accent: #00ff88;
+      --accent-secondary: #00d4ff;
+      --accent-gradient: linear-gradient(135deg, #00ff88, #00d4ff);
+      --accent-glow: rgba(0, 255, 136, 0.15);
+      --accent-glow-strong: rgba(0, 255, 136, 0.3);
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898a8;
+      --text-dim: #5a5a6e;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(0, 255, 136, 0.2);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-weight: 300;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grid pattern overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Background gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 90%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 10%, rgba(0, 212, 255, 0.02) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      display: flex;
+      z-index: 200;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      background: rgba(18, 18, 26, 0.8);
+    }
+
+    .mode-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn:hover {
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.03);
+    }
+    .mode-btn.active {
+      color: var(--bg-deep);
+      background: var(--accent);
+      font-weight: 700;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb {
+      background: var(--accent);
+      border-radius: 4px;
+    }
+    .scroll-area {
+      scrollbar-width: thin;
+      scrollbar-color: var(--accent) transparent;
+    }
+
+    /* ===== SHARED ELEMENTS ===== */
+    .meta-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+
+    .meta-secondary {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    .headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+
+    .subtitle {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .body-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.85;
+    }
+
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bg-deep);
+      flex-shrink: 0;
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--accent-glow-strong);
+    }
+    .cta-button .arrow {
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+    .cta-button:hover .arrow {
+      transform: translate(2px, -2px);
+    }
+
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-color: var(--bg-raised);
+      position: relative;
+    }
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Corner accents */
+    .corner-accent {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 10;
+    }
+    .corner-accent::before,
+    .corner-accent::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+    .corner-accent.tl { top: 24px; left: 24px; }
+    .corner-accent.tl::before { width: 24px; height: 2px; top: 0; left: 0; }
+    .corner-accent.tl::after { width: 2px; height: 24px; top: 0; left: 0; }
+    .corner-accent.br { bottom: 24px; right: 24px; }
+    .corner-accent.br::before { width: 24px; height: 2px; bottom: 0; right: 0; }
+    .corner-accent.br::after { width: 2px; height: 24px; bottom: 0; right: 0; }
+
+    /* ===== CONTENT PARAGRAPHS ===== */
+    .article-paragraphs p {
+      margin-bottom: 1.5em;
+    }
+    .article-paragraphs p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ===== TRANSITIONS ===== */
+    .view-container {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+      z-index: 1;
+    }
+    .view-container.active {
+      opacity: 1;
+      visibility: visible;
+      z-index: 10;
+    }
+
+    /* ================================================================
+       VERTICAL MODE
+       ================================================================ */
+    .vertical-view {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+    }
+
+    .vertical-view .v-header {
+      padding: 24px 48px 0;
+      flex-shrink: 0;
+    }
+
+    .vertical-view .v-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .vertical-view .v-meta-dot {
+      width: 4px;
+      height: 4px;
+      background: var(--text-dim);
+      border-radius: 50%;
+    }
+
+    .vertical-view .v-headline {
+      font-size: clamp(32px, 5vw, 56px);
+      margin-bottom: 16px;
+    }
+
+    .vertical-view .v-subtitle {
+      font-size: clamp(16px, 2vw, 20px);
+      margin-bottom: 24px;
+    }
+
+    .vertical-view .v-hero-container {
+      position: relative;
+      margin: 0 48px;
+      height: 280px;
+      border-radius: 8px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .vertical-view .v-hero-container .hero-image {
+      position: absolute;
+      inset: 0;
+    }
+    .vertical-view .v-hero-container .hero-image::after {
+      background: linear-gradient(180deg, transparent 40%, rgba(10, 10, 15, 0.8) 100%);
+    }
+
+    .vertical-view .v-hero-author {
+      position: absolute;
+      bottom: 16px;
+      left: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 5;
+    }
+
+    .vertical-view .v-hero-author-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .vertical-view .v-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 32px 48px 0;
+      min-height: 0;
+    }
+
+    .vertical-view .v-body {
+      max-width: 720px;
+      font-size: clamp(15px, 1.5vw, 17px);
+    }
+
+    .vertical-view .v-footer {
+      flex-shrink: 0;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+
+    .vertical-view .v-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ================================================================
+       HORIZONTAL MODE
+       ================================================================ */
+    .horizontal-view {
+      display: grid;
+      grid-template-columns: 45% 55%;
+      height: 100%;
+    }
+
+    .horizontal-view .h-left {
+      display: flex;
+      flex-direction: column;
+      padding: 48px;
+      overflow: hidden;
+      position: relative;
+      border-right: 1px solid var(--border);
+    }
+
+    .horizontal-view .h-source-badge {
+      margin-bottom: 28px;
+    }
+
+    .horizontal-view .h-headline {
+      font-size: clamp(28px, 3.5vw, 44px);
+      margin-bottom: 20px;
+    }
+
+    .horizontal-view .h-subtitle {
+      font-size: clamp(14px, 1.5vw, 17px);
+      margin-bottom: 28px;
+    }
+
+    .horizontal-view .h-author-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .horizontal-view .h-author-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .horizontal-view .h-author-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .horizontal-view .h-author-date {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .horizontal-view .h-image-block {
+      margin-top: auto;
+      height: 180px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .horizontal-view .h-image-block .hero-image {
+      position: absolute;
+      inset: 0;
+    }
+    .horizontal-view .h-image-block .hero-image::after {
+      background: linear-gradient(0deg, rgba(10, 10, 15, 0.5) 0%, transparent 60%);
+    }
+
+    .horizontal-view .h-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .horizontal-view .h-right-header {
+      padding: 48px 48px 0;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .horizontal-view .h-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 48px;
+      min-height: 0;
+    }
+
+    .horizontal-view .h-body {
+      font-size: clamp(15px, 1.3vw, 17px);
+    }
+
+    .horizontal-view .h-right-footer {
+      flex-shrink: 0;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+
+    /* ================================================================
+       PRESENTATION MODE
+       ================================================================ */
+    .present-view {
+      position: relative;
+      height: 100%;
+    }
+
+    /* Blurred background image */
+    .present-view .p-bg {
+      position: absolute;
+      inset: 0;
+      background-size: cover;
+      background-position: center;
+      filter: blur(40px) brightness(0.25);
+      transform: scale(1.2);
+      z-index: 0;
+    }
+
+    .present-view .p-overlay {
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 30% 70%, rgba(0, 255, 136, 0.04) 0%, transparent 50%),
+        linear-gradient(180deg, rgba(10, 10, 15, 0.7) 0%, rgba(10, 10, 15, 0.85) 100%);
+      z-index: 1;
+    }
+
+    .present-view .p-content {
+      position: relative;
+      z-index: 2;
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      grid-template-rows: 1fr auto;
+      gap: 0;
+    }
+
+    .present-view .p-left {
+      padding: 60px 48px 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: relative;
+    }
+
+    .present-view .p-meta-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    .present-view .p-headline {
+      font-size: clamp(30px, 3.8vw, 52px);
+      margin-bottom: 20px;
+    }
+
+    .present-view .p-subtitle {
+      font-size: clamp(15px, 1.6vw, 19px);
+      margin-bottom: 32px;
+    }
+
+    .present-view .p-author-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+
+    .present-view .p-author-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .present-view .p-author-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .present-view .p-right {
+      padding: 60px 48px 40px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-left: 1px solid var(--border);
+    }
+
+    .present-view .p-right-header {
+      margin-bottom: 24px;
+      flex-shrink: 0;
+    }
+
+    .present-view .p-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border);
+      padding: 32px;
+    }
+
+    .present-view .p-body {
+      font-size: clamp(15px, 1.3vw, 17px);
+    }
+
+    .present-view .p-footer {
+      grid-column: span 2;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: rgba(10, 10, 15, 0.6);
+      backdrop-filter: blur(12px);
+    }
+
+    .present-view .p-footer-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .horizontal-view {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .horizontal-view .h-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 32px;
+      }
+      .horizontal-view .h-image-block { display: none; }
+      .horizontal-view .h-right-header { padding: 32px 32px 0; }
+      .horizontal-view .h-scroll-content { padding: 0 32px; }
+      .horizontal-view .h-right-footer { padding: 16px 32px; }
+
+      .present-view .p-content {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+      }
+      .present-view .p-left { padding: 32px; }
+      .present-view .p-right {
+        border-left: none;
+        border-top: 1px solid var(--border);
+        padding: 32px;
+      }
+      .present-view .p-footer { grid-column: span 1; }
+
+      .mode-toggle { top: 12px; right: 12px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="vertical">Vertical</button>
+    <button class="mode-btn" data-mode="horizontal">Horizontal</button>
+    <button class="mode-btn" data-mode="present">Present</button>
+  </div>
+
+  <!-- ===== VERTICAL MODE ===== -->
+  <div class="view-container active" id="view-vertical">
+    <div class="vertical-view">
+      <div class="v-header">
+        <div class="v-meta-row">
+          <span class="meta-text">{{ article.source_name }}</span>
+          <span class="v-meta-dot"></span>
+          <span class="meta-secondary">
+            {% if article.published_date %}
+            {{ article.published_date.strftime('%B %d, %Y') }}
+            {% else %}
+            Recent
+            {% endif %}
+          </span>
+          {% if read_time %}
+          <span class="v-meta-dot"></span>
+          <span class="meta-secondary">{{ read_time }}</span>
+          {% endif %}
+        </div>
+        <h1 class="headline v-headline">{{ article.title }}</h1>
+        {% if article.summary %}
+        <p class="subtitle v-subtitle">{{ article.summary[:120] }}{% if article.summary|length > 120 %}...{% endif %}</p>
+        {% endif %}
+      </div>
+
+      <div class="v-hero-container">
+        <div class="hero-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+        <div class="v-hero-author">
+          <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+          <span class="v-hero-author-name">{{ article.source_name }}</span>
+        </div>
+      </div>
+
+      <div class="v-scroll-content scroll-area">
+        <div class="body-text v-body article-paragraphs" id="v-content"></div>
+      </div>
+
+      <div class="v-footer">
+        <div class="v-footer-left">
+          <span class="meta-secondary">Preview</span>
+          <span class="meta-secondary">&middot;</span>
+          <span class="meta-secondary">Scroll for more</span>
+        </div>
+        <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
+          Read Full Article <span class="arrow">&nearr;</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HORIZONTAL MODE ===== -->
+  <div class="view-container" id="view-horizontal">
+    <div class="horizontal-view">
+      <div class="h-left">
+        <div class="corner-accent tl"></div>
+        <div class="h-source-badge">
+          <span class="meta-text">{{ article.source_name }}</span>
+        </div>
+        <h1 class="headline h-headline">{{ article.title }}</h1>
+        {% if article.summary %}
+        <p class="subtitle h-subtitle">{{ article.summary[:160] }}{% if article.summary|length > 160 %}...{% endif %}</p>
+        {% endif %}
+        <div class="h-author-row">
+          <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+          <div class="h-author-details">
+            <span class="h-author-name">{{ article.source_name }}</span>
+            <span class="h-author-date">
+              {% if article.published_date %}
+              {{ article.published_date.strftime('%B %d, %Y') }}
+              {% else %}
+              Recent
+              {% endif %}
+            </span>
+          </div>
+        </div>
+        <div class="h-image-block">
+          <div class="hero-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+        </div>
+      </div>
+
+      <div class="h-right">
+        <div class="h-right-header">
+          <span class="meta-secondary">
+            {% if read_time %}{{ read_time }}{% else %}Article{% endif %}
+          </span>
+        </div>
+        <div class="h-scroll-content scroll-area">
+          <div class="body-text h-body article-paragraphs" id="h-content"></div>
+        </div>
+        <div class="h-right-footer">
+          <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
+            Read Full Article <span class="arrow">&nearr;</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== PRESENTATION MODE ===== -->
+  <div class="view-container" id="view-present">
+    <div class="present-view">
+      <div class="p-bg" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+      <div class="p-overlay"></div>
+      <div class="p-content">
+        <div class="p-left">
+          <div class="corner-accent tl"></div>
+          <div class="p-meta-row">
+            <span class="meta-text">{{ article.source_name }}</span>
+            <span style="width:4px;height:4px;background:var(--text-dim);border-radius:50%;display:inline-block;"></span>
+            <span class="meta-secondary">
+              {% if article.published_date %}
+              {{ article.published_date.strftime('%B %d, %Y') }}
+              {% endif %}
+            </span>
+          </div>
+          <h1 class="headline p-headline">{{ article.title }}</h1>
+          {% if article.summary %}
+          <p class="subtitle p-subtitle">{{ article.summary[:200] }}{% if article.summary|length > 200 %}...{% endif %}</p>
+          {% endif %}
+          <div class="p-author-row">
+            <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+            <div>
+              <div class="p-author-name">{{ article.source_name }}</div>
+              <div class="p-author-meta">
+                {% if read_time %}{{ read_time }}{% endif %}
+              </div>
+            </div>
+          </div>
+          <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
+            Read Full Article <span class="arrow">&nearr;</span>
+          </a>
+        </div>
+
+        <div class="p-right">
+          <div class="p-scroll-content scroll-area">
+            <div class="body-text p-body article-paragraphs" id="p-content"></div>
+          </div>
+          <div class="corner-accent br"></div>
+        </div>
+
+        <div class="p-footer">
+          <div class="p-footer-left">
+            <span class="meta-text">{{ article.source_name }}</span>
+            <span class="meta-secondary">&middot;</span>
+            <span class="meta-secondary">{{ article.category or 'General' }}</span>
+          </div>
+          <span class="meta-secondary">
+            {% if article.published_date %}
+            {{ article.published_date.strftime('%Y-%m-%d') }}
+            {% endif %}
+          </span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Article content (passed from server, paragraphs separated by \n\n)
+    const rawContent = {{ content_text|tojson }};
+
+    // Parse paragraphs and render into all three content areas
+    function renderContent(targetId) {
+      const el = document.getElementById(targetId);
+      if (!el) return;
+      const paragraphs = rawContent.split(/\n\n+/).filter(p => p.trim());
+      el.innerHTML = paragraphs.map(p => `<p>${p.trim()}</p>`).join('');
+    }
+
+    renderContent('v-content');
+    renderContent('h-content');
+    renderContent('p-content');
+
+    // Mode toggling
+    const modeButtons = document.querySelectorAll('.mode-btn');
+    const views = {
+      vertical: document.getElementById('view-vertical'),
+      horizontal: document.getElementById('view-horizontal'),
+      present: document.getElementById('view-present'),
+    };
+
+    modeButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const mode = btn.dataset.mode;
+
+        // Update buttons
+        modeButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update views
+        Object.values(views).forEach(v => v.classList.remove('active'));
+        if (views[mode]) views[mode].classList.add('active');
+      });
+    });
+
+    // Default mode from URL param
+    const params = new URLSearchParams(window.location.search);
+    const defaultMode = params.get('mode');
+    if (defaultMode && views[defaultMode]) {
+      modeButtons.forEach(b => b.classList.toggle('active', b.dataset.mode === defaultMode));
+      Object.values(views).forEach(v => v.classList.remove('active'));
+      views[defaultMode].classList.add('active');
+    }
+  </script>
+</body>
+</html>

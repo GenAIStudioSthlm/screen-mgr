@@ -44,6 +44,8 @@ async def screen_page(request: Request, screen_id: str):
         content_url = base_url + f"pdf/{screen.pdf}"
     elif screen.type == "slideshow":
         content_url = base_url + f"slideshow/{screen.slideshow}"
+    elif screen.type == "news":
+        content_url = base_url + f"news/{screen.news_mode}"
     elif screen.type == "screen_share":
         room_id = screen.screen_share or f"room-{screen_id}"
         content_url = base_url + f"screen-share/{room_id}"

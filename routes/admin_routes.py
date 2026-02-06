@@ -97,6 +97,9 @@ async def update_screens(
         screen.slideshow = form_data_dict[
             f"screen{screen_id}_slideshow"
         ]
+        screen.news_mode = form_data_dict.get(
+            f"screen{screen_id}_news_mode", "landscape"
+        )
         screen.screen_share = form_data_dict.get(
             f"screen{screen_id}_screen_share", ""
         )
@@ -131,6 +134,9 @@ async def update_screens(
                 screen.slideshow = form_data_dict[
                     f"screen{source_screen_id}_slideshow"
                 ]
+                screen_manager.screens[index].news_mode = form_data_dict.get(
+                    f"screen{screen_id}_news_mode", "landscape"
+                )
 
     print("Updated screen data:")
     screen_manager.print_screens()  # Print updated screen data

@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI News | GenAI Popup Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&family=IBM+Plex+Sans:wght@300;400;500&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-deep: #0a0a0f;
+      --bg-surface: #12121a;
+      --bg-raised: #1a1a25;
+      --bg-card: #1e1e2a;
+      --accent: #00ff88;
+      --accent-secondary: #00d4ff;
+      --accent-gradient: linear-gradient(135deg, #00ff88, #00d4ff);
+      --accent-glow: rgba(0, 255, 136, 0.15);
+      --accent-glow-strong: rgba(0, 255, 136, 0.3);
+      --text-primary: #e8e8f0;
+      --text-secondary: #9898a8;
+      --text-dim: #5a5a6e;
+      --border: rgba(255, 255, 255, 0.06);
+      --border-accent: rgba(0, 255, 136, 0.2);
+    }
+
+    html, body {
+      height: 100%;
+      overflow: hidden;
+      font-family: 'IBM Plex Sans', -apple-system, sans-serif;
+      font-weight: 300;
+      background: var(--bg-deep);
+      color: var(--text-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Grid pattern overlay */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Background gradient */
+    body::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse at 10% 90%, rgba(0, 255, 136, 0.03) 0%, transparent 50%),
+        radial-gradient(ellipse at 90% 10%, rgba(0, 212, 255, 0.02) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0a0f 0%, #12121a 100%);
+      pointer-events: none;
+      z-index: -1;
+    }
+
+    /* ===== MODE TOGGLE ===== */
+    .mode-toggle {
+      position: fixed;
+      top: 24px;
+      right: 32px;
+      display: flex;
+      z-index: 200;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      overflow: hidden;
+      backdrop-filter: blur(16px);
+      background: rgba(18, 18, 26, 0.8);
+    }
+    .mode-btn {
+      padding: 10px 20px;
+      border: none;
+      background: transparent;
+      color: var(--text-dim);
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      font-weight: 400;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      border-right: 1px solid var(--border);
+      white-space: nowrap;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+    }
+    .mode-btn:last-child { border-right: none; }
+    .mode-btn:hover { color: var(--text-secondary); background: rgba(255, 255, 255, 0.03); }
+    .mode-btn.active { color: var(--bg-deep); background: var(--accent); font-weight: 700; }
+
+    /* ===== SCROLLBAR ===== */
+    .scroll-area::-webkit-scrollbar { width: 4px; }
+    .scroll-area::-webkit-scrollbar-track { background: transparent; }
+    .scroll-area::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 4px; }
+    .scroll-area { scrollbar-width: thin; scrollbar-color: var(--accent) transparent; }
+
+    /* ===== SHARED TEXT ===== */
+    .meta-text {
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--accent);
+    }
+    .meta-secondary {
+      font-family: 'Space Mono', monospace;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .headline {
+      font-family: 'Playfair Display', serif;
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1.15;
+      letter-spacing: -0.5px;
+    }
+    .subtitle {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+    .body-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      color: var(--text-secondary);
+      line-height: 1.85;
+    }
+    .author-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Space Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--bg-deep);
+      flex-shrink: 0;
+    }
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 28px;
+      background: var(--accent);
+      color: var(--bg-deep);
+      font-family: 'Space Mono', monospace;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      text-decoration: none;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px var(--accent-glow-strong);
+    }
+    .cta-button .arrow {
+      font-size: 16px;
+      transition: transform 0.2s ease;
+    }
+    .cta-button:hover .arrow {
+      transform: translate(2px, -2px);
+    }
+
+    .hero-image {
+      background-size: cover;
+      background-position: center;
+      background-color: var(--bg-raised);
+      position: relative;
+    }
+    .hero-image::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+    }
+
+    /* Corner accents */
+    .corner-accent {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      z-index: 10;
+    }
+    .corner-accent::before,
+    .corner-accent::after {
+      content: '';
+      position: absolute;
+      background: var(--accent);
+      opacity: 0.4;
+    }
+    .corner-accent.tl { top: 24px; left: 24px; }
+    .corner-accent.tl::before { width: 24px; height: 2px; top: 0; left: 0; }
+    .corner-accent.tl::after { width: 2px; height: 24px; top: 0; left: 0; }
+
+    .article-paragraphs p {
+      margin-bottom: 1.5em;
+    }
+    .article-paragraphs p:last-child {
+      margin-bottom: 0;
+    }
+
+    /* ===== SLIDE TRANSITIONS ===== */
+    .slides-container {
+      position: absolute;
+      inset: 0;
+      z-index: 1;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+    .slide.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    /* ===== HORIZONTAL LAYOUT ===== */
+    .h-view {
+      display: grid;
+      grid-template-columns: 45% 55%;
+      height: 100%;
+    }
+
+    .h-left {
+      display: flex;
+      flex-direction: column;
+      padding: 48px;
+      overflow: hidden;
+      position: relative;
+      border-right: 1px solid var(--border);
+    }
+
+    .h-source-badge {
+      margin-bottom: 28px;
+    }
+
+    .h-headline {
+      font-size: clamp(28px, 3.5vw, 44px);
+      margin-bottom: 20px;
+    }
+
+    .h-subtitle {
+      font-size: clamp(14px, 1.5vw, 17px);
+      margin-bottom: 28px;
+    }
+
+    .h-author-row {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+
+    .h-author-details {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .h-author-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .h-author-date {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+
+    .h-image-block {
+      margin-top: auto;
+      height: 180px;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+    }
+    .h-image-block .hero-image {
+      position: absolute;
+      inset: 0;
+    }
+    .h-image-block .hero-image::after {
+      background: linear-gradient(0deg, rgba(10, 10, 15, 0.5) 0%, transparent 60%);
+    }
+
+    .h-right {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .h-right-header {
+      padding: 48px 48px 0;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+
+    .h-scroll-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 0 48px;
+      min-height: 0;
+    }
+
+    .h-body {
+      font-size: clamp(15px, 1.3vw, 17px);
+    }
+
+    .h-right-footer {
+      flex-shrink: 0;
+      padding: 20px 48px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--border);
+      background: var(--bg-surface);
+    }
+
+    .nav-section {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .nav-dots { display: flex; gap: 6px; }
+    .nav-dot {
+      width: 8px;
+      height: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--text-dim);
+      border-radius: 50%;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+    }
+    .nav-dot:hover { border-color: var(--accent); }
+    .nav-dot.active {
+      width: 20px;
+      background: var(--accent);
+      border-color: var(--accent);
+      border-radius: 9999px;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+    .nav-counter {
+      font-family: 'Space Mono', monospace;
+      font-size: 10px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+    .nav-counter span { color: var(--accent); font-weight: 700; }
+
+    /* ===== RESPONSIVE ===== */
+    @media (max-width: 900px) {
+      .h-view {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr;
+      }
+      .h-left {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        padding: 32px;
+      }
+      .h-image-block { display: none; }
+      .h-right-header { padding: 32px 32px 0; }
+      .h-scroll-content { padding: 0 32px; }
+      .h-right-footer { padding: 16px 32px; }
+      .mode-toggle { top: 12px; right: 12px; }
+    }
+
+    /* ===== EMPTY STATE ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      text-align: center;
+      padding: 32px;
+    }
+    .empty-icon { font-size: 80px; margin-bottom: 28px; opacity: 0.7; }
+    .empty-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 40px;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 16px;
+    }
+    .empty-text {
+      font-family: 'IBM Plex Sans', sans-serif;
+      font-weight: 300;
+      font-size: 18px;
+      color: var(--text-secondary);
+      max-width: 380px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mode Toggle -->
+  <div class="mode-toggle">
+    <a class="mode-btn" id="mode-portrait">Portrait</a>
+    <a class="mode-btn active" id="mode-landscape">Landscape</a>
+    <a class="mode-btn" id="mode-present">Present</a>
+  </div>
+
+  {% if articles %}
+  <div class="slides-container">
+    {% for article in articles %}
+    <div class="slide {% if loop.first %}active{% endif %}" data-index="{{ loop.index0 }}">
+      <div class="h-view">
+        <div class="h-left">
+          <div class="corner-accent tl"></div>
+          <div class="h-source-badge">
+            <span class="meta-text">{{ article.source_name }}</span>
+          </div>
+          <h1 class="headline h-headline">{{ article.title }}</h1>
+          {% if article.summary %}
+          <p class="subtitle h-subtitle">{{ article.summary[:160] }}{% if article.summary|length > 160 %}...{% endif %}</p>
+          {% endif %}
+          <div class="h-author-row">
+            <div class="author-avatar">{{ article.source_name[:2]|upper }}</div>
+            <div class="h-author-details">
+              <span class="h-author-name">{{ article.source_name }}</span>
+              <span class="h-author-date">
+                {% if article.published_date %}
+                {{ article.published_date.strftime('%B %d, %Y') }}
+                {% else %}
+                Recent
+                {% endif %}
+              </span>
+            </div>
+          </div>
+          <div class="h-image-block">
+            <div class="hero-image" style="background-image: url('{{ article.image_url or '/static/pictures/default_landscape.png' }}')"></div>
+          </div>
+        </div>
+
+        <div class="h-right">
+          <div class="h-right-header">
+            <span class="meta-secondary">{{ article.category or 'General' }}</span>
+          </div>
+          <div class="h-scroll-content scroll-area">
+            <div class="body-text h-body article-paragraphs">
+              <p>{{ article.summary }}</p>
+            </div>
+          </div>
+          <div class="h-right-footer">
+            <div class="nav-section">
+              <div class="nav-dots">
+                {% set slide_index = loop.index0 %}
+                {% for i in range(articles|length) %}
+                <div class="nav-dot {% if i == slide_index %}active{% endif %}" data-index="{{ i }}"></div>
+                {% endfor %}
+              </div>
+              <div class="nav-counter"><span class="current-num">{{ loop.index }}</span> / {{ articles|length }}</div>
+            </div>
+            <a href="{{ article.article_url }}" target="_blank" rel="noopener" class="cta-button">
+              Read Full Article <span class="arrow">&nearr;</span>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="empty-state">
+    <div class="empty-icon">&#x1F4E1;</div>
+    <h2 class="empty-title">No Signal</h2>
+    <p class="empty-text">Waiting for news feed. Check back in a moment.</p>
+  </div>
+  {% endif %}
+
+  <script>
+    // Mode toggle navigation
+    (function() {
+      const path = window.location.pathname;
+      const m = path.match(/\/news\/(portrait|landscape|presentation)(\/.*)?/);
+      const suffix = m ? (m[2] || '') : '';
+      document.getElementById('mode-portrait').href = '/news/portrait' + suffix;
+      document.getElementById('mode-landscape').href = '/news/landscape' + suffix;
+      document.getElementById('mode-present').href = '/news/presentation' + suffix;
+    })();
+
+    const slides = document.querySelectorAll('.slide');
+    const allDots = document.querySelectorAll('.nav-dot');
+    const total = slides.length;
+    let current = 0;
+    const interval = {{ rotation_seconds }} * 1000;
+
+    function show(i) {
+      slides.forEach((s, idx) => s.classList.toggle('active', idx === i));
+      // Update all nav dots across all slides
+      allDots.forEach(d => {
+        const dotIdx = parseInt(d.dataset.index);
+        d.classList.toggle('active', dotIdx === i);
+      });
+      // Update counters
+      document.querySelectorAll('.current-num').forEach(el => el.textContent = i + 1);
+    }
+
+    function next() {
+      current = (current + 1) % total;
+      show(current);
+    }
+
+    // Click nav dots
+    allDots.forEach(dot => {
+      dot.addEventListener('click', () => {
+        current = parseInt(dot.dataset.index);
+        show(current);
+      });
+    });
+
+    if (total > 1) setInterval(next, interval);
+  </script>
+</body>
+</html>
