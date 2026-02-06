@@ -16,6 +16,11 @@ class ConnectionManager:
         try:
             screen_index = int(screen_id) - 1
 
+            if screen_index < 0 or screen_index >= len(screen_manager.screens):
+                logger.error("Screen ID %s out of range (have %d screens)", screen_id, len(screen_manager.screens))
+                await websocket.close(code=1008, reason="Invalid screen ID")
+                return False
+
             if screen_manager.screens[screen_index].connected:
                 logger.warning("Screen %s is already connected", screen_id)
                 await websocket.close(code=1000, reason="Screen already connected")
@@ -45,8 +50,12 @@ class ConnectionManager:
 
     def disconnect(self, screen_id: str):
         logger.warning("Screen %s disconnected", screen_id)
-        # self.active_connections.get(screen_id, []).remove(websocket)
-        screen_manager.screens[int(screen_id) - 1].connected = False
+        screen_index = int(screen_id) - 1
+        if 0 <= screen_index < len(screen_manager.screens):
+            screen_manager.screens[screen_index].connected = False
+        else:
+            logger.error("Screen ID %s out of range on disconnect", screen_id)
+            return
 
         # Notify all admin clients
         # about the screen disconnection
