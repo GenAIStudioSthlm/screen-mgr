@@ -14,8 +14,12 @@
             Not connected (?)
         </span>
         <span class="text-green-700 text-xs" id="screen_connected_{{ screens[i].id }}"
-            style="{% if not screens[i].connected %}display:none{% endif %}">
+            style="{% if not screens[i].connected %}display:none{% endif %}"
+            title="SSH into this station: ssh screen@<ip>  (password: screen)">
             Connected <span id="screen_host_{{ screens[i].id }}">{% if screens[i].client_host %}({{ screens[i].client_host }}){% endif %}</span>
+            {% if screens[i].client_host %}
+            <code class="ml-1 text-gray-500 text-xs select-all">ssh screen@{{ screens[i].client_host }}</code>
+            {% endif %}
         </span>
 
         <div class="flex items-center w-full gap-2 hidden" id="update_screen_section_{{ screens[i].id }}">

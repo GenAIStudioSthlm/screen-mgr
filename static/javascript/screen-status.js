@@ -46,8 +46,17 @@ document.addEventListener("DOMContentLoaded", function () {
         .classList.remove("hidden");
       document.getElementById("update_section_" + screenId).style.display =
         "block";
-      if (connectedEl) connectedEl.style.display = "inline";
-      if (hostEl) hostEl.textContent = clientHost ? "(" + clientHost + ")" : "";
+      if (connectedEl) {
+        connectedEl.style.display = "inline";
+        // Re-render host + ssh hint
+        if (clientHost) {
+          connectedEl.innerHTML =
+            'Connected <span id="screen_host_' + screenId + '">(' + clientHost + ')</span>' +
+            ' <code class="ml-1 text-gray-500 text-xs select-all">ssh screen@' + clientHost + '</code>';
+        } else {
+          connectedEl.innerHTML = 'Connected <span id="screen_host_' + screenId + '"></span>';
+        }
+      }
     } else {
       if (notConnectedEl) notConnectedEl.style.display = "inline";
       document
