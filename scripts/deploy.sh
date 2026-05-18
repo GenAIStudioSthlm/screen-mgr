@@ -24,6 +24,9 @@ ylw()   { printf "\033[33m%s\033[0m\n" "$*"; }
 # ---------- preflight ----------
 echo "== preflight =="
 
+# Refresh the index first — Windows/WSL cross-mount can leave stale entries
+# that make diff-index report phantom changes.
+git update-index --refresh -q > /dev/null 2>&1 || true
 if ! git diff-index --quiet HEAD --; then
     red "ERROR: working tree has uncommitted changes. Commit or stash first."
     git status --short

@@ -24,6 +24,18 @@ async def default_screen_page(request: Request, screen_id: str):
 
 
 # ---------------------------------------------------------------------
+# Updating page (transient — shown to screens during deploys, then
+# auto-redirects back to the original content URL via ?return_to=).
+# ---------------------------------------------------------------------
+@router.get("/updating", response_class=HTMLResponse)
+async def updating_page(request: Request):
+    return templates.TemplateResponse(
+        "content/updating.html",
+        {"request": request},
+    )
+
+
+# ---------------------------------------------------------------------
 # Responsive text
 # ---------------------------------------------------------------------
 @router.get("/responsive/{text}", response_class=HTMLResponse)

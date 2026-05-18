@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Updating</title>
+<style>
+ html,body{height:100%;margin:0}
+ body{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;
+      display:flex;flex-direction:column;justify-content:center;align-items:center;
+      background:#1a1a1a;color:#e0e0e0;gap:1em;text-align:center;padding:1em}
+ h1{color:#ffaa00;font-size:clamp(2em,8vw,3.5em);margin:0;letter-spacing:0.04em}
+ p{font-size:clamp(1em,3vw,1.4em);color:#888;margin:0}
+ #countdown{display:inline-block;min-width:1.2em;color:#ffaa00;font-weight:600}
+ .dots::after{content:"...";animation:d 1.2s steps(4,end) infinite;
+              display:inline-block;width:1.4em;text-align:left}
+ @keyframes d{
+  0%{content:""} 25%{content:"."} 50%{content:".."} 75%,100%{content:"..."}
+ }
+</style>
+</head>
+<body>
+<h1>Updating<span class="dots"></span></h1>
+<p>Returning in <span id="countdown">10</span>s</p>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const returnTo = params.get("return_to") || "/";
+  const duration = parseInt(params.get("duration") || "10", 10);
+  let remaining = duration;
+  const el = document.getElementById("countdown");
+  el.textContent = remaining;
+  const tick = setInterval(() => {
+    remaining--;
+    if (remaining <= 0) {
+      clearInterval(tick);
+      window.location = decodeURIComponent(returnTo);
+    } else {
+      el.textContent = remaining;
+    }
+  }, 1000);
+</script>
+</body>
+</html>

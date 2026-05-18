@@ -11,6 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 
 ### Added
+- `GET /updating` (`routes/content_routes.py` + `templates/content/updating.html`) — transient page shown on screens during deploys. Maintenance-styled with a 10s countdown, then auto-redirects to `?return_to=<url>`. Makes the deploy/refresh loop visible to viewers instead of a silent flash.
+- `static/javascript/screen.js` now sends the visible content popup to `/updating?return_to=<original>` on WebSocket reload, falling back to a full frame reload if the popup is gone. The "Updating" feature uses the same visual language as `scripts/maintenance.py`.
 - `scripts/deploy.sh` — dev-side WSL entry point. Preflight (clean tree, no unpushed commits), SSH to Pi to run `pi-update.sh`, then `POST /api/screens/reload-all` so every connected display refreshes itself.
 - `scripts/pi-update.sh` — Pi-side script invoked over SSH by `deploy.sh`. Bails if already up to date; otherwise pulls main, restarts the service through the maintenance bridge only if `requirements.txt` changed, else lets uvicorn `--reload` do the work. Logs commit hash to `last_deploy.log`.
 - `POST /api/screens/reload-all` (`routes/api_routes.py`) — broadcasts a WebSocket reload to every connected screen and returns JSON of `notified` / `skipped` lists.

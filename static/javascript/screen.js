@@ -19,8 +19,16 @@ const connect = () => {
   ws = new WebSocket(window.ws_url);
 
   ws.onmessage = (event) => {
-    console.log("Received message3", event.data);
-    window.location.reload();
+    console.log("Received WS message", event.data);
+    // Send the visible content window to /updating, which shows an
+    // "Updating" countdown for 10s and then auto-returns to the original
+    // content URL. Fallback to reloading the frame if the popup is gone.
+    if (contentWindow && !contentWindow.closed && window.contentUrl) {
+      const returnTo = encodeURIComponent(window.contentUrl);
+      contentWindow.location = "/updating?return_to=" + returnTo;
+    } else {
+      window.location.reload();
+    }
   };
 
   ws.onopen = () => {
