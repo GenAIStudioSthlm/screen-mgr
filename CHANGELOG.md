@@ -11,6 +11,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 
 ### Added
+- `docs/DEPLOY.md` — operator-facing guide for the dev-to-Pi deploy flow (SSH key setup, daily workflow, what `deploy.sh` / `pi-update.sh` do, troubleshooting, teammate onboarding).
+- `docs/ARCHITECTURE.md` — system spec covering the two roles of Raspberry Pi (admin hub vs display station), the launcher-script + screen-session + systemd-unit microservice pattern, communication channels, and a template for plugging in a new service. Frames the extensible-system direction.
+- Auto-cache-bust for static assets via `utils.APP_VERSION` (short git SHA). Templates use `?v={{ app_version }}` so every deploy invalidates browser caches on connected stations automatically.
+- `GET /admin/ssh.bat?host=<ip>` — admin downloads a `.bat` that runs `wsl ssh screen@<host>` and pauses. The "ssh screen@<ip>" hint beside each connected station is now a one-click launcher to a CMD session.
 - Admin panel now shows the **client IP** of each connected station next to its name. `Screen.client_host` is populated from `websocket.client.host` on connect, surfaced through the `screen_status_update` WebSocket message and the `/api/screens` response, and rendered in `templates/admin/screens.html`. Foundation for future remote-control of stations (SSH/agent deployment).
 - `GET /updating` (`routes/content_routes.py` + `templates/content/updating.html`) — transient page shown on screens during deploys. Maintenance-styled with a 10s countdown, then auto-redirects to `?return_to=<url>`. Makes the deploy/refresh loop visible to viewers instead of a silent flash.
 - `static/javascript/screen.js` now sends the visible content popup to `/updating?return_to=<original>` on WebSocket reload, falling back to a full frame reload if the popup is gone. The "Updating" feature uses the same visual language as `scripts/maintenance.py`.
