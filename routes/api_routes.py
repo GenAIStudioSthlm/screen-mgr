@@ -83,6 +83,29 @@ async def set_screen_content(
 
 
 # ---------------------------------------------------------------------
+# Broadcast reload to every connected screen
+# ---------------------------------------------------------------------
+@router.post("/api/screens/reload-all", response_class=JSONResponse)
+async def reload_all_screens():
+    notified: list[int] = []
+    skipped: list[dict] = []
+    for screen in screen_manager.screens:
+        if not screen.connected:
+            skipped.append({"id": screen.id, "reason": "not connected"})
+            continue
+        try:
+            await connection_manager.notify_screen(screen=screen)
+            notified.append(screen.id)
+        except Exception as e:
+            skipped.append({"id": screen.id, "reason": str(e)})
+    return {
+        "notified": notified,
+        "skipped": skipped,
+        "total": len(screen_manager.screens),
+    }
+
+
+# ---------------------------------------------------------------------
 # Upload a picture
 # ---------------------------------------------------------------------
 @router.post("/api/upload/picture", response_class=JSONResponse)
