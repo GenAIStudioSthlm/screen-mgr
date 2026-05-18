@@ -1,0 +1,13 @@
+[Unit]
+Description=RGB LED matrix clock — runs as root (GPIO)
+After=network.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=root
+ExecStart=/bin/bash /home/admin/rpi-rgb-led-matrix/start_display.sh
+ExecStop=/usr/bin/screen -S rgbdisplay -X quit
+
+[Install]
+WantedBy=multi-user.target

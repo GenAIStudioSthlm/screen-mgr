@@ -1,0 +1,14 @@
+[Unit]
+Description=screen-mgr — FastAPI/uvicorn inside a GNU screen session
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+User=admin
+ExecStart=/bin/bash /home/admin/screen-mgr/scripts/start_screen_mgr.sh
+ExecStop=/usr/bin/screen -S screen-mgr -X quit
+
+[Install]
+WantedBy=multi-user.target
