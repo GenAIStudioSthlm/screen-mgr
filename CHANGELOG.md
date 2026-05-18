@@ -7,7 +7,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased]
 
 ### Verified
-- 2026-05-18: end-to-end deploy through `scripts/deploy.sh` exercised for the first time with Station 2 and Station 3 connected as screens #4 and #5.
+- 2026-05-18 (round 1): `scripts/deploy.sh` from WSL → preflight passed; Pi was already at latest, so pi-update did nothing; reload-all returned `notified: [4, 5]` and the two stations refreshed.
+- 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 
 ### Added
 - `scripts/deploy.sh` — dev-side WSL entry point. Preflight (clean tree, no unpushed commits), SSH to Pi to run `pi-update.sh`, then `POST /api/screens/reload-all` so every connected display refreshes itself.
