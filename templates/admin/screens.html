@@ -8,9 +8,14 @@
 
 
         </label>
-        <span class="text-red-500 cursor-pointer" id="screen_not_connected_{{ screens[i].id }}" class="hidden "
+        <span class="text-red-500 cursor-pointer" id="screen_not_connected_{{ screens[i].id }}"
+            style="{% if screens[i].connected %}display:none{% endif %}"
             title="This screen is currently not connected. Make sure it is running a browser window in fullscreen with the following URL: http://studiopi:8000/screen/{{ screens[i].id }}">
             Not connected (?)
+        </span>
+        <span class="text-green-700 text-xs" id="screen_connected_{{ screens[i].id }}"
+            style="{% if not screens[i].connected %}display:none{% endif %}">
+            Connected <span id="screen_host_{{ screens[i].id }}">{% if screens[i].client_host %}({{ screens[i].client_host }}){% endif %}</span>
         </span>
 
         <div class="flex items-center w-full gap-2 hidden" id="update_screen_section_{{ screens[i].id }}">
@@ -124,4 +129,4 @@
 
 
 <!-- Include the separate JavaScript file -->
-<script src="static/javascript/screen-status.js?{{timestamp}}"></script>
+<script src="static/javascript/screen-status.js?v=20260518a"></script>

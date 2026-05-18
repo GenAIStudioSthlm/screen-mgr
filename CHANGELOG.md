@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 
 ### Added
+- Admin panel now shows the **client IP** of each connected station next to its name. `Screen.client_host` is populated from `websocket.client.host` on connect, surfaced through the `screen_status_update` WebSocket message and the `/api/screens` response, and rendered in `templates/admin/screens.html`. Foundation for future remote-control of stations (SSH/agent deployment).
 - `GET /updating` (`routes/content_routes.py` + `templates/content/updating.html`) — transient page shown on screens during deploys. Maintenance-styled with a 10s countdown, then auto-redirects to `?return_to=<url>`. Makes the deploy/refresh loop visible to viewers instead of a silent flash.
 - `static/javascript/screen.js` now sends the visible content popup to `/updating?return_to=<original>` on WebSocket reload, falling back to a full frame reload if the popup is gone. The "Updating" feature uses the same visual language as `scripts/maintenance.py`.
 - `scripts/deploy.sh` — dev-side WSL entry point. Preflight (clean tree, no unpushed commits), SSH to Pi to run `pi-update.sh`, then `POST /api/screens/reload-all` so every connected display refreshes itself.

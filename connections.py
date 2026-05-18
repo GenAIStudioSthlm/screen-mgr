@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Optional
 from fastapi import WebSocket
 from logger import logger
 from screens import Screen, screen_manager
@@ -27,13 +27,15 @@ class ConnectionManager:
                 return False
 
             await websocket.accept()
-            logger.info("Screen %s connected", screen_id)
+            client_host = websocket.client.host if websocket.client else None
+            logger.info("Screen %s connected from %s", screen_id, client_host)
             screen_manager.screens[screen_index].connected = True
             screen_manager.screens[screen_index].websocket = websocket
+            screen_manager.screens[screen_index].client_host = client_host
             # screen_manager.print_screens()
 
             # Notify all admin clients about the new screen connection
-            await self.broadcast_screen_status(screen_id, True)
+            await self.broadcast_screen_status(screen_id, True, client_host)
 
         except ValueError:
             logger.error("Invalid screen ID: %s", screen_id)
@@ -46,13 +48,16 @@ class ConnectionManager:
 
         # Send initial status for all screens to the new admin client
         for screen in screen_manager.screens:
-            await self.send_screen_status(websocket, str(screen.id), screen.connected)
+            await self.send_screen_status(
+                websocket, str(screen.id), screen.connected, screen.client_host
+            )
 
     def disconnect(self, screen_id: str):
         logger.warning("Screen %s disconnected", screen_id)
         screen_index = int(screen_id) - 1
         if 0 <= screen_index < len(screen_manager.screens):
             screen_manager.screens[screen_index].connected = False
+            screen_manager.screens[screen_index].client_host = None
         else:
             logger.error("Screen ID %s out of range on disconnect", screen_id)
             return
@@ -80,22 +85,24 @@ class ConnectionManager:
             logger.warning("No active connections for screen %i", screen.id)
 
     async def send_screen_status(
-        self, websocket: WebSocket, screen_id: str, connected: bool
+        self, websocket: WebSocket, screen_id: str, connected: bool, client_host: Optional[str] = None
     ):
         """Send status update for a specific screen to a specific admin client"""
         message = {
             "type": "screen_status_update",
             "screen_id": screen_id,
             "connected": connected,
+            "client_host": client_host,
         }
         await websocket.send_json(message)
 
-    async def broadcast_screen_status(self, screen_id: str, connected: bool):
+    async def broadcast_screen_status(self, screen_id: str, connected: bool, client_host: Optional[str] = None):
         """Send screen status update to all connected admin clients"""
         message = {
             "type": "screen_status_update",
             "screen_id": screen_id,
             "connected": connected,
+            "client_host": client_host,
         }
 
         # Use a list to avoid "dictionary changed size during iteration" errors

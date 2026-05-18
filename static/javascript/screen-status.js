@@ -15,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
   socket.addEventListener("message", (event) => {
     const data = JSON.parse(event.data);
     if (data.type === "screen_status_update") {
-      updateScreenStatus(data.screen_id, data.connected);
+      updateScreenStatus(data.screen_id, data.connected, data.client_host);
     }
   });
 
@@ -35,29 +35,26 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   // Function to update screen status in the UI
-  function updateScreenStatus(screenId, isConnected) {
-    // Add new status based on isConnected
+  function updateScreenStatus(screenId, isConnected, clientHost) {
+    const notConnectedEl = document.getElementById("screen_not_connected_" + screenId);
+    const connectedEl = document.getElementById("screen_connected_" + screenId);
+    const hostEl = document.getElementById("screen_host_" + screenId);
     if (isConnected) {
-      document.getElementById(
-        "screen_not_connected_" + screenId
-      ).style.display = "none";
+      if (notConnectedEl) notConnectedEl.style.display = "none";
       document
         .getElementById("update_screen_section_" + screenId)
         .classList.remove("hidden");
-
-      // Also enable the update button for this screen
       document.getElementById("update_section_" + screenId).style.display =
         "block";
+      if (connectedEl) connectedEl.style.display = "inline";
+      if (hostEl) hostEl.textContent = clientHost ? "(" + clientHost + ")" : "";
     } else {
-      document.getElementById(
-        "screen_not_connected_" + screenId
-      ).style.display = "block";
-
+      if (notConnectedEl) notConnectedEl.style.display = "inline";
       document
         .getElementById("update_screen_section_" + screenId)
         .classList.add("hidden");
-
-      // Disable the update button for this screen
+      if (connectedEl) connectedEl.style.display = "none";
+      if (hostEl) hostEl.textContent = "";
     }
   }
 });

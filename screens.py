@@ -1,5 +1,5 @@
 import json
-from typing import List
+from typing import List, Optional
 from pydantic import BaseModel, Field, ValidationError
 from fastapi import WebSocket
 
@@ -33,6 +33,10 @@ class Screen(BaseModel):
     connected: bool = Field(
         False,
         description="Indicates if the screen is currently connected",
+    )
+    client_host: Optional[str] = Field(
+        None,
+        description="Last-known client IP from the WebSocket connection",
     )
     websocket: WebSocket = Field(
         None,
@@ -86,7 +90,7 @@ class ScreenManager:
                     {
                         key: value
                         for key, value in screen.model_dump().items()
-                        if key not in {"websocket", "connected"}
+                        if key not in {"websocket", "connected", "client_host"}
                     }
                     for screen in self.screens
                 ],
