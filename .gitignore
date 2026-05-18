@@ -7,3 +7,14 @@ static/videos
 static/pdfs
 .claude/logs
 data/
+
+# secrets / credentials — never commit
+.env
+.env.*
+*.key
+*.pem
+id_ed25519
+id_ed25519.pub
+id_rsa
+id_rsa.pub
+authorized_keys
