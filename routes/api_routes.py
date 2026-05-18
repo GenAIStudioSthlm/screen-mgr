@@ -55,7 +55,7 @@ async def set_screen_content(
         if not screen:
             raise HTTPException(status_code=404, detail="Screen not found")
 
-        if content_type not in ["text", "url", "video", "picture", "pdf", "slideshow"]:
+        if content_type not in ["text", "url", "video", "picture", "pdf", "slideshow", "default"]:
             raise HTTPException(status_code=400, detail="Invalid content type")
 
         # Update the screen's content based on the type
@@ -72,6 +72,7 @@ async def set_screen_content(
             screen.pdf = content_value
         elif content_type == "slideshow":
             screen.slideshow = content_value
+        # "default" needs no content_value — type alone routes to the studio logo
 
         # Save the updated screens to the file
         screen_manager.save_screens()
