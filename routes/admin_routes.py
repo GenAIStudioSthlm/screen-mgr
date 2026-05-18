@@ -12,10 +12,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from screens import screen_manager
 from connections import connection_manager
-from utils import delete_file
+from utils import APP_VERSION, delete_file
 
 
 templates = Jinja2Templates(directory="templates")
+templates.env.globals["app_version"] = APP_VERSION
 router = APIRouter()
 
 VIDEO_FOLDER = "static/videos"

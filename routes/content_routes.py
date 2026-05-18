@@ -7,8 +7,11 @@ from fastapi import (
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 
+from utils import APP_VERSION
+
 
 templates = Jinja2Templates(directory="templates")
+templates.env.globals["app_version"] = APP_VERSION
 router = APIRouter()
 
 
