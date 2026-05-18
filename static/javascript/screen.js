@@ -20,14 +20,30 @@ const connect = () => {
 
   ws.onmessage = (event) => {
     console.log("Received WS message", event.data);
-    // Send the visible content window to /updating, which shows an
-    // "Updating" countdown for 10s and then auto-returns to the original
-    // content URL. Fallback to reloading the frame if the popup is gone.
-    if (contentWindow && !contentWindow.closed && window.contentUrl) {
-      const returnTo = encodeURIComponent(window.contentUrl);
-      contentWindow.location = "/updating?return_to=" + returnTo;
+    const returnTo = encodeURIComponent(window.contentUrl || window.location.href);
+    const updatingUrl = "/updating?return_to=" + returnTo;
+
+    // Try the kept popup reference first, then re-acquire by window name
+    // (some kiosk Chromium setups don't return a handle from window.open
+    // but the named popup is still alive).
+    let popup = contentWindow && !contentWindow.closed ? contentWindow : null;
+    if (!popup) {
+      try {
+        popup = window.open("", "contentWindow");
+        if (popup && popup.location.href === "about:blank") {
+          popup.close();
+          popup = null;
+        }
+      } catch (e) {
+        popup = null;
+      }
+    }
+
+    if (popup && !popup.closed) {
+      popup.location = updatingUrl;
     } else {
-      window.location.reload();
+      // Last resort: navigate the frame itself
+      window.location = updatingUrl;
     }
   };
 

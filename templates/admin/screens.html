@@ -18,7 +18,12 @@
             title="SSH into this station: ssh screen@<ip>  (password: screen)">
             Connected <span id="screen_host_{{ screens[i].id }}">{% if screens[i].client_host %}({{ screens[i].client_host }}){% endif %}</span>
             {% if screens[i].client_host %}
-            <code class="ml-1 text-gray-500 text-xs select-all">ssh screen@{{ screens[i].client_host }}</code>
+            <a href="/admin/ssh.bat?host={{ screens[i].client_host }}"
+               download
+               class="ml-1 text-blue-700 text-xs select-all hover:underline"
+               title="Download a .bat to open CMD with `wsl ssh screen@{{ screens[i].client_host }}` (password: screen)">
+              ssh screen@{{ screens[i].client_host }}
+            </a>
             {% endif %}
         </span>
 

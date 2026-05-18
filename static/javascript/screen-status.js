@@ -48,11 +48,16 @@ document.addEventListener("DOMContentLoaded", function () {
         "block";
       if (connectedEl) {
         connectedEl.style.display = "inline";
-        // Re-render host + ssh hint
         if (clientHost) {
+          const sshHref =
+            "/admin/ssh.bat?host=" + encodeURIComponent(clientHost);
+          const tip =
+            "Download a .bat to open CMD with `wsl ssh screen@" +
+            clientHost +
+            "` (password: screen)";
           connectedEl.innerHTML =
             'Connected <span id="screen_host_' + screenId + '">(' + clientHost + ')</span>' +
-            ' <code class="ml-1 text-gray-500 text-xs select-all">ssh screen@' + clientHost + '</code>';
+            ' <a href="' + sshHref + '" download class="ml-1 text-blue-700 text-xs select-all hover:underline" title="' + tip + '">ssh screen@' + clientHost + '</a>';
         } else {
           connectedEl.innerHTML = 'Connected <span id="screen_host_' + screenId + '"></span>';
         }

@@ -66,6 +66,25 @@ async def admin_page(request: Request):
     )
 
 
+@router.get("/admin/ssh.bat")
+async def ssh_bat(host: str, user: str = "screen"):
+    """Download a one-shot .bat that pops a CMD with `wsl ssh user@host`.
+    Used by the admin UI 'SSH' link beside each connected station."""
+    from fastapi.responses import Response
+    bat = (
+        "@echo off\r\n"
+        "title SSH to {user}@{host}\r\n"
+        "wsl ssh {user}@{host}\r\n"
+        "pause\r\n"
+    ).format(user=user, host=host)
+    safe_host = host.replace("/", "_")
+    return Response(
+        content=bat,
+        media_type="application/octet-stream",
+        headers={"Content-Disposition": f'attachment; filename="ssh-{safe_host}.bat"'},
+    )
+
+
 @router.post("/admin/update")
 async def update_screens(
     request: Request,
