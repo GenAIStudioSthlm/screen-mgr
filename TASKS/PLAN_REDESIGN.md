@@ -223,7 +223,49 @@ The existing `DisplayModule.get_screen_url(screen, base_url)` contract already m
 
 This means: when we build the screen-agent (Phase 6 of `TASKS/PLAN_SCREEN_AGENT.md`) and the robot panel module, **they reuse** these primitives rather than reinventing renderers. Same vocabulary across the system.
 
+**Future primitives we'll want** (each is a short `modules/<name>/__init__.py` + a renderer template, registered like the others):
+
+- `json` — display a structured payload (pretty-printed, optionally tree-rendered). Sourced from a URL, file, or inline.
+- `csv` — render rows as a table; headers + body styling.
+- `markdown` — server-rendered MD, useful for status pages, runbooks, dashboards.
+- `iframe` — embed any external page (different from `url` which steers the whole screen).
+- `chart` — render a chart from a `csv` or `json` source. Composes the simpler primitives.
+
+Adding any of these = one folder + one register line, no surgery to the rest of the system.
+
 **Verify:** every action available today is available in `/admin/v2` too — set content, upload media, start/stop modules, control lights — each driven by its dedicated view.
+
+### Phase 4-ter — Unified content / data storage (architectural note, 2026-05-19)
+
+Today's persistence is **scattered**:
+
+- `data/screens.json` — Screen configs
+- `data/zones.json` — Zone configs (new in Phase 2)
+- `data/modules.json` — module enabled flags + external manifest entries
+- `data/hue.json` — Hue bridge credentials
+- `news/*.json` — news sources, articles, playlists
+- `static/pictures/<folder>/<file>` — uploaded images
+- `static/videos/<file>` — uploaded videos
+- `static/pdfs/<file>` — uploaded PDFs
+- per-module storage that any new module would invent again
+
+This works at today's scale but leaks responsibility: every new module reinvents its own JSON-on-disk scheme; uploads land in different folders; nothing has a single source of truth for "what content is on this Pi".
+
+**Proposed layer** (its own plan when we get there): a single `storage/` API that every module reads/writes through. Two surface concepts:
+
+| Surface | What it stores | How it's accessed |
+|---|---|---|
+| **Data** (small structured records) | JSON, CSV, markdown, module configs | `storage.put_data(namespace, key, value)`, `storage.get_data(namespace, key)`, `storage.list_data(namespace)` |
+| **Content** (binary blobs) | Images, videos, PDFs, audio, any large file | `storage.put_content(namespace, name, bytes_or_stream)`, `storage.get_content(namespace, name)`, `storage.get_content_url(namespace, name)` |
+
+Backing store starts as filesystem (today's pattern, just unified under `storage/<namespace>/...`) and can evolve to SQLite for data + content-addressable storage for blobs without changing the API. Each module gets its own namespace (`modules.hue.config`, `modules.news.articles`, `screens.uploads`, etc.).
+
+**Why this matters for the redesign:**
+- A `json`/`csv` consumable module can read content from `storage.get_data(...)` rather than fetching a URL — turns "data on the Pi" into first-class addressable content.
+- Backup / migration / share-with-another-Pi becomes one operation against `storage/` rather than `data/` + `static/*` + per-module trees.
+- Future Brand Profiles (Phase 7) and Scenes (Phase 5) can reference content by `storage://` URI rather than per-feature paths.
+
+**Promote to its own plan** (e.g. `TASKS/PLAN_STORAGE.md`) before implementation. Not blocking Phase 4 — that finishes first.
 
 ### Phase 5 — Scene model
 - Add `Scene` model + `data/scenes.json`.
