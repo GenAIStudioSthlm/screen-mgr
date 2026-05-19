@@ -32,6 +32,42 @@ async def list_modules():
     return {"modules": [_module_payload(m) for m in registry.list()]}
 
 
+# Specific paths under /api/modules/ must come BEFORE the /api/modules/{id}
+# catch-all, or FastAPI binds them as module_id="external" / module_id="refresh".
+
+@router.get("/api/modules/external", response_class=JSONResponse)
+async def list_external_modules():
+    return {"external": registry.external_entries()}
+
+
+@router.post("/api/modules/external", response_class=JSONResponse)
+async def add_external_module(payload: dict = Body(...)):
+    manifest_url = (payload or {}).get("manifest_url", "").strip()
+    if not manifest_url:
+        raise HTTPException(status_code=400, detail="manifest_url is required")
+    try:
+        info = registry.add_external(manifest_url)
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not register manifest at {manifest_url}: {e}",
+        )
+    return info
+
+
+@router.delete("/api/modules/external/{module_id}", response_class=JSONResponse)
+async def remove_external_module(module_id: str):
+    removed = registry.remove_external(module_id)
+    if not removed:
+        raise HTTPException(status_code=404, detail="No such external module")
+    return {"id": module_id, "removed": True}
+
+
+@router.post("/api/modules/refresh", response_class=JSONResponse)
+async def refresh_external_manifests():
+    return {"results": registry.load_external()}
+
+
 @router.get("/api/modules/{module_id}", response_class=JSONResponse)
 async def get_module(module_id: str):
     m = registry.get(module_id)
@@ -78,40 +114,3 @@ async def stop_module(module_id: str):
             status_code=400, detail=f"{module_id} is not a service module"
         )
     return m.stop()
-
-
-# ---------------------------------------------------------------------
-# External modules — registered via a JSON manifest URL the module hosts.
-# ---------------------------------------------------------------------
-
-@router.get("/api/modules/external", response_class=JSONResponse)
-async def list_external_modules():
-    return {"external": registry.external_entries()}
-
-
-@router.post("/api/modules/external", response_class=JSONResponse)
-async def add_external_module(payload: dict = Body(...)):
-    manifest_url = (payload or {}).get("manifest_url", "").strip()
-    if not manifest_url:
-        raise HTTPException(status_code=400, detail="manifest_url is required")
-    try:
-        info = registry.add_external(manifest_url)
-    except Exception as e:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Could not register manifest at {manifest_url}: {e}",
-        )
-    return info
-
-
-@router.delete("/api/modules/external/{module_id}", response_class=JSONResponse)
-async def remove_external_module(module_id: str):
-    removed = registry.remove_external(module_id)
-    if not removed:
-        raise HTTPException(status_code=404, detail="No such external module")
-    return {"id": module_id, "removed": True}
-
-
-@router.post("/api/modules/refresh", response_class=JSONResponse)
-async def refresh_external_manifests():
-    return {"results": registry.load_external()}
