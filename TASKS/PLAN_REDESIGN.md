@@ -345,6 +345,60 @@ screen-mgr/
 
 ---
 
+## 10.5. Gotchas we hit (and how to avoid)
+
+Captured 2026-05-19 after a long debug session on Phase 4. These are non-obvious; future-you (and any colleague picking up the redesign) will thank past-you.
+
+### 10.5.1 Alpine 3 + the microtask race
+
+**Symptom:** Cascading `Uncaught ReferenceError: studioShell is not defined` (and every property after it — `view`, `zones`, `selected`, ...). Page renders the static HTML and CSS but Alpine bindings are dead.
+
+**Root cause:** Alpine 3's `cdn.min.js` ends with a `queueMicrotask(() => { document.dispatchEvent(new Event('alpine:init')); Alpine.start(); })`. Microtasks **drain between deferred scripts**, not after all of them. So if `alpine.min.js` comes before any factory script in document order, the sequence is:
+
+1. `alpine.min.js` task runs → schedules microtask
+2. Microtask drains: `alpine:init` fires, `Alpine.start()` walks the DOM
+3. *Then* the next deferred script (which would have set `window.studioShell`) runs — too late.
+
+**Fix:** **Load every `window.X` factory script BEFORE alpine in document order.** Currently:
+
+```html
+<script defer src="...studio-theme.js?...">
+<script defer src="...v2/shell.js?...">
+<script defer src="...v2/views/screens.js?...">
+<script defer src="...v2/views/lighting.js?...">
+<script defer src="...v2/views/led_screens.js?...">
+<script defer src="...v2/views/modules.js?...">
+<script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>  <!-- LAST -->
+```
+
+Adding a new view = add its `<script defer>` to `<head>` *before* the alpine line. **Do not** put view `<script>` tags inside the per-view templates — they'd end up in body, after alpine's microtask has already drained.
+
+The factories also register themselves on `alpine:init` via `Alpine.data()`, but that path is dormant: it only takes effect if Alpine *re-walks* the DOM (which it doesn't on its own).
+
+### 10.5.2 `$root.X` is the element, not the data
+
+**Symptom:** Inside a child x-data scope, `$root.selected` is always undefined, even when the parent scope has `selected: ...`.
+
+**Root cause:** `$root` returns the closest x-data **element**, not its data object. Property access on the element returns DOM properties.
+
+**Fix:** Use the bare property name — Alpine 3's scope chain walks up through parent x-data scopes for any name the child doesn't define. Just write `selected`, not `$root.selected`.
+
+### 10.5.3 Cache-bust requires uvicorn restart
+
+**Symptom:** New JS landed but browser still serves old version. `?v={{ app_version }}` URL doesn't change because uvicorn `--reload` only triggers on `.py` files.
+
+**Fix:** `scripts/pi-update.sh` now `touch utils.py` after every successful `git pull`, forcing uvicorn to reload and refresh `APP_VERSION` even for HTML/CSS/JS-only deploys.
+
+### 10.5.4 Endpoint-blocker browser extensions
+
+**Symptom:** Static JS files never load, but no 404 in Network tab — the requests just don't happen.
+
+**Cause:** Edge/Chrome extensions like Volentio JSD (corporate JS-blockers) silently prevent script execution on unfamiliar hostnames.
+
+**Fix:** Whitelist `studiopi.local` (and any other Pi the team works against) in the blocker's site list. If you ship to colleagues, mention this in `docs/DEPLOY.md`.
+
+---
+
 ## 11. Why this is the right shape
 
 - **Phased.** Each phase ships independently useful value. Bailing after Phase 1 already leaves the admin meaningfully better.
