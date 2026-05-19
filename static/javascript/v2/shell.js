@@ -1,17 +1,12 @@
 /* shell.js — Alpine x-data factory for the /admin/v2 layout.
  *
- * Responsibilities:
- *   - Holds the list of zones (polled from /api/zones every 8s)
- *   - Holds the currently selected zone
- *   - Holds the active sidebar view ('screens' | 'lighting' | 'led_screens' | 'modules')
- *   - Runs the header clock
- *
- * Stays small on purpose. Per-domain logic (light controls, screen content,
- * LED service, modules registry) lives in views/<name>.js, each managing
- * its own Alpine sub-scope. The shell never reaches into a view.
+ * Registered as Alpine data on the `alpine:init` event, which fires
+ * before Alpine processes any x-data attribute. This avoids the
+ * timing/scope quirks of relying on `window.studioShell` being set
+ * before Alpine evaluates `<body x-data="studioShell()">`.
  */
-function studioShell() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('studioShell', () => ({
     zones: [],
     selected: null,
     view: 'screens',
@@ -50,7 +45,7 @@ function studioShell() {
       t();
       setInterval(t, 1000);
     },
-  };
-}
+  }));
 
-window.studioShell = studioShell;
+  console.log('[studio v2] shell registered');
+});

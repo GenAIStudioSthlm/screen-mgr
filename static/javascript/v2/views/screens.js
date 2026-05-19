@@ -1,21 +1,12 @@
-/* views/screens.js — Alpine factory for the v2 Screens view.
+/* views/screens.js — Alpine.data factory for the v2 Screens view.
  *
  * Per-zone screen content editor + global screen list with reload-all.
- * Drives:
- *   - /api/screens                       (read)
- *   - /api/screens/{id}/set_content     (write)
- *   - /api/screens/reload-all           (broadcast)
- *   - /api/modules                       (display module ids for the type dropdown)
- *
- * Reads the shell's selected zone via Alpine v3 scope inheritance —
- * a child x-data scope that doesn't define `selected` falls through
- * to the parent (studioShell)'s reactive property.
+ * Reads the shell's selected zone via Alpine scope chain.
  */
-function v2ScreensView() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2ScreensView', () => ({
     screens: [],
     displayModules: [],
-    // editor state — bound to the selected zone's screen
     editing: { type: '', value: '', news_mode: 'landscape' },
     lastAction: '',
     lastActionOk: true,
@@ -49,7 +40,6 @@ function v2ScreensView() {
       return this.screens.find(s => s.id === zone.screen_id) || null;
     },
 
-    // Hydrate the editor when the selection changes
     syncEditor(zone) {
       const s = this.screenFor(zone);
       if (!s) {
@@ -57,7 +47,7 @@ function v2ScreensView() {
         this.editing = { type: '', value: '', news_mode: 'landscape' };
         return;
       }
-      if (this._lastSelectedScreenId === s.id) return;  // already loaded for this zone
+      if (this._lastSelectedScreenId === s.id) return;
       this._lastSelectedScreenId = s.id;
       this.editing = {
         type: s.type,
@@ -98,11 +88,6 @@ function v2ScreensView() {
       try {
         const body = new URLSearchParams();
         body.append('content_type', this.editing.type);
-        // The /set_content endpoint takes a single 'content_value' field.
-        // For news, we send the mode in content_value too (the news module
-        // reads news_mode from the Screen, so we also PUT it via /admin/update
-        // separately — but for v1 keep it simple and rely on the existing
-        // screens.json state for news_mode until Phase 5 adds a Scene model.)
         body.append('content_value', this.editing.type === 'news' ? this.editing.news_mode : (this.editing.value || ''));
         const r = await fetch('/api/screens/' + s.id + '/set_content', {
           method: 'POST',
@@ -121,7 +106,7 @@ function v2ScreensView() {
         this.lastAction = 'failed: ' + e;
         this.lastActionOk = false;
       }
-      this._lastSelectedScreenId = null;  // force resync
+      this._lastSelectedScreenId = null;
       await this._loadScreens();
       this.syncEditor(zone);
     },
@@ -139,7 +124,5 @@ function v2ScreensView() {
         this.lastActionOk = false;
       }
     },
-  };
-}
-
-window.v2ScreensView = v2ScreensView;
+  }));
+});

@@ -1,16 +1,13 @@
-/* views/led_screens.js — Alpine factory for the LED Screens view.
+/* views/led_screens.js — Alpine.data factory for the LED Screens view.
  *
  * Surfaces every LED-screen service module. Today: just rgbdisplay
- * (the 32x64 LED matrix). Future modules (a second matrix, an LED
- * strip controller, etc.) appear automatically because we filter
- * /api/modules by id and not by hard-coded names.
+ * (the 32x64 LED matrix). Future modules appear automatically because
+ * we filter /api/modules by id and not by hard-coded names.
  */
-function v2LedScreensView() {
-  // List of module ids we treat as LED screens. Adding to this list
-  // surfaces a new card with the same Start/Stop UX.
+document.addEventListener('alpine:init', () => {
   const LED_MODULE_IDS = ['rgbdisplay'];
 
-  return {
+  Alpine.data('v2LedScreensView', () => ({
     panels: [],
     _timer: null,
 
@@ -52,7 +49,5 @@ function v2LedScreensView() {
       }
       await this.load();
     },
-  };
-}
-
-window.v2LedScreensView = v2LedScreensView;
+  }));
+});

@@ -1,4 +1,4 @@
-/* views/lighting.js — Alpine factory for the v2 Lighting view.
+/* views/lighting.js — Alpine.data factory for the v2 Lighting view.
  *
  * Pulls live Hue state from /api/modules/hue/* and renders:
  *   - bridge status (paired / available)
@@ -7,11 +7,10 @@
  *   - global rooms (all groups) and scene buttons
  *   - individual light list (collapsible)
  *
- * Reuses the same v2.css design tokens and Alpine v3 patterns as the
- * other views. Polls every 8s.
+ * Polls every 8s.
  */
-function v2LightingView() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2LightingView', () => ({
     hue: { paired: false, available: false, bridge_ip: '' },
     lights: {},
     groups: {},
@@ -75,7 +74,6 @@ function v2LightingView() {
       }
     },
 
-    // Zone-scoped (light_group_id from shell.selected)
     async toggleZone(zone) {
       if (!zone?.light_group_id) return;
       const g = this.groups[zone.light_group_id] || {};
@@ -92,7 +90,6 @@ function v2LightingView() {
       return this.groups[zone.light_group_id] || null;
     },
 
-    // Per-room
     async toggleGroup(id, g) {
       const any = !!(g.state?.any_on || g.action?.on);
       await this._put('/api/modules/hue/groups/' + id, { on: !any });
@@ -102,7 +99,6 @@ function v2LightingView() {
       await this._put('/api/modules/hue/groups/' + id, { on: true, bri: parseInt(value) });
     },
 
-    // Per-light
     async toggleLight(id, l) {
       const want = !(l.state && l.state.on);
       await this._put('/api/modules/hue/lights/' + id, { on: want });
@@ -122,19 +118,16 @@ function v2LightingView() {
     async allOn()  { await this._post('/api/modules/hue/all/on');  await this.load(); },
     async allOff() { await this._post('/api/modules/hue/all/off'); await this.load(); },
 
-    // helpers
     hueToHexLight(l) {
       const s = (l && l.state) || {};
       if (s.hue == null || s.sat == null) return '#ffffff';
       return hsvToHex(s.hue / 65535, s.sat / 254, (s.bri ?? 254) / 254);
     },
-    // expose for templates
-    isRoom(g) { return (g && g.type) === 'Room'; },
     rooms() {
-      return Object.entries(this.groups).filter(([id, g]) => this.isRoom(g));
+      return Object.entries(this.groups).filter(([id, g]) => (g && g.type) === 'Room');
     },
-  };
-}
+  }));
+});
 
 // ---- color helpers (shared between views; kept inline here for v1) ----
 function hexToXy(hex) {
@@ -169,5 +162,3 @@ function hsvToHex(h, s, v) {
   const hex = n => Math.round(n * 255).toString(16).padStart(2, '0');
   return '#' + hex(r) + hex(g) + hex(b);
 }
-
-window.v2LightingView = v2LightingView;

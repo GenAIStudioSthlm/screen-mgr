@@ -1,12 +1,11 @@
-/* views/modules.js — Alpine factory for the v2 Modules view.
+/* views/modules.js — Alpine.data factory for the v2 Modules view.
  *
  * Self-contained: polls /api/modules every 5s, supports enable/disable,
  * Start/Stop for service modules, and the full add/refresh/delete flow
- * for external modules. Identical functionality to the legacy admin
- * Modules tab, restyled with the v2 design tokens.
+ * for external modules.
  */
-function v2ModulesView() {
-  return {
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2ModulesView', () => ({
     modules: [],
     newManifestUrl: '',
     lastExternal: '',
@@ -115,7 +114,5 @@ function v2ModulesView() {
         setTimeout(() => { if (this.copied === key) this.copied = ''; }, 1500);
       } catch (e) { console.error('clipboard write failed', e); }
     },
-  };
-}
-
-window.v2ModulesView = v2ModulesView;
+  }));
+});
