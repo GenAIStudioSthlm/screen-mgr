@@ -4,10 +4,10 @@
  * (the 32x64 LED matrix). Future modules appear automatically because
  * we filter /api/modules by id and not by hard-coded names.
  */
-document.addEventListener('alpine:init', () => {
-  const LED_MODULE_IDS = ['rgbdisplay'];
+const LED_MODULE_IDS = ['rgbdisplay'];
 
-  Alpine.data('v2LedScreensView', () => ({
+function v2LedScreensView() {
+  return {
     panels: [],
     _timer: null,
 
@@ -49,5 +49,10 @@ document.addEventListener('alpine:init', () => {
       }
       await this.load();
     },
-  }));
+  };
+}
+
+window.v2LedScreensView = v2LedScreensView;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2LedScreensView', v2LedScreensView);
 });

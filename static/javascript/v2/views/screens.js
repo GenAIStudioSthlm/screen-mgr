@@ -3,8 +3,8 @@
  * Per-zone screen content editor + global screen list with reload-all.
  * Reads the shell's selected zone via Alpine scope chain.
  */
-document.addEventListener('alpine:init', () => {
-  Alpine.data('v2ScreensView', () => ({
+function v2ScreensView() {
+  return {
     screens: [],
     displayModules: [],
     editing: { type: '', value: '', news_mode: 'landscape' },
@@ -124,5 +124,10 @@ document.addEventListener('alpine:init', () => {
         this.lastActionOk = false;
       }
     },
-  }));
+  };
+}
+
+window.v2ScreensView = v2ScreensView;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2ScreensView', v2ScreensView);
 });

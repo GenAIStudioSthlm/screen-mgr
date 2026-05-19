@@ -4,8 +4,8 @@
  * Start/Stop for service modules, and the full add/refresh/delete flow
  * for external modules.
  */
-document.addEventListener('alpine:init', () => {
-  Alpine.data('v2ModulesView', () => ({
+function v2ModulesView() {
+  return {
     modules: [],
     newManifestUrl: '',
     lastExternal: '',
@@ -114,5 +114,10 @@ document.addEventListener('alpine:init', () => {
         setTimeout(() => { if (this.copied === key) this.copied = ''; }, 1500);
       } catch (e) { console.error('clipboard write failed', e); }
     },
-  }));
+  };
+}
+
+window.v2ModulesView = v2ModulesView;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2ModulesView', v2ModulesView);
 });

@@ -9,8 +9,8 @@
  *
  * Polls every 8s.
  */
-document.addEventListener('alpine:init', () => {
-  Alpine.data('v2LightingView', () => ({
+function v2LightingView() {
+  return {
     hue: { paired: false, available: false, bridge_ip: '' },
     lights: {},
     groups: {},
@@ -126,7 +126,12 @@ document.addEventListener('alpine:init', () => {
     rooms() {
       return Object.entries(this.groups).filter(([id, g]) => (g && g.type) === 'Room');
     },
-  }));
+  };
+}
+
+window.v2LightingView = v2LightingView;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('v2LightingView', v2LightingView);
 });
 
 // ---- color helpers (shared between views; kept inline here for v1) ----

@@ -5,8 +5,8 @@
  * timing/scope quirks of relying on `window.studioShell` being set
  * before Alpine evaluates `<body x-data="studioShell()">`.
  */
-document.addEventListener('alpine:init', () => {
-  Alpine.data('studioShell', () => ({
+function studioShell() {
+  return {
     zones: [],
     selected: null,
     view: 'screens',
@@ -45,7 +45,11 @@ document.addEventListener('alpine:init', () => {
       t();
       setInterval(t, 1000);
     },
-  }));
+  };
+}
 
+window.studioShell = studioShell;
+document.addEventListener('alpine:init', () => {
+  Alpine.data('studioShell', studioShell);
   console.log('[studio v2] shell registered');
 });
