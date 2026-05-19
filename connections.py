@@ -74,10 +74,27 @@ class ConnectionManager:
     async def notify_screen(self, screen: Screen):
         logger.info("Attempting to broadcast message to screen %i", screen.id)
 
+        # Compute the screen's CURRENT content URL via the module registry, so
+        # the client doesn't have to trust its stale window.contentUrl from
+        # when the frame first loaded. The URL we send is a path (leading
+        # slash) for backend-served types and an absolute URL for external
+        # ones (e.g. type=url). screen.js resolves to the full URL.
+        content_url = None
+        try:
+            from modules import registry as _reg
+            from modules.base import DisplayModule
+            from modules.default import DefaultModule
+            m = _reg.get(screen.type)
+            if not isinstance(m, DisplayModule) or not _reg.is_enabled(m.id):
+                m = DefaultModule()
+            content_url = m.get_screen_url(screen, "/")
+        except Exception as e:
+            logger.warning("notify_screen: could not compute content_url: %s", e)
+
         message = {
             "type": "reload",
+            "content_url": content_url,
         }
-        # connection = self.active_connections.get(str(screen.id), [])
         if screen.connected:
             logger.info("Notifying screen %i: %s", screen.id, message)
             await screen.websocket.send_json(message)

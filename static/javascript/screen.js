@@ -20,12 +20,29 @@ const connect = () => {
 
   ws.onmessage = (event) => {
     console.log("Received WS message", event.data);
+
+    // Server may include the screen's CURRENT content_url so we don't reuse
+    // a stale window.contentUrl from when the frame first loaded. If absent,
+    // fall back to the cached URL (backward-compatible with older payloads).
+    let serverUrl = null;
+    try {
+      const msg = JSON.parse(event.data);
+      if (msg && msg.content_url) serverUrl = msg.content_url;
+    } catch (_) { /* not JSON — ignore */ }
+
+    if (serverUrl) {
+      // Resolve to absolute if it's a path
+      if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
+        window.contentUrl = serverUrl;
+      } else {
+        window.contentUrl = window.location.origin + (serverUrl.startsWith("/") ? "" : "/") + serverUrl;
+      }
+    }
+
     const returnTo = encodeURIComponent(window.contentUrl || window.location.href);
     const updatingUrl = "/updating?return_to=" + returnTo;
 
-    // Try the kept popup reference first, then re-acquire by window name
-    // (some kiosk Chromium setups don't return a handle from window.open
-    // but the named popup is still alive).
+    // Try the kept popup reference first, then re-acquire by window name.
     let popup = contentWindow && !contentWindow.closed ? contentWindow : null;
     if (!popup) {
       try {
@@ -42,7 +59,6 @@ const connect = () => {
     if (popup && !popup.closed) {
       popup.location = updatingUrl;
     } else {
-      // Last resort: navigate the frame itself
       window.location = updatingUrl;
     }
   };
