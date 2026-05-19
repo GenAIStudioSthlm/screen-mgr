@@ -32,15 +32,9 @@
                 <div class="bg-[#f6c6ce] shadow border rounded py-2 px-3">
                     <select name="screen{{ screens[i].id }}_type" class="bg-[#f6c6ce] py-0" x-model="selectedType"
                         x-init="selectedType = '{{ screens[(i)].type }}'">
-                        <option value="url">Url</option>
-                        <option value="text">Text</option>
-                        <option value="video">Video</option>
-                        <option value="picture">Picture</option>
-                        <option value="pdf">PDF</option>
-                        <option value="default">Studio logo</option>
-                        <option value="slideshow">Slideshow</option>
-                        <option value="news">AI News</option>
-                        <option value="screen_share">Screen Share</option>
+                        {% for m in display_modules %}
+                        <option value="{{ m.id }}">{{ m.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
 

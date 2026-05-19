@@ -4,6 +4,8 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from connections import connection_manager
+from modules import registry
+from modules.base import DisplayModule
 from screens import screen_manager
 
 router = APIRouter()
@@ -55,8 +57,16 @@ async def set_screen_content(
         if not screen:
             raise HTTPException(status_code=404, detail="Screen not found")
 
-        if content_type not in ["text", "url", "video", "picture", "pdf", "slideshow", "default"]:
-            raise HTTPException(status_code=400, detail="Invalid content type")
+        # Valid content types are the ids of currently-registered display modules.
+        valid_types = {
+            m.id for m in registry.list()
+            if isinstance(m, DisplayModule) and registry.is_enabled(m.id)
+        }
+        if content_type not in valid_types:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Invalid content type '{content_type}'. Valid: {sorted(valid_types)}",
+            )
 
         # Update the screen's content based on the type
         screen.type = content_type

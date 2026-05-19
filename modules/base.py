@@ -48,15 +48,22 @@ class Module(ABC):
 
 
 class DisplayModule(Module):
-    """A module that provides content for screens to render. Its `id` doubles
-    as a value of `Screen.type` once display modules supplant the hard-coded
-    content-type list (phase 4 in PLAN_MODULES.md)."""
+    """A module that provides content for screens to render. Its `id` matches
+    a value of `Screen.type` — the screens-tab dropdown is built dynamically
+    from the registered display modules."""
 
     type = ["display"]
 
     @abstractmethod
-    def get_screen_url(self, screen_id: int) -> str:
-        """URL a screen should load to render this module's content."""
+    def get_screen_url(self, screen, base_url: str) -> str:
+        """URL a screen should load to render this module's content.
+
+        `screen` is the Screen object so the module can read per-screen
+        fields (text, url, video, picture, pdf, slideshow, news_mode, ...).
+        `base_url` is the request's base URL (e.g. 'http://192.168.2.65:8000/')
+        so the module can return either an absolute backend path or an
+        external URL.
+        """
         ...
 
 

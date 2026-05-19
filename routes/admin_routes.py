@@ -10,6 +10,8 @@ from fastapi import (
 )
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
+from modules import registry
+from modules.base import DisplayModule
 from screens import screen_manager
 from connections import connection_manager
 from utils import APP_VERSION, delete_file
@@ -53,6 +55,11 @@ async def admin_page(request: Request):
         if pictures:
             uploaded_pictures[folder] = pictures
 
+    display_modules = [
+        m for m in registry.list()
+        if isinstance(m, DisplayModule) and registry.is_enabled(m.id)
+    ]
+
     return templates.TemplateResponse(
         "admin.html",
         {
@@ -63,6 +70,7 @@ async def admin_page(request: Request):
             "pdfs": os.listdir(PDF_FOLDER),
             "picture_subfolders": picture_subfolders,
             "uploaded_pictures": uploaded_pictures,
+            "display_modules": display_modules,
         },
     )
 

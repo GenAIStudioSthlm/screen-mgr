@@ -9,10 +9,29 @@ from modules.registry import registry, ModuleRegistry  # noqa: F401
 from modules.base import Module, DisplayModule, ServiceModule  # noqa: F401
 
 # --- built-in modules ---------------------------------------------------
-# Order matters only for log readability.
+# Order chosen to match the historical content-type dropdown order so the
+# admin UI doesn't visually reshuffle when the dropdown becomes dynamic.
 
+from modules.url import UrlModule
+from modules.text import TextModule
+from modules.video import VideoModule
+from modules.picture import PictureModule
+from modules.pdf import PdfModule
+from modules.default import DefaultModule
+from modules.slideshow import SlideshowModule
+from modules.news import NewsModule
+from modules.screen_share import ScreenShareModule
 from modules.rgbdisplay import RGBDisplayModule
 
+registry.register(UrlModule())
+registry.register(TextModule())
+registry.register(VideoModule())
+registry.register(PictureModule())
+registry.register(PdfModule())
+registry.register(DefaultModule())
+registry.register(SlideshowModule())
+registry.register(NewsModule())
+registry.register(ScreenShareModule())
 registry.register(RGBDisplayModule())
 
 __all__ = [

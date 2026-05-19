@@ -11,6 +11,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 - 2026-05-19: Module registry end-to-end — `rgbdisplay` module visible at `/api/modules`; admin Modules tab renders it with live status; `Stop` button darkens the LED matrix, `Start` brings it back. The IoT-for-displays foundation works.
 
+### Changed
+- **Content types are now registered display modules (phase 4 of `TASKS/PLAN_MODULES.md`)**. Each former hard-coded type (`url`, `text`, `video`, `picture`, `pdf`, `slideshow`, `news`, `screen_share`, `default`) is a thin `modules/<id>/__init__.py` DisplayModule wrapper around the existing per-type URL logic. `routes/screen_routes.py` resolves content via `registry.get(screen.type).get_screen_url(screen, base_url)` instead of an if/elif chain — falls back to the `default` module if the type isn't a registered display module. The admin screens-tab dropdown is now generated from the registry's display modules (sorted by registration order). `/api/screens/{id}/set_content` validates against the live registry, not a hardcoded list. Adding a new content type now means: drop a folder under `modules/`, register it, done.
+
 ### Added
 - **Modules admin tab (phase 3 of `TASKS/PLAN_MODULES.md`)** — `templates/admin/modules.html` rendering the registry, with availability badge, enabled toggle, and Start/Stop buttons for service modules. Polls `/api/modules` every 5s for live status; shows the last action outcome inline. Tab added between Screen Share and AI News in the main admin nav.
 - **Module registry (phase 1+2 of `TASKS/PLAN_MODULES.md`)** — `modules/` package containing `Module` / `DisplayModule` / `ServiceModule` base classes plus a `ModuleRegistry` singleton that built-in modules self-register with at import time. Enabled state persists to `data/modules.json`.
