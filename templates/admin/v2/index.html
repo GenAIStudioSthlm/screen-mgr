@@ -28,10 +28,9 @@
     <aside class="v2-sidebar">
 
       <div class="view-toggle">
-        <button class="btn" :class="view === 'screens'    ? 'btn-brand' : 'btn-ghost'" @click="view='screens'">Screens</button>
-        <button class="btn" :class="view === 'lighting'   ? 'btn-brand' : 'btn-ghost'" @click="view='lighting'">Lighting</button>
-        <button class="btn" :class="view === 'led_screens'? 'btn-brand' : 'btn-ghost'" @click="view='led_screens'">LED</button>
-        <button class="btn" :class="view === 'modules'    ? 'btn-brand' : 'btn-ghost'" @click="view='modules'">Modules</button>
+        <button class="btn" :class="view === 'screens'  ? 'btn-brand' : 'btn-ghost'" @click="view='screens'">Screens</button>
+        <button class="btn" :class="view === 'lighting' ? 'btn-brand' : 'btn-ghost'" @click="view='lighting'">Lighting</button>
+        <button class="btn" :class="view === 'modules'  ? 'btn-brand' : 'btn-ghost'" @click="view='modules'">Modules</button>
       </div>
 
       <div>
@@ -75,7 +74,6 @@
       {# Per-view content. Each view is its own self-contained template + JS file. #}
       <div x-show="view === 'screens'">{% include "admin/v2/views/screens.html" %}</div>
       <div x-show="view === 'lighting'">{% include "admin/v2/views/lighting.html" %}</div>
-      <div x-show="view === 'led_screens'">{% include "admin/v2/views/led_screens.html" %}</div>
       <div x-show="view === 'modules'">{% include "admin/v2/views/modules.html" %}</div>
 
     </main>

@@ -94,7 +94,7 @@
 
   {# ---------- Global screens list ---------- #}
   <div class="card">
-    <h3 style="margin:0 0 var(--s-3) 0">All screens</h3>
+    <h3 style="margin:0 0 var(--s-3) 0">All web screens</h3>
     <div style="display:flex;flex-direction:column;gap:var(--s-1)">
       <template x-for="s in screens" :key="s.id">
         <div style="display:flex;align-items:center;gap:var(--s-2);padding:var(--s-1) 0;border-bottom:1px solid var(--border);flex-wrap:wrap;font-size:12px">
@@ -108,3 +108,6 @@
   </div>
 
 </div>
+
+{# ---------- LED panels (LED Screens, folded under the Screens view) ---------- #}
+{% include "admin/v2/views/led_screens.html" %}

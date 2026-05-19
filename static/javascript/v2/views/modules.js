@@ -11,6 +11,7 @@ function v2ModulesView() {
     newManifestUrl: '',
     lastExternal: '',
     lastExternalOk: true,
+    showAdd: false,
     showHelp: false,
     copied: '',
     _timer: null,
