@@ -2,7 +2,7 @@
 
 <script defer src="/static/javascript/v2/views/screens.js?v={{ app_version }}"></script>
 
-<div x-data="v2ScreensView()"
+<div x-data="v2ScreensView"
      x-init="load()"
      x-effect="selected !== null && syncEditor(selected)"
      style="display:flex;flex-direction:column;gap:var(--s-4)">
