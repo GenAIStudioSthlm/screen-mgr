@@ -34,6 +34,11 @@ registry.register(NewsModule())
 registry.register(ScreenShareModule())
 registry.register(RGBDisplayModule())
 
+# --- external modules ---------------------------------------------------
+# Pull each manifest configured in data/modules.json. Failures are
+# logged inside load_external() and don't break startup.
+registry.load_external()
+
 __all__ = [
     "registry",
     "ModuleRegistry",

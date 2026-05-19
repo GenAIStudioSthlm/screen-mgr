@@ -4,6 +4,32 @@
     Modules registered with screen-mgr. Service modules can be started/stopped from here.
   </div>
 
+  <!-- Add external module -->
+  <div class="border rounded p-3 bg-pink-50">
+    <div class="font-semibold text-sm mb-1">Add external module</div>
+    <div class="text-xs text-gray-600 mb-2">
+      Point at a JSON manifest URL hosted by another service. It will be fetched, validated, and registered.
+    </div>
+    <div class="flex flex-wrap gap-2 items-center">
+      <input type="url" x-model="newManifestUrl"
+        placeholder="http://robotpi.local:8080/manifest.json"
+        class="border rounded px-2 py-1 text-sm flex-grow min-w-0">
+      <button @click="addExternal()"
+        class="bg-pink-600 hover:bg-pink-700 text-white px-3 py-1 rounded text-sm">
+        Register
+      </button>
+      <button @click="refreshExternals()"
+        class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm"
+        title="Re-fetch every configured external manifest">
+        Refresh externals
+      </button>
+    </div>
+    <div x-show="lastExternal" class="mt-2 text-xs"
+      :class="lastExternalOk ? 'text-green-700' : 'text-red-700'">
+      <span x-text="lastExternal"></span>
+    </div>
+  </div>
+
   <template x-for="m in modules" :key="m.id">
     <div class="border rounded p-3 bg-white">
 
@@ -20,6 +46,12 @@
         </div>
 
         <div class="flex items-center gap-2 shrink-0">
+          <span x-show="m.status && m.status.external"
+            class="bg-purple-100 text-purple-800 px-2 py-1 text-xs font-semibold rounded"
+            title="Registered via external manifest URL">
+            external
+          </span>
+
           <span
             :class="m.available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
             class="px-2 py-1 text-xs font-semibold rounded">
@@ -30,6 +62,13 @@
             :class="m.enabled ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 hover:bg-gray-500'"
             class="text-white text-xs px-3 py-1 rounded font-semibold">
             <span x-text="m.enabled ? 'ENABLED' : 'DISABLED'"></span>
+          </button>
+
+          <button x-show="m.status && m.status.external"
+            @click="removeExternal(m)"
+            class="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-1 rounded"
+            title="Remove this external module">
+            ✕
           </button>
         </div>
       </div>
@@ -72,6 +111,9 @@
   function modulesPanel() {
     return {
       modules: [],
+      newManifestUrl: '',
+      lastExternal: '',
+      lastExternalOk: true,
       _timer: null,
 
       async load() {
@@ -115,6 +157,62 @@
           m.lastActionOk = false;
         }
         // Refresh status immediately
+        await this.load();
+      },
+
+      async addExternal() {
+        const url = (this.newManifestUrl || '').trim();
+        if (!url) return;
+        this.lastExternal = 'registering ' + url + '…';
+        this.lastExternalOk = true;
+        try {
+          const r = await fetch('/api/modules/external', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ manifest_url: url }),
+          });
+          const d = await r.json();
+          if (r.ok) {
+            this.lastExternal = 'registered ' + (d.id || url) + ' ✓';
+            this.lastExternalOk = true;
+            this.newManifestUrl = '';
+          } else {
+            this.lastExternal = 'failed: ' + (d.detail || JSON.stringify(d));
+            this.lastExternalOk = false;
+          }
+        } catch (e) {
+          this.lastExternal = 'failed: ' + e;
+          this.lastExternalOk = false;
+        }
+        await this.load();
+      },
+
+      async removeExternal(m) {
+        if (!confirm('Remove external module "' + m.id + '"?')) return;
+        try {
+          await fetch('/api/modules/external/' + encodeURIComponent(m.id), {
+            method: 'DELETE',
+          });
+        } catch (e) {
+          console.error('remove external failed', e);
+        }
+        await this.load();
+      },
+
+      async refreshExternals() {
+        this.lastExternal = 'refreshing all external manifests…';
+        this.lastExternalOk = true;
+        try {
+          const r = await fetch('/api/modules/refresh', { method: 'POST' });
+          const d = await r.json();
+          const ok = (d.results || []).filter(x => x.ok).length;
+          const total = (d.results || []).length;
+          this.lastExternal = 'refreshed ' + ok + '/' + total;
+          this.lastExternalOk = ok === total;
+        } catch (e) {
+          this.lastExternal = 'failed: ' + e;
+          this.lastExternalOk = false;
+        }
         await this.load();
       },
     };
