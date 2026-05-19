@@ -1,8 +1,7 @@
 {# views/lighting.html — Hue controls. Per-zone block when a zone is selected
    (reads selected from the shell), plus global all-rooms / scenes /
-   per-light controls. #}
-
-<script defer src="/static/javascript/v2/views/lighting.js?v={{ app_version }}"></script>
+   per-light controls. The lighting.js factory loads from index.html's
+   <head>; no <script> tag here. #}
 
 <div x-data="v2LightingView()" x-init="load()" style="display:flex;flex-direction:column;gap:var(--s-4)">
 

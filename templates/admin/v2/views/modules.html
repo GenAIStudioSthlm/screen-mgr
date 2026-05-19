@@ -1,7 +1,6 @@
 {# views/modules.html — registry overview, ported from legacy admin/modules.html
-   to the v2 design tokens. Self-contained Alpine scope. #}
-
-<script defer src="/static/javascript/v2/views/modules.js?v={{ app_version }}"></script>
+   to the v2 design tokens. modules.js loads from index.html's <head>; no
+   <script> tag here. #}
 
 <div x-data="v2ModulesView()" x-init="load()" class="space-y-3" style="display:flex;flex-direction:column;gap:var(--s-4)">
 

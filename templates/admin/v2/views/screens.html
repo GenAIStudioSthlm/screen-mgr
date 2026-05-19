@@ -1,6 +1,6 @@
-{# views/screens.html — per-zone screen content editor + global screen list. #}
-
-<script defer src="/static/javascript/v2/views/screens.js?v={{ app_version }}"></script>
+{# views/screens.html — per-zone screen content editor + global screen list.
+   Note: the screens.js factory is loaded from index.html's <head> so it
+   beats Alpine's microtask. Do not add a <script> tag here. #}
 
 <div x-data="v2ScreensView()"
      x-init="load()"

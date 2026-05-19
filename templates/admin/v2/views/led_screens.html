@@ -1,8 +1,7 @@
 {# views/led_screens.html — LED screens / panels section. Included from
    views/screens.html as a sub-section since LED panels are a flavor of
-   screen. Today: rgbdisplay. #}
-
-<script defer src="/static/javascript/v2/views/led_screens.js?v={{ app_version }}"></script>
+   screen. Today: rgbdisplay. led_screens.js loads from index.html's
+   <head>; no <script> tag here. #}
 
 <div x-data="v2LedScreensView()" x-init="load()" style="display:flex;flex-direction:column;gap:var(--s-3);margin-top:var(--s-5)">
 
