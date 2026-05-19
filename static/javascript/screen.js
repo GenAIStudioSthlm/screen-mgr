@@ -21,28 +21,38 @@ const connect = () => {
   ws.onmessage = (event) => {
     console.log("Received WS message", event.data);
 
-    // Server may include the screen's CURRENT content_url so we don't reuse
-    // a stale window.contentUrl from when the frame first loaded. If absent,
-    // fall back to the cached URL (backward-compatible with older payloads).
+    // The server includes the screen's CURRENT content_url so we don't reuse
+    // a stale window.contentUrl from when the frame first loaded.
     let serverUrl = null;
     try {
       const msg = JSON.parse(event.data);
       if (msg && msg.content_url) serverUrl = msg.content_url;
     } catch (_) { /* not JSON — ignore */ }
 
+    let newUrl = window.contentUrl;
     if (serverUrl) {
-      // Resolve to absolute if it's a path
       if (serverUrl.startsWith("http://") || serverUrl.startsWith("https://")) {
-        window.contentUrl = serverUrl;
+        newUrl = serverUrl;
       } else {
-        window.contentUrl = window.location.origin + (serverUrl.startsWith("/") ? "" : "/") + serverUrl;
+        newUrl = window.location.origin + (serverUrl.startsWith("/") ? "" : "/") + serverUrl;
       }
     }
 
-    const returnTo = encodeURIComponent(window.contentUrl || window.location.href);
+    // If the content URL actually changed (e.g. scene swap, content edit) we
+    // need a full FRAME reload so screen.html re-renders with the new
+    // window.contentUrl AND we pick up any new screen.js too. Trying to
+    // navigate the popup alone leaves the frame stuck on the old data.
+    if (newUrl !== window.contentUrl) {
+      console.log("content URL changed; reloading frame", { from: window.contentUrl, to: newUrl });
+      window.location.reload();
+      return;
+    }
+
+    // Same content — pure refresh. Use the /updating popup-dance for a
+    // visible "Updating" beat then bounce back.
+    const returnTo = encodeURIComponent(newUrl || window.location.href);
     const updatingUrl = "/updating?return_to=" + returnTo;
 
-    // Try the kept popup reference first, then re-acquire by window name.
     let popup = contentWindow && !contentWindow.closed ? contentWindow : null;
     if (!popup) {
       try {
