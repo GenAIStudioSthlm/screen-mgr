@@ -16,7 +16,7 @@ function studioShell() {
 
     async load() {
       this.startClock();
-      await this.refreshZones();
+      await Promise.all([this.refreshZones(), this.refreshScenes()]);
     },
 
     async refreshZones() {
@@ -36,6 +36,40 @@ function studioShell() {
 
     select(z) {
       this.selected = z;
+    },
+
+    // Scenes
+    scenes: [],
+    sceneActionMsg: '',
+    sceneActionOk: true,
+    sceneDropdownOpen: false,
+
+    async refreshScenes() {
+      try {
+        const r = await fetch('/api/scenes');
+        const d = await r.json();
+        this.scenes = d.scenes || [];
+      } catch (e) { console.error('scenes load failed', e); }
+    },
+
+    async applyScene(sceneId) {
+      this.sceneActionMsg = 'applying…';
+      this.sceneActionOk = true;
+      this.sceneDropdownOpen = false;
+      try {
+        const r = await fetch('/api/scenes/' + sceneId + '/apply', { method: 'POST' });
+        const d = await r.json();
+        const updated = (d.screens_updated || []).length;
+        const reloaded = (d.reloaded || []).length;
+        const failed = (d.screens_failed || []).length;
+        const hueNote = d.hue && d.hue.error ? ' · hue: ' + d.hue.error : (d.hue ? ' · hue ✓' : '');
+        this.sceneActionMsg = sceneId + ' ✓ — ' + updated + ' screens updated · ' + reloaded + ' reloaded' + (failed ? ' · ' + failed + ' failed' : '') + hueNote;
+        this.sceneActionOk = failed === 0;
+        await this.refreshZones();
+      } catch (e) {
+        this.sceneActionMsg = sceneId + ' ✗ ' + e;
+        this.sceneActionOk = false;
+      }
     },
 
     startClock() {
