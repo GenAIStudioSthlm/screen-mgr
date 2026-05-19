@@ -1,5 +1,78 @@
-{# led_screens.html — rgbdisplay + future LED outputs. Phase 4 step 3. #}
-<div class="card" style="color:var(--text-dim);font-size:11px">
-  <h3>LED Screens view</h3>
-  <p>Coming next: rgbdisplay start/stop + content swap (clock / axolotl / other), plus a slot for any future LED panel modules — backed by <code>/api/modules/rgbdisplay/*</code>.</p>
+{# views/led_screens.html — LED screens / panels. Today: rgbdisplay. #}
+
+<script defer src="/static/javascript/v2/views/led_screens.js?v={{ app_version }}"></script>
+
+<div x-data="v2LedScreensView()" x-init="load()" style="display:flex;flex-direction:column;gap:var(--s-4)">
+
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h1 style="margin:0">LED Screens</h1>
+    <span class="pill" x-text="panels.length + ' panel' + (panels.length === 1 ? '' : 's')"></span>
+  </div>
+  <p style="color:var(--text-dim);font-size:12px;margin:0">
+    Physical LED outputs on the Pi. Today: the 32×64 matrix (<code>rgbdisplay</code>). Adding a new panel = register its service module; this view picks it up automatically.
+  </p>
+
+  <template x-for="panel in panels" :key="panel.id">
+    <div class="card">
+
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-3)">
+        <div style="min-width:0;flex:1">
+          <div style="display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap">
+            <h2 style="margin:0;text-transform:none;color:var(--text)" x-text="panel.name"></h2>
+            <span class="pill" x-text="panel.id"></span>
+            <span class="pill" x-text="'v' + panel.version"></span>
+          </div>
+          <div style="margin-top:var(--s-2);font-size:12px;color:var(--text-mid)" x-text="panel.description"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:var(--s-2);flex-shrink:0">
+          <span class="pill" :class="panel.available ? 'pill-ok' : 'pill-err'" x-text="panel.available ? 'available' : 'unavailable'"></span>
+          <button @click="toggleEnabled(panel)" class="btn" :class="panel.enabled ? 'btn-brand' : 'btn-ghost'">
+            <span x-text="panel.enabled ? 'ENABLED' : 'DISABLED'"></span>
+          </button>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--s-4);padding-top:var(--s-3);border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:var(--s-4)">
+
+        <div>
+          <div style="font-size:10px;color:var(--text-dim);letter-spacing:0.05em;text-transform:uppercase">Service status</div>
+          <div style="font-size:24px;font-weight:600;margin-top:var(--s-1)"
+               :style="(panel.status && panel.status.active === 'active') ? 'color:var(--ok)' : 'color:var(--text-dim)'">
+            <span x-text="(panel.status && panel.status.active) || 'unknown'"></span>
+          </div>
+          <div style="font-size:11px;color:var(--text-mid);margin-top:var(--s-1)">
+            boot: <span style="font-family:var(--font-mono)" x-text="(panel.status && panel.status.enabled) || 'unknown'"></span>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:var(--s-2);justify-content:center">
+          <button @click="action(panel, 'start')"
+                  :disabled="panel.status && panel.status.active === 'active'"
+                  class="btn" style="background:var(--ok);color:#000">
+            ▶ Start
+          </button>
+          <button @click="action(panel, 'stop')"
+                  :disabled="panel.status && panel.status.active !== 'active'"
+                  class="btn" style="background:var(--err);color:#fff">
+            ■ Stop
+          </button>
+          <div x-show="panel.lastAction" style="font-size:11px;text-align:center"
+               :style="panel.lastActionOk ? 'color:var(--ok)' : 'color:var(--err)'">
+            <span x-text="panel.lastAction"></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:var(--s-4);padding-top:var(--s-3);border-top:1px solid var(--border);font-size:11px;color:var(--text-dim)">
+        <strong>Future:</strong> content variant switcher (clock / axolotl_anim / other), brightness control if the underlying script supports it, scheduled on/off windows.
+      </div>
+
+    </div>
+  </template>
+
+  <div x-show="panels.length === 0" style="color:var(--text-dim);font-size:11px;font-style:italic">
+    No LED panels registered. Adding one is a small ServiceModule in <code>modules/&lt;name&gt;/</code> with id listed in <code>led_screens.js → LED_MODULE_IDS</code>.
+  </div>
+
 </div>
