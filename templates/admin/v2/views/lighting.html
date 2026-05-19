@@ -1,5 +1,5 @@
 {# views/lighting.html — Hue controls. Per-zone block when a zone is selected
-   (reads $root.selected from the shell), plus global all-rooms / scenes /
+   (reads selected from the shell), plus global all-rooms / scenes /
    per-light controls. #}
 
 <script defer src="/static/javascript/v2/views/lighting.js?v={{ app_version }}"></script>
@@ -38,26 +38,26 @@ python3 scripts/hue_pair.py</pre>
   </div>
 
   {# ---------- Zone-scoped block ---------- #}
-  <template x-if="hue.available && $root.selected && $root.selected.light_group_id">
+  <template x-if="hue.available && selected && selected.light_group_id">
     <div class="card" style="border-color:var(--brand)">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
         <h3 style="margin:0">
-          Zone &mdash; <span x-text="$root.selected.name"></span>
+          Zone &mdash; <span x-text="selected.name"></span>
         </h3>
-        <span class="pill" x-text="'group ' + $root.selected.light_group_id"></span>
+        <span class="pill" x-text="'group ' + selected.light_group_id"></span>
       </div>
-      <template x-if="zoneGroup($root.selected)">
+      <template x-if="zoneGroup(selected)">
         <div style="display:flex;align-items:center;gap:var(--s-3);flex-wrap:wrap">
-          <button @click="toggleZone($root.selected)" class="btn"
-                  :style="(zoneGroup($root.selected).state?.any_on || zoneGroup($root.selected).action?.on) ? 'background:var(--yellow);color:#000' : 'background:var(--card);color:var(--text-mid);border:1px solid var(--border)'">
-            <span x-text="(zoneGroup($root.selected).state?.any_on || zoneGroup($root.selected).action?.on) ? 'ON' : 'OFF'"></span>
+          <button @click="toggleZone(selected)" class="btn"
+                  :style="(zoneGroup(selected).state?.any_on || zoneGroup(selected).action?.on) ? 'background:var(--yellow);color:#000' : 'background:var(--card);color:var(--text-mid);border:1px solid var(--border)'">
+            <span x-text="(zoneGroup(selected).state?.any_on || zoneGroup(selected).action?.on) ? 'ON' : 'OFF'"></span>
           </button>
           <input type="range" min="0" max="254" step="1"
-                 :value="zoneGroup($root.selected).action?.bri ?? 128"
-                 @change="setZoneBri($root.selected, $event.target.value)"
+                 :value="zoneGroup(selected).action?.bri ?? 128"
+                 @change="setZoneBri(selected, $event.target.value)"
                  style="flex:1;min-width:120px">
           <span style="font-size:11px;color:var(--text-dim);font-family:var(--font-mono)">
-            <span x-text="zoneGroup($root.selected).action?.bri ?? 0"></span>/254
+            <span x-text="zoneGroup(selected).action?.bri ?? 0"></span>/254
           </span>
         </div>
       </template>

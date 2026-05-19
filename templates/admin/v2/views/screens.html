@@ -4,7 +4,7 @@
 
 <div x-data="v2ScreensView()"
      x-init="load()"
-     x-effect="$root.selected !== null && syncEditor($root.selected)"
+     x-effect="selected !== null && syncEditor(selected)"
      style="display:flex;flex-direction:column;gap:var(--s-4)">
 
   {# ---------- Header ---------- #}
@@ -21,29 +21,29 @@
   </div>
 
   {# ---------- Per-zone editor ---------- #}
-  <template x-if="!$root.selected">
+  <template x-if="!selected">
     <div class="card" style="color:var(--text-dim);font-size:11px">
       Click any zone on the floor plan to edit its assigned screen.
     </div>
   </template>
 
-  <template x-if="$root.selected && !screenFor($root.selected)">
+  <template x-if="selected && !screenFor(selected)">
     <div class="card" style="color:var(--text-dim);font-size:11px">
-      Zone <code x-text="$root.selected.id"></code> has no screen assigned. Use the legacy admin to bind one for now (Phase 5 will add this here).
+      Zone <code x-text="selected.id"></code> has no screen assigned. Use the legacy admin to bind one for now (Phase 5 will add this here).
     </div>
   </template>
 
-  <template x-if="$root.selected && screenFor($root.selected)">
+  <template x-if="selected && screenFor(selected)">
     <div class="card" style="border-color:var(--brand)">
 
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-3);flex-wrap:wrap;margin-bottom:var(--s-3)">
         <div>
-          <h3 style="margin:0" x-text="$root.selected.name"></h3>
+          <h3 style="margin:0" x-text="selected.name"></h3>
           <div style="font-size:11px;color:var(--text-dim);margin-top:var(--s-1)">
-            screen #<span x-text="$root.selected.screen.id"></span>
+            screen #<span x-text="selected.screen.id"></span>
             ·
-            <span class="dot" :class="$root.selected.screen.connected ? 'ok' : 'dim'"></span>
-            <span x-text="$root.selected.screen.connected ? ($root.selected.screen.client_host || 'connected') : 'not connected'"></span>
+            <span class="dot" :class="selected.screen.connected ? 'ok' : 'dim'"></span>
+            <span x-text="selected.screen.connected ? (selected.screen.client_host || 'connected') : 'not connected'"></span>
           </div>
         </div>
       </div>
@@ -77,7 +77,7 @@
         </label>
 
         <div style="display:flex;gap:var(--s-2);align-items:center">
-          <button @click="save($root.selected)" class="btn btn-brand">Save</button>
+          <button @click="save(selected)" class="btn btn-brand">Save</button>
           <span x-show="lastAction" style="font-size:11px"
                 :style="lastActionOk ? 'color:var(--ok)' : 'color:var(--err)'"
                 x-text="lastAction"></span>

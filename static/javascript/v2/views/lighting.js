@@ -3,7 +3,7 @@
  * Pulls live Hue state from /api/modules/hue/* and renders:
  *   - bridge status (paired / available)
  *   - per-zone scoped controls when the shell has a zone selected
- *     (reads `$root.selected` from the shell's outer scope)
+ *     (reads `selected` inherited from the shell's outer scope)
  *   - global rooms (all groups) and scene buttons
  *   - individual light list (collapsible)
  *

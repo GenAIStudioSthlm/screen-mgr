@@ -7,7 +7,9 @@
  *   - /api/screens/reload-all           (broadcast)
  *   - /api/modules                       (display module ids for the type dropdown)
  *
- * Reads the shell's selected zone via $root.selected (Alpine v3).
+ * Reads the shell's selected zone via Alpine v3 scope inheritance —
+ * a child x-data scope that doesn't define `selected` falls through
+ * to the parent (studioShell)'s reactive property.
  */
 function v2ScreensView() {
   return {
