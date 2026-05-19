@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
 
 ### Added
+- **Modules admin tab (phase 3 of `TASKS/PLAN_MODULES.md`)** — `templates/admin/modules.html` rendering the registry, with availability badge, enabled toggle, and Start/Stop buttons for service modules. Polls `/api/modules` every 5s for live status; shows the last action outcome inline. Tab added between Screen Share and AI News in the main admin nav.
 - **Module registry (phase 1+2 of `TASKS/PLAN_MODULES.md`)** — `modules/` package containing `Module` / `DisplayModule` / `ServiceModule` base classes plus a `ModuleRegistry` singleton that built-in modules self-register with at import time. Enabled state persists to `data/modules.json`.
 - **`rgbdisplay` as the inaugural Module** — `modules/rgbdisplay/` wraps the existing `rgbdisplay.service` systemd unit on studiopi. Surfaces `available` / `active` / `enabled` status via `systemctl is-active|is-enabled`, and `start()` / `stop()` shell out to `sudo systemctl` (admin user has NOPASSWD on the Pi).
 - HTTP endpoints `/api/modules`, `/api/modules/{id}`, `/api/modules/{id}/{enable,disable,start,stop}` — wired through the new `routes/modules_routes.py` and included in the composite router.

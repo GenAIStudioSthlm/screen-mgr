@@ -58,6 +58,10 @@
           :class="{ 'border-b-2 border-black': activeTab === 'screen_share' }" @click="setActiveTab('screen_share')">
           Screen Share
         </button>
+        <button class="py-2 px-4 text-gray-700 font-bold"
+          :class="{ 'border-b-2 border-black': activeTab === 'modules' }" @click="setActiveTab('modules')">
+          Modules
+        </button>
         <a href="/admin/news" class="py-2 px-4 text-pink-700 font-bold hover:text-pink-900">
           AI News
         </a>
@@ -93,6 +97,11 @@
         <!-- Screen Share Tab -->
         <div x-show="activeTab === 'screen_share'" class="p-4">
           {% include "admin/screen_share.html" %}
+        </div>
+
+        <!-- Modules Tab -->
+        <div x-show="activeTab === 'modules'" class="p-4">
+          {% include "admin/modules.html" %}
         </div>
       </div>
     </div>
