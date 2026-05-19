@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Studio · v2</title>
+  <link rel="stylesheet" href="/static/css/design-tokens.css?v={{ app_version }}">
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  <script defer src="/static/javascript/studio-theme.js?v={{ app_version }}"></script>
+  <style>
+    /* Layout grid + chrome scoped to this page */
+    body.studio-shell .v2-grid {
+      display: grid;
+      grid-template-columns: 260px 1fr 300px;
+      grid-template-rows: 48px 1fr;
+      grid-template-areas:
+        "header header header"
+        "sidebar main controls";
+      min-height: 100vh;
+    }
+    body.studio-shell .v2-header {
+      grid-area: header;
+      display: flex; align-items: center; gap: var(--s-4);
+      padding: 0 var(--s-4);
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+    }
+    body.studio-shell .v2-sidebar {
+      grid-area: sidebar;
+      background: var(--panel);
+      border-right: 1px solid var(--border);
+      padding: var(--s-4);
+      overflow-y: auto;
+    }
+    body.studio-shell .v2-main {
+      grid-area: main;
+      padding: var(--s-5);
+      overflow: auto;
+    }
+    body.studio-shell .v2-controls {
+      grid-area: controls;
+      background: var(--panel);
+      border-left: 1px solid var(--border);
+      padding: var(--s-4);
+      color: var(--text-dim);
+      font-size: 11px;
+    }
+
+    /* View toggle */
+    body.studio-shell .view-toggle {
+      display: flex; gap: var(--s-1);
+      margin-bottom: var(--s-4);
+    }
+    body.studio-shell .view-toggle .btn { flex: 1; padding: 6px 8px; }
+
+    /* Floor plan */
+    body.studio-shell .floorplan-wrap {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: var(--s-4);
+    }
+    body.studio-shell .floorplan {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+    body.studio-shell .zone-shape {
+      fill: var(--card);
+      stroke: var(--border);
+      stroke-width: 1.5;
+      cursor: pointer;
+      transition: fill var(--dur) var(--ease), stroke var(--dur) var(--ease);
+    }
+    body.studio-shell .zone-shape:hover { fill: var(--hover); stroke: var(--text-dim); }
+    body.studio-shell .zone-shape.connected { fill: rgba(161, 0, 255, 0.10); stroke: var(--brand); }
+    body.studio-shell .zone-shape.selected   { stroke: var(--brand); stroke-width: 3; fill: rgba(161, 0, 255, 0.20); }
+    body.studio-shell .zone-label {
+      fill: var(--text);
+      font-family: var(--font);
+      font-size: 12px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      pointer-events: none;
+      user-select: none;
+    }
+    body.studio-shell .zone-sublabel {
+      fill: var(--text-dim);
+      font-family: var(--font);
+      font-size: 9px;
+      text-anchor: middle;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    body.studio-shell .selected-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: var(--s-3);
+      margin-top: var(--s-3);
+    }
+    body.studio-shell .field-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 4px 0;
+      font-size: 11px;
+      color: var(--text-mid);
+    }
+    body.studio-shell .field-row .val {
+      color: var(--text);
+      font-family: var(--font-mono);
+    }
+    body.studio-shell .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; vertical-align: middle; margin-right: 4px; }
+    body.studio-shell .dot.ok  { background: var(--ok); }
+    body.studio-shell .dot.dim { background: var(--text-dim); }
+  </style>
+</head>
+<body class="studio-shell" x-data="v2App()" x-init="load()">
+
+  <div class="v2-grid">
+
+    <header class="v2-header">
+      <div style="font-weight:700;letter-spacing:0.04em">Studio</div>
+      <div style="font-size:11px;color:var(--text-dim)">v2</div>
+      <div style="flex:1"></div>
+      <div style="font-size:11px;color:var(--text-dim)" x-text="clock"></div>
+      <a href="/admin" class="btn btn-ghost" style="font-size:10px">legacy admin</a>
+      <button id="studio-theme-toggle" class="btn btn-icon" aria-label="Toggle theme">☀</button>
+    </header>
+
+    <aside class="v2-sidebar">
+      <div class="view-toggle">
+        <button class="btn"
+          :class="view === 'screens' ? 'btn-brand' : 'btn-ghost'"
+          @click="view='screens'">Screens</button>
+        <button class="btn"
+          :class="view === 'lighting' ? 'btn-brand' : 'btn-ghost'"
+          @click="view='lighting'">Lighting</button>
+        <button class="btn"
+          :class="view === 'modules' ? 'btn-brand' : 'btn-ghost'"
+          @click="view='modules'">Modules</button>
+      </div>
+
+      <h2>Selected zone</h2>
+
+      <div x-show="!selected" style="color:var(--text-dim);font-size:11px">
+        Click any zone on the floor plan to view its details.
+      </div>
+
+      <template x-if="selected">
+        <div class="selected-card">
+          <h3 style="margin-bottom:var(--s-2)" x-text="selected.name"></h3>
+          <div class="field-row">
+            <span>id</span>
+            <span class="val" x-text="selected.id"></span>
+          </div>
+          <div class="field-row">
+            <span>screen</span>
+            <span class="val" x-text="selected.screen ? '#' + selected.screen.id + ' — ' + selected.screen.type : '—'"></span>
+          </div>
+          <div class="field-row">
+            <span>connected</span>
+            <span class="val">
+              <span class="dot" :class="selected.screen?.connected ? 'ok' : 'dim'"></span>
+              <span x-text="selected.screen?.connected ? (selected.screen.client_host || 'yes') : 'no'"></span>
+            </span>
+          </div>
+          <div class="field-row">
+            <span>light group</span>
+            <span class="val" x-text="selected.light_group_id || '—'"></span>
+          </div>
+          <div class="field-row">
+            <span>area</span>
+            <span class="val" x-text="selected.area_label || '—'"></span>
+          </div>
+          <div style="margin-top:var(--s-3);font-size:11px;color:var(--text-dim)">
+            Phase 4 will add per-zone Screens / Lighting / Modules editing here.
+          </div>
+        </div>
+      </template>
+
+      <div x-show="view === 'modules'" style="margin-top:var(--s-4);color:var(--text-dim);font-size:11px">
+        Per-zone modules view also lands in Phase 4.
+      </div>
+    </aside>
+
+    <main class="v2-main">
+      <h1>Floor plan</h1>
+      <p style="color:var(--text-dim);font-size:12px">
+        8 zones placeholder-laid-out from <code>data/zones.json</code>. The polygons are temporary — Phase 3 will replace
+        them with the real Studio layout when we have coordinates.
+      </p>
+
+      <div class="floorplan-wrap" style="margin-top:var(--s-4)">
+        <svg class="floorplan" viewBox="0 0 960 420" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Studio floor plan">
+          <template x-for="z in zones" :key="z.id">
+            <g>
+              <polygon
+                :class="'zone-shape ' + (selected?.id === z.id ? 'selected ' : '') + (z.screen?.connected ? 'connected ' : '')"
+                :points="z.polygon.map(p => p.join(',')).join(' ')"
+                @click="select(z)"
+              />
+              <text
+                class="zone-label"
+                :x="z.label_xy[0]"
+                :y="z.label_xy[1] - 6"
+                x-text="z.name"
+              ></text>
+              <text
+                class="zone-sublabel"
+                :x="z.label_xy[0]"
+                :y="z.label_xy[1] + 9"
+                x-text="(z.screen?.type || '—') + (z.screen?.connected ? ' · live' : '')"
+              ></text>
+            </g>
+          </template>
+        </svg>
+      </div>
+
+      <div style="margin-top:var(--s-4);color:var(--text-dim);font-size:11px">
+        <span style="display:inline-block;width:12px;height:12px;background:rgba(161,0,255,0.10);border:1px solid var(--brand);vertical-align:middle"></span>
+        connected screen
+        <span style="display:inline-block;width:12px;height:12px;background:var(--card);border:1px solid var(--border);vertical-align:middle;margin-left:var(--s-3)"></span>
+        no screen / disconnected
+        <span style="display:inline-block;width:12px;height:12px;background:rgba(161,0,255,0.20);border:2px solid var(--brand);vertical-align:middle;margin-left:var(--s-3)"></span>
+        selected
+      </div>
+    </main>
+
+    <aside class="v2-controls">
+      <h2>Agent</h2>
+      <p>Reserved for the chat/voice agent (Phase 6).</p>
+
+      <h2 style="margin-top:var(--s-5)">Quick facts</h2>
+      <div class="field-row" style="font-size:10px">
+        <span>zones</span><span class="val" x-text="zones.length"></span>
+      </div>
+      <div class="field-row" style="font-size:10px">
+        <span>connected</span>
+        <span class="val" x-text="zones.filter(z => z.screen?.connected).length"></span>
+      </div>
+    </aside>
+
+  </div>
+
+  <script>
+    function v2App() {
+      return {
+        zones: [],
+        selected: null,
+        view: 'screens',
+        clock: '',
+        _timer: null,
+        async load() {
+          this.startClock();
+          try {
+            const r = await fetch('/api/zones');
+            const d = await r.json();
+            this.zones = d.zones || [];
+            // re-select if we had one
+            if (this.selected) {
+              this.selected = this.zones.find(z => z.id === this.selected.id) || null;
+            }
+          } catch (e) {
+            console.error('zones load failed', e);
+          }
+          clearTimeout(this._timer);
+          this._timer = setTimeout(() => this.load(), 8000);
+        },
+        select(z) {
+          this.selected = z;
+        },
+        startClock() {
+          const t = () => {
+            const d = new Date();
+            this.clock = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+          };
+          t(); setInterval(t, 1000);
+        },
+      };
+    }
+  </script>
+
+</body>
+</html>

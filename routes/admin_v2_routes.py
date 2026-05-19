@@ -21,16 +21,15 @@ router = APIRouter()
 
 @router.get("/admin/v2", response_class=HTMLResponse)
 async def admin_v2_index(request: Request):
-    # Phase 1: redirect to the design-tokens preview. Phase 3 will replace
-    # this with the real v2 shell.
     return templates.TemplateResponse(
-        "admin/v2/preview.html",
+        "admin/v2/index.html",
         {"request": request},
     )
 
 
 @router.get("/admin/v2/preview", response_class=HTMLResponse)
 async def admin_v2_preview(request: Request):
+    """Phase 1 token preview — kept around for design-system reference."""
     return templates.TemplateResponse(
         "admin/v2/preview.html",
         {"request": request},
