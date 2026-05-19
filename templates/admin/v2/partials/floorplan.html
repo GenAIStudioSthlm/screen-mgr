@@ -1,0 +1,31 @@
+{# Reusable SVG floor plan partial.
+   Expects an Alpine scope exposing:
+     - zones    : list from /api/zones
+     - selected : currently selected zone or null
+     - select(zone) : selector
+   Lives independently of which view is active in the sidebar so all views
+   can keep the floor plan visible.
+#}
+<div class="floorplan-wrap">
+  <svg class="floorplan" viewBox="0 0 960 420" preserveAspectRatio="xMidYMid meet"
+       role="img" aria-label="Studio floor plan">
+    <template x-for="z in zones" :key="z.id">
+      <g>
+        <polygon
+          :class="'zone-shape ' + (selected?.id === z.id ? 'selected ' : '') + (z.screen?.connected ? 'connected ' : '')"
+          :points="z.polygon.map(p => p.join(',')).join(' ')"
+          @click="select(z)"
+        />
+        <text class="zone-label"    :x="z.label_xy[0]" :y="z.label_xy[1] - 6" x-text="z.name"></text>
+        <text class="zone-sublabel" :x="z.label_xy[0]" :y="z.label_xy[1] + 9"
+              x-text="(z.screen?.type || '—') + (z.screen?.connected ? ' · live' : '')"></text>
+      </g>
+    </template>
+  </svg>
+</div>
+
+<div class="floorplan-legend">
+  <span class="floorplan-swatch connected"></span> connected screen
+  <span class="floorplan-swatch idle"></span> no screen / disconnected
+  <span class="floorplan-swatch selected"></span> selected
+</div>

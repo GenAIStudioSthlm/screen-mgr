@@ -178,12 +178,52 @@ In v1 both dropdowns can be present but mostly empty; they become useful in thei
 - Existing `/admin` continues to work.
 - **Verify:** Visit `/admin/v2`, click each zone, see correct screen info in the panel.
 
-### Phase 4 — Migrate existing controls into the new shell
-- The new admin's sidebar gains the three views: **Screens** / **Lights** / **Modules**.
-- Each view is a port of the current tab's functionality but scoped to the selected zone (Screens, Lights) or global (Modules).
-- All existing endpoints reused; no backend rewrite.
-- Light presets (warm/cool/blue/off) become shortcut buttons in the Lights view.
-- **Verify:** Every action available today is available in `/admin/v2` too — set content, upload media, start/stop modules, control lights.
+### Phase 4 — Migrate existing controls into the new shell (modular)
+
+**Architectural invariant (added 2026-05-19):** the v2 admin is **never** a single monolithic template. Each domain (Lights, Screens, LED Screens / rgbdisplay, Modules registry) gets its own self-contained view template + JS file. The shell only knows the list of views, not their internals.
+
+```
+templates/admin/v2/
+├── index.html              # shell: header, grid, sidebar nav, floor plan, right panel
+├── partials/
+│   └── floorplan.html      # SVG floor plan — included by the shell
+└── views/
+    ├── screens.html        # per-zone screen content management
+    ├── lighting.html       # Hue controls (reuses /api/modules/hue/*)
+    ├── led_screens.html    # rgbdisplay + any future LED outputs
+    └── modules.html        # registry overview (port of today's Modules tab)
+
+static/js/v2/
+├── shell.js                # Alpine app for the layout, zone selection, theme
+└── views/
+    ├── screens.js
+    ├── lighting.js
+    ├── led_screens.js
+    └── modules.js
+```
+
+Per-view rules:
+
+- **Self-contained Alpine scope.** A view manages its own state, fetches its own endpoints, and never reaches into shell internals beyond reading the currently selected zone.
+- **One file per view, both for the template and the JS.** Add a new domain = add two files + one sidebar nav entry. No edits to the shell.
+- **Reuses existing backend endpoints.** No backend rewrite in this phase; the heavy lifting is in `/api/zones`, `/api/modules/*`, `/api/screens`, `/api/modules/hue/*`.
+
+### Phase 4-bis — Modules as consumable primitives (architectural insight, 2026-05-19)
+
+The simple in-code modules (`url`, `text`, `picture`, `video`, `pdf`, `slideshow`) are not just admin-facing content types — they are **reusable primitives** other modules can compose. A future "Robot Control Panel" might fetch live telemetry and have its own UI built out of:
+
+- `text.get_screen_url(virtual_screen("Temperature: 23°C"), base_url)` for a number readout
+- `picture.get_screen_url(virtual_screen("robot.png"), base_url)` for a status diagram
+- Custom HTML for the parts that don't fit a primitive
+
+The existing `DisplayModule.get_screen_url(screen, base_url)` contract already makes this possible. To formalize:
+
+- A compound module can call `registry.get(primitive_id).get_screen_url(...)` with a lightweight Screen-like object (just `id`/`name` plus whichever content fields the primitive reads).
+- Phase 4-bis adds a `registry.compose(primitive_id, **fields)` helper that builds the Screen-like wrapper, so callers don't have to know which fields each primitive expects.
+
+This means: when we build the screen-agent (Phase 6 of `TASKS/PLAN_SCREEN_AGENT.md`) and the robot panel module, **they reuse** these primitives rather than reinventing renderers. Same vocabulary across the system.
+
+**Verify:** every action available today is available in `/admin/v2` too — set content, upload media, start/stop modules, control lights — each driven by its dedicated view.
 
 ### Phase 5 — Scene model
 - Add `Scene` model + `data/scenes.json`.
