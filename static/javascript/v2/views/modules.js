@@ -1,3 +1,4 @@
+console.log('[studio v2] modules.js LOADED');
 /* views/modules.js — Alpine.data factory for the v2 Modules view.
  *
  * Self-contained: polls /api/modules every 5s, supports enable/disable,
