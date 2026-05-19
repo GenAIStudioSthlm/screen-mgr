@@ -15,6 +15,7 @@ from routes.news_content_routes import router as news_content_router
 from routes.modules_routes import router as modules_router
 from modules.hue.routes import router as hue_router
 from routes.admin_v2_routes import router as admin_v2_router
+from routes.zones_routes import router as zones_router
 
 
 router = APIRouter()
@@ -29,3 +30,4 @@ router.include_router(news_content_router)
 router.include_router(modules_router)
 router.include_router(hue_router)
 router.include_router(admin_v2_router)
+router.include_router(zones_router)
