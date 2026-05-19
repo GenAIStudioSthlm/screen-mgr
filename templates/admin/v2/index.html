@@ -56,25 +56,28 @@
         </template>
       </div>
 
-      <div>
-        <h2 x-text="view + ' view'"></h2>
-        <div x-show="view === 'screens'">{% include "admin/v2/views/screens.html" %}</div>
-        <div x-show="view === 'lighting'">{% include "admin/v2/views/lighting.html" %}</div>
-        <div x-show="view === 'led_screens'">{% include "admin/v2/views/led_screens.html" %}</div>
-        <div x-show="view === 'modules'">{% include "admin/v2/views/modules.html" %}</div>
-      </div>
-
     </aside>
 
     {# ---------- MAIN ---------- #}
     <main class="v2-main">
-      <h1>Floor plan</h1>
-      <p style="color:var(--text-dim);font-size:12px">
-        8 zones from <code>/api/zones</code>. Polygons are placeholders pending real Studio coordinates.
-      </p>
-      <div style="margin-top:var(--s-4)">
-        {% include "admin/v2/partials/floorplan.html" %}
+
+      {# Floor plan: shown only for views that need zone selection. #}
+      <div x-show="view === 'screens' || view === 'lighting'">
+        <h1>Floor plan</h1>
+        <p style="color:var(--text-dim);font-size:12px">
+          8 zones from <code>/api/zones</code>. Polygons are placeholders pending real Studio coordinates.
+        </p>
+        <div style="margin-top:var(--s-4);margin-bottom:var(--s-5)">
+          {% include "admin/v2/partials/floorplan.html" %}
+        </div>
       </div>
+
+      {# Per-view content. Each view is its own self-contained template + JS file. #}
+      <div x-show="view === 'screens'">{% include "admin/v2/views/screens.html" %}</div>
+      <div x-show="view === 'lighting'">{% include "admin/v2/views/lighting.html" %}</div>
+      <div x-show="view === 'led_screens'">{% include "admin/v2/views/led_screens.html" %}</div>
+      <div x-show="view === 'modules'">{% include "admin/v2/views/modules.html" %}</div>
+
     </main>
 
     {# ---------- RIGHT PANEL (reserved for agent) ---------- #}
