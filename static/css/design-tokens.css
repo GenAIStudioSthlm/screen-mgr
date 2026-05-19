@@ -1,0 +1,212 @@
+/* ============================================================
+   screen-mgr — design tokens
+   ============================================================
+   Single source of truth for colors, typography, motion, and
+   surfaces used by the redesigned admin (/admin/v2). Modeled on
+   the Reinvention Studio aesthetic: dark-first, square corners,
+   Accenture purple as accent.
+
+   Toggle light mode by adding `class="light"` on <html>.
+   ============================================================ */
+
+:root {
+  /* Surfaces */
+  --bg: #0a0a0a;
+  --panel: #141414;
+  --card: #1c1c1c;
+  --border: #252525;
+  --hover: rgba(255, 255, 255, 0.06);
+
+  /* Text */
+  --text: rgba(255, 255, 255, 0.85);
+  --text-mid: rgba(255, 255, 255, 0.65);
+  --text-dim: rgba(255, 255, 255, 0.45);
+
+  /* Brand (Accenture purple by default; will be overridden per brand-profile in Phase 7) */
+  --brand: #A100FF;
+  --brand-dark: #7500C0;
+  --brand-contrast: #ffffff;
+
+  /* Secondary brand accents (room for client palettes) */
+  --blue: #0058A3;        /* IKEA primary */
+  --blue-dark: #003F7A;   /* IKEA secondary */
+  --yellow: #FFDA1A;      /* IKEA accent */
+  --yellow-dark: #F0C400;
+
+  /* Semantic */
+  --ok: #22c55e;
+  --warn: #fbbf24;
+  --err: #ef4444;
+
+  /* Motion */
+  --ease: cubic-bezier(0.85, 0, 0, 1);
+  --dur: 150ms;
+
+  /* Type */
+  --font: "Graphik", -apple-system, BlinkMacSystemFont, "Segoe UI", Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+
+  /* Radii (Studio convention: square, but a couple of subtle exceptions) */
+  --r-0: 0;
+  --r-1: 2px;
+  --r-2: 4px;
+  --r-pill: 999px;
+
+  /* Spacing scale (multiples of 4px) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+}
+
+html.light {
+  --bg: #F1F1EF;
+  --panel: #F8F8F6;
+  --card: #ffffff;
+  --border: #DCDCD8;
+  --hover: rgba(0, 0, 0, 0.04);
+
+  --text: rgba(0, 0, 0, 0.88);
+  --text-mid: rgba(0, 0, 0, 0.6);
+  --text-dim: rgba(0, 0, 0, 0.4);
+}
+
+/* ============================================================
+   Base typography + body
+   ============================================================ */
+
+body.studio-shell {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  letter-spacing: 0.005em;
+  margin: 0;
+  min-height: 100vh;
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+/* Use these utility classes inside `.studio-shell` for the redesign. They
+   coexist with Tailwind / existing styling — nothing in here leaks into
+   /admin unless the body opts in via `class="studio-shell"`. */
+
+.studio-shell *,
+.studio-shell *::before,
+.studio-shell *::after {
+  box-sizing: border-box;
+}
+
+.studio-shell h1, .studio-shell h2, .studio-shell h3 {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0 0 var(--s-3) 0;
+}
+
+.studio-shell h1 { font-size: 20px; }
+.studio-shell h2 { font-size: 15px; color: var(--text-mid); text-transform: uppercase; }
+.studio-shell h3 { font-size: 13px; }
+
+.studio-shell p { color: var(--text); line-height: 1.5; margin: 0 0 var(--s-3) 0; }
+.studio-shell small { color: var(--text-dim); }
+
+/* ============================================================
+   Re-usable atoms
+   ============================================================ */
+
+.studio-shell .card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: var(--s-4);
+  transition: background var(--dur) var(--ease), border-color var(--dur) var(--ease);
+}
+
+.studio-shell .panel {
+  background: var(--panel);
+  border-right: 1px solid var(--border);
+}
+
+.studio-shell .btn {
+  appearance: none;
+  border: none;
+  background: var(--card);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  padding: 6px 14px;
+  cursor: pointer;
+  border-radius: var(--r-0);
+  transition: background var(--dur) var(--ease), color var(--dur) var(--ease);
+}
+
+.studio-shell .btn:hover { background: var(--hover); }
+
+.studio-shell .btn-brand {
+  background: var(--brand);
+  color: var(--brand-contrast);
+}
+.studio-shell .btn-brand:hover { background: var(--brand-dark); }
+
+.studio-shell .btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-mid);
+}
+.studio-shell .btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+
+.studio-shell .btn-icon {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.studio-shell input[type="text"],
+.studio-shell input[type="number"],
+.studio-shell input[type="url"],
+.studio-shell select,
+.studio-shell textarea {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  border-radius: var(--r-0);
+}
+
+.studio-shell input:focus,
+.studio-shell select:focus,
+.studio-shell textarea:focus {
+  outline: none;
+  border-color: var(--brand);
+}
+
+.studio-shell .pill {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  background: var(--hover);
+  color: var(--text-mid);
+}
+
+.studio-shell .pill-ok { background: rgba(34, 197, 94, 0.15); color: var(--ok); }
+.studio-shell .pill-warn { background: rgba(251, 191, 36, 0.15); color: var(--warn); }
+.studio-shell .pill-err { background: rgba(239, 68, 68, 0.15); color: var(--err); }
+
+.studio-shell .swatch {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  display: inline-block;
+  vertical-align: middle;
+}
