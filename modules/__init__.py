@@ -22,6 +22,7 @@ from modules.slideshow import SlideshowModule
 from modules.news import NewsModule
 from modules.screen_share import ScreenShareModule
 from modules.rgbdisplay import RGBDisplayModule
+from modules.hue import HueModule
 
 registry.register(UrlModule())
 registry.register(TextModule())
@@ -33,6 +34,7 @@ registry.register(SlideshowModule())
 registry.register(NewsModule())
 registry.register(ScreenShareModule())
 registry.register(RGBDisplayModule())
+registry.register(HueModule())
 
 # --- external modules ---------------------------------------------------
 # Pull each manifest configured in data/modules.json. Failures are

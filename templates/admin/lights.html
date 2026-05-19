@@ -1,0 +1,287 @@
+<div x-data="lightsPanel()" x-init="load()" class="space-y-4">
+
+  <!-- Status header -->
+  <div class="border rounded p-3 bg-white">
+    <div class="flex items-start justify-between gap-3">
+      <div class="min-w-0">
+        <div class="font-bold">Philips Hue</div>
+        <div class="text-xs text-gray-600">
+          <span x-show="status.paired && status.available">
+            Bridge <span class="font-mono" x-text="status.bridge_ip"></span> &middot; reachable
+          </span>
+          <span x-show="status.paired && !status.available" class="text-red-700">
+            Bridge <span class="font-mono" x-text="status.bridge_ip"></span> &middot; not reachable
+          </span>
+          <span x-show="!status.paired" class="text-red-700">
+            Not paired
+          </span>
+        </div>
+      </div>
+      <div class="flex gap-2">
+        <button @click="allOn()" :disabled="!status.available"
+          class="bg-yellow-500 hover:bg-yellow-600 disabled:bg-gray-300 disabled:cursor-not-allowed
+                 text-white px-3 py-1 rounded font-bold text-sm">
+          ☀ All on
+        </button>
+        <button @click="allOff()" :disabled="!status.available"
+          class="bg-gray-700 hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed
+                 text-white px-3 py-1 rounded font-bold text-sm">
+          ☾ All off
+        </button>
+      </div>
+    </div>
+
+    <!-- Pairing instructions -->
+    <div x-show="!status.paired" class="mt-3 p-3 bg-pink-50 border rounded text-xs">
+      <div class="font-semibold text-sm mb-1">How to pair</div>
+      <ol class="list-decimal list-inside text-gray-700 space-y-1">
+        <li>Find the physical Hue Bridge (small white square plugged into the router).</li>
+        <li>Press the round button on top.</li>
+        <li>Within 30 seconds, run on studiopi:
+          <pre class="bg-gray-900 text-gray-100 p-2 rounded text-[11px] mt-1">ssh admin@studiopi.local
+cd /home/admin/screen-mgr
+python3 scripts/hue_pair.py</pre>
+        </li>
+        <li>Reload this page. The Lights tab should populate.</li>
+      </ol>
+    </div>
+  </div>
+
+  <!-- Rooms / groups -->
+  <div x-show="status.available && Object.keys(groups).length > 0" class="border rounded p-3 bg-white">
+    <div class="font-bold mb-2">Rooms</div>
+    <template x-for="(g, id) in groupsArr" :key="id">
+      <div class="border-b last:border-b-0 py-2">
+        <div class="flex items-center justify-between gap-3">
+          <div class="min-w-0">
+            <span class="font-semibold" x-text="g.name"></span>
+            <span class="text-xs text-gray-500 ml-2" x-text="(g.type || '') + (g.class ? ' · ' + g.class : '')"></span>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="range" min="0" max="254" step="1"
+              :value="g.action?.bri ?? 128"
+              @change="setGroupBri(id, $event.target.value)"
+              class="w-32">
+            <button @click="toggleGroup(id, g)"
+              :class="g.state?.any_on || g.action?.on ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-400 hover:bg-gray-500'"
+              class="text-white px-3 py-1 rounded text-sm w-16">
+              <span x-text="(g.state?.any_on || g.action?.on) ? 'ON' : 'OFF'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <!-- Scenes -->
+  <div x-show="status.available && Object.keys(scenes).length > 0" class="border rounded p-3 bg-white">
+    <div class="font-bold mb-2">Scenes</div>
+    <div class="flex flex-wrap gap-2">
+      <template x-for="(s, id) in scenesArr" :key="id">
+        <button @click="recallScene(id)"
+          class="bg-pink-500 hover:bg-pink-600 text-white px-3 py-1 rounded text-sm"
+          :title="(s.group ? 'Group ' + s.group + ' · ' : '') + (s.lastupdated || '')">
+          <span x-text="s.name"></span>
+        </button>
+      </template>
+    </div>
+  </div>
+
+  <!-- Individual lights -->
+  <div x-show="status.available && Object.keys(lights).length > 0" class="border rounded p-3 bg-white">
+    <div class="font-bold mb-2">Individual lights</div>
+    <div class="text-xs text-gray-500 mb-2">
+      Per-bulb on/off, brightness, and color. Color picker maps to the Hue xy color space.
+    </div>
+    <template x-for="(l, id) in lightsArr" :key="id">
+      <div class="border-b last:border-b-0 py-2">
+        <div class="flex items-center justify-between gap-3 flex-wrap">
+          <div class="min-w-0">
+            <span class="font-semibold" x-text="l.name"></span>
+            <span class="text-xs text-gray-500 ml-2" x-text="l.type || ''"></span>
+            <span x-show="!l.state?.reachable" class="text-xs text-red-600 ml-1">unreachable</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <input type="range" min="1" max="254" step="1"
+              :value="l.state?.bri ?? 128"
+              @change="setLightBri(id, $event.target.value)"
+              class="w-24" :disabled="!l.state?.reachable">
+            <input type="color"
+              :value="hueToHex(l)"
+              @change="setLightColor(id, $event.target.value)"
+              class="w-10 h-7 border rounded cursor-pointer" :disabled="!l.state?.reachable || !l.state?.hue">
+            <button @click="toggleLight(id, l)"
+              :class="l.state?.on ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-gray-400 hover:bg-gray-500'"
+              class="text-white px-3 py-1 rounded text-sm w-16"
+              :disabled="!l.state?.reachable">
+              <span x-text="l.state?.on ? 'ON' : 'OFF'"></span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div x-show="lastAction" class="text-xs"
+    :class="lastActionOk ? 'text-green-700' : 'text-red-700'">
+    <span x-text="lastAction"></span>
+  </div>
+
+</div>
+
+<script>
+  // --- helpers: hex <-> Hue color space ----------------------------------
+  function hexToXy(hex) {
+    let r = parseInt(hex.substr(1, 2), 16) / 255;
+    let g = parseInt(hex.substr(3, 2), 16) / 255;
+    let b = parseInt(hex.substr(5, 2), 16) / 255;
+    // Gamma correction (sRGB -> linear)
+    r = (r > 0.04045) ? Math.pow((r + 0.055) / 1.055, 2.4) : r / 12.92;
+    g = (g > 0.04045) ? Math.pow((g + 0.055) / 1.055, 2.4) : g / 12.92;
+    b = (b > 0.04045) ? Math.pow((b + 0.055) / 1.055, 2.4) : b / 12.92;
+    const X = r * 0.664511 + g * 0.154324 + b * 0.162028;
+    const Y = r * 0.283881 + g * 0.668433 + b * 0.047685;
+    const Z = r * 0.000088 + g * 0.072310 + b * 0.986039;
+    const denom = X + Y + Z;
+    if (denom === 0) return [0.32, 0.34];
+    return [X / denom, Y / denom];
+  }
+
+  function hueToHex(l) {
+    // Best-effort: if light reports hue+sat, convert to RGB and then hex.
+    const s = (l.state || {});
+    if (s.hue == null || s.sat == null) return '#ffffff';
+    const h = (s.hue / 65535);
+    const sat = s.sat / 254;
+    const v = (s.bri ?? 254) / 254;
+    // HSV -> RGB
+    const i = Math.floor(h * 6);
+    const f = h * 6 - i;
+    const p = v * (1 - sat);
+    const q = v * (1 - f * sat);
+    const t = v * (1 - (1 - f) * sat);
+    let r, g, b;
+    switch (i % 6) {
+      case 0: r = v; g = t; b = p; break;
+      case 1: r = q; g = v; b = p; break;
+      case 2: r = p; g = v; b = t; break;
+      case 3: r = p; g = q; b = v; break;
+      case 4: r = t; g = p; b = v; break;
+      default: r = v; g = p; b = q;
+    }
+    const toHex = (n) => Math.round(n * 255).toString(16).padStart(2, '0');
+    return '#' + toHex(r) + toHex(g) + toHex(b);
+  }
+
+  function lightsPanel() {
+    return {
+      status: { paired: false, available: false, bridge_ip: '' },
+      lights: {},
+      groups: {},
+      scenes: {},
+      lastAction: '',
+      lastActionOk: true,
+      _timer: null,
+
+      get lightsArr() { return this.lights; },
+      get groupsArr() { return this.groups; },
+      get scenesArr() { return this.scenes; },
+
+      hueToHex,  // expose for inline calls
+
+      async load() {
+        // Status from /api/modules
+        try {
+          const r = await fetch('/api/modules/hue');
+          const m = await r.json();
+          this.status = m.status || { paired: false, available: false };
+        } catch (e) {
+          this.status = { paired: false, available: false };
+        }
+
+        if (this.status.available) {
+          try {
+            const [lr, gr, sr] = await Promise.all([
+              fetch('/api/modules/hue/lights').then(r => r.json()),
+              fetch('/api/modules/hue/groups').then(r => r.json()),
+              fetch('/api/modules/hue/scenes').then(r => r.json()),
+            ]);
+            this.lights = lr || {};
+            this.groups = gr || {};
+            // Skip auto-generated scenes (Hue creates many internal ones).
+            // Heuristic: scenes with no `name` or with `appdata` containing 'hue' are auto.
+            const scenes = sr || {};
+            const filtered = {};
+            for (const [id, s] of Object.entries(scenes)) {
+              if (!s || !s.name) continue;
+              filtered[id] = s;
+            }
+            this.scenes = filtered;
+          } catch (e) {
+            console.error('hue load failed', e);
+          }
+        }
+
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => this.load(), 8000);
+      },
+
+      // --- action helpers ---
+      async _put(url, body) {
+        try {
+          const r = await fetch(url, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+          });
+          const d = await r.json();
+          this.lastAction = url + ' ✓';
+          this.lastActionOk = true;
+          return d;
+        } catch (e) {
+          this.lastAction = url + ' ✗ ' + e;
+          this.lastActionOk = false;
+        }
+      },
+      async _post(url) {
+        try {
+          await fetch(url, { method: 'POST' });
+          this.lastAction = url + ' ✓';
+          this.lastActionOk = true;
+        } catch (e) {
+          this.lastAction = url + ' ✗ ' + e;
+          this.lastActionOk = false;
+        }
+      },
+
+      async toggleLight(id, light) {
+        const want = !(light.state && light.state.on);
+        await this._put('/api/modules/hue/lights/' + id, { on: want });
+        light.state.on = want;
+      },
+      async setLightBri(id, value) {
+        await this._put('/api/modules/hue/lights/' + id, { on: true, bri: parseInt(value) });
+      },
+      async setLightColor(id, hex) {
+        const xy = hexToXy(hex);
+        await this._put('/api/modules/hue/lights/' + id, { on: true, xy: xy });
+      },
+
+      async toggleGroup(id, group) {
+        const any = !!(group.state?.any_on || group.action?.on);
+        await this._put('/api/modules/hue/groups/' + id, { on: !any });
+        if (group.action) group.action.on = !any;
+      },
+      async setGroupBri(id, value) {
+        await this._put('/api/modules/hue/groups/' + id, { on: true, bri: parseInt(value) });
+      },
+
+      async recallScene(id) {
+        await this._post('/api/modules/hue/scenes/' + id + '/recall');
+      },
+
+      async allOn() { await this._post('/api/modules/hue/all/on'); await this.load(); },
+      async allOff() { await this._post('/api/modules/hue/all/off'); await this.load(); },
+    };
+  }
+</script>
