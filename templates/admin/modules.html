@@ -6,10 +6,117 @@
 
   <!-- Add external module -->
   <div class="border rounded p-3 bg-pink-50">
-    <div class="font-semibold text-sm mb-1">Add external module</div>
+    <div class="flex items-center justify-between mb-1">
+      <div class="font-semibold text-sm">Add external module</div>
+      <button @click="showHelp = !showHelp" type="button"
+        class="bg-pink-600 hover:bg-pink-700 text-white w-6 h-6 rounded-full text-xs font-bold flex items-center justify-center"
+        :title="showHelp ? 'Hide help' : 'How does this work?'">
+        ?
+      </button>
+    </div>
     <div class="text-xs text-gray-600 mb-2">
       Point at a JSON manifest URL hosted by another service. It will be fetched, validated, and registered.
     </div>
+
+    <!-- Help panel -->
+    <div x-show="showHelp" x-transition class="border rounded bg-white p-3 mb-3 space-y-3 text-xs">
+      <div>
+        <div class="font-semibold text-sm mb-1">What is an external module?</div>
+        <p class="text-gray-700">
+          A small service running elsewhere on the LAN (a Raspberry Pi, a colleague's laptop, a mini PC, whatever) that wants
+          to plug into screen-mgr — for example, a robot control panel, a sensor dashboard, or another LED display.
+          The service hosts a single JSON file (the <em>manifest</em>) that tells screen-mgr how to talk to it.
+          You paste that JSON's URL below, click Register, and the module appears in this list.
+          screen-mgr never runs the external module's code &mdash; it only fetches the manifest and calls the URLs the
+          manifest declares.
+        </p>
+      </div>
+
+      <div>
+        <div class="font-semibold text-sm mb-1">How to do it</div>
+        <ol class="list-decimal list-inside text-gray-700 space-y-1">
+          <li>Your service hosts a JSON file at some URL (e.g. <code>http://robotpi.local:8080/manifest.json</code>).</li>
+          <li>Paste that URL into the input below.</li>
+          <li>Click <strong>Register</strong>. The manifest is fetched, validated, and the module appears in the list.</li>
+          <li>The new module's status updates from its <code>health_url</code> on each refresh tick.</li>
+          <li>Remove it with the <span class="text-red-600 font-bold">✕</span> button next to the module row.</li>
+        </ol>
+      </div>
+
+      <div>
+        <div class="font-semibold text-sm mb-1">Display-module manifest</div>
+        <p class="text-gray-700 mb-1">For a module that supplies content for a screen to show:</p>
+        <div class="relative">
+          <pre class="bg-gray-900 text-gray-100 p-2 rounded text-[11px] overflow-x-auto"
+            x-ref="manifestDisplay">{
+  "id": "robot-panel",
+  "name": "Robot Control Panel",
+  "description": "Live status + drive control for the lab robot",
+  "type": ["display"],
+  "version": "0.2.0",
+  "health_url": "http://robotpi.local:8080/health",
+  "screen_url_pattern": "http://robotpi.local:8080/screen/{screen_id}"
+}</pre>
+          <button type="button"
+            @click="copyText($refs.manifestDisplay.textContent, 'display')"
+            class="absolute top-1 right-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] px-2 py-0.5 rounded">
+            <span x-text="copied === 'display' ? 'Copied!' : 'Copy'"></span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="font-semibold text-sm mb-1">Service-module manifest</div>
+        <p class="text-gray-700 mb-1">For a backend service the admin can start/stop (no screen content):</p>
+        <div class="relative">
+          <pre class="bg-gray-900 text-gray-100 p-2 rounded text-[11px] overflow-x-auto"
+            x-ref="manifestService">{
+  "id": "co2-fan",
+  "name": "Cleanroom CO2 Fan",
+  "description": "Toggles the ceiling fan via a relay",
+  "type": ["service"],
+  "version": "0.1.0",
+  "health_url": "http://co2pi.local:8090/health",
+  "start_url": "http://co2pi.local:8090/start",
+  "stop_url": "http://co2pi.local:8090/stop"
+}</pre>
+          <button type="button"
+            @click="copyText($refs.manifestService.textContent, 'service')"
+            class="absolute top-1 right-1 bg-gray-700 hover:bg-gray-600 text-white text-[10px] px-2 py-0.5 rounded">
+            <span x-text="copied === 'service' ? 'Copied!' : 'Copy'"></span>
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="font-semibold text-sm mb-1">Manifest field reference</div>
+        <table class="text-[11px] border-collapse w-full">
+          <thead class="bg-gray-100">
+            <tr>
+              <th class="border px-2 py-1 text-left">Field</th>
+              <th class="border px-2 py-1 text-left">Required</th>
+              <th class="border px-2 py-1 text-left">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td class="border px-2 py-1 font-mono">id</td><td class="border px-2 py-1">yes</td><td class="border px-2 py-1">Stable slug. Must be unique. For display modules this is also the <code>Screen.type</code> value.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">name</td><td class="border px-2 py-1">yes</td><td class="border px-2 py-1">Human-friendly label shown in admin.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">description</td><td class="border px-2 py-1">no</td><td class="border px-2 py-1">One-liner shown under the name.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">type</td><td class="border px-2 py-1">yes</td><td class="border px-2 py-1">Array containing <code>"display"</code> and/or <code>"service"</code>. First match wins in v1.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">version</td><td class="border px-2 py-1">no</td><td class="border px-2 py-1">Semver-ish string. Shown in the admin row.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">health_url</td><td class="border px-2 py-1">recommended</td><td class="border px-2 py-1">GET on each availability tick; 2xx response → green badge. Omit and the module is always "available".</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">screen_url_pattern</td><td class="border px-2 py-1">display only</td><td class="border px-2 py-1">URL template a screen loads. <code>{screen_id}</code> and <code>{screen_name}</code> placeholders are substituted at render time.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">start_url</td><td class="border px-2 py-1">service only</td><td class="border px-2 py-1">screen-mgr POSTs here when Start is clicked.</td></tr>
+            <tr><td class="border px-2 py-1 font-mono">stop_url</td><td class="border px-2 py-1">service only</td><td class="border px-2 py-1">screen-mgr POSTs here when Stop is clicked.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="text-gray-600">
+        Full operator + author guide: <code>docs/MODULES.md</code> in the repo.
+      </div>
+    </div>
+
     <div class="flex flex-wrap gap-2 items-center">
       <input type="url" x-model="newManifestUrl"
         placeholder="http://robotpi.local:8080/manifest.json"
@@ -114,7 +221,19 @@
       newManifestUrl: '',
       lastExternal: '',
       lastExternalOk: true,
+      showHelp: false,
+      copied: '',
       _timer: null,
+
+      async copyText(text, key) {
+        try {
+          await navigator.clipboard.writeText(text);
+          this.copied = key;
+          setTimeout(() => { if (this.copied === key) this.copied = ''; }, 1500);
+        } catch (e) {
+          console.error('clipboard write failed', e);
+        }
+      },
 
       async load() {
         try {
