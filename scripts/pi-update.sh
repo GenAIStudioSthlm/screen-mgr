@@ -31,6 +31,11 @@ AFTER_SHA="$(git rev-parse HEAD)"
 AFTER_REQ_HASH="$(sha256sum requirements.txt | cut -d' ' -f1)"
 echo "after:  $AFTER_SHA"
 
+# Force uvicorn --reload to pick up the new commit even when only static/
+# or templates/ changed (i.e. no .py change). This refreshes the cached
+# APP_VERSION used in template cache-busting (?v={{ app_version }}).
+touch utils.py
+
 if [ "$BEFORE_REQ_HASH" != "$AFTER_REQ_HASH" ]; then
     echo "requirements.txt changed — installing deps and restarting service"
     venv/bin/pip install -r requirements.txt
