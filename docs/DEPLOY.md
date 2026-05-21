@@ -90,6 +90,30 @@ That's the common case. uvicorn runs with `--reload`, watching the project tree.
 
 The pi-update.sh detects this by hashing requirements.txt before and after, and only then does it stop the service, install deps, run the maintenance bridge, and start the service. Adds ~10-15s of downtime, bridged by a styled "screen-mgr is restarting" page on `:8000`.
 
+## Agents API key (Phase 2+ of `TASKS/PLAN_AGENTIC.md`)
+
+The specialist agents (Lighting, Screens, LED) call the Anthropic API to drive Claude. They look for the key in `ANTHROPIC_API_KEY`, loaded from a `.env` file at the project root.
+
+**One-time setup on the Pi:**
+
+```bash
+ssh admin@studiopi
+cd /home/admin/screen-mgr
+cp .env.example .env
+nano .env                   # paste the real key from console.anthropic.com
+chmod 600 .env              # owner-only readable
+```
+
+`.env` is gitignored. **Never commit a real key.** If one accidentally lands in git, rotate it immediately at the Anthropic console — git history is forever.
+
+Once `.env` is in place, the CLI smoke test for the Lighting specialist:
+
+```bash
+ssh admin@studiopi
+cd /home/admin/screen-mgr && source venv/bin/activate
+python -m agents.lighting_specialist "what's the current state of the Maker room"
+```
+
 ## MCP servers (Phase 1+ of `TASKS/PLAN_AGENTIC.md`)
 
 In-process FastMCP servers are mounted under `/mcp/<domain>` alongside `/api/*`. They're started by the same uvicorn instance — no extra processes, no extra systemd units. As of today:

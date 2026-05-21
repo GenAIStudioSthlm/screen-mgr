@@ -12,6 +12,7 @@ last_deploy.log
 # secrets / credentials — never commit
 .env
 .env.*
+!.env.example
 *.key
 *.pem
 id_ed25519

@@ -269,13 +269,14 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 
 **Gotcha for future MCP servers:** the mcp library defaults to localhost-only via DNS-rebinding protection (`Invalid Host header` from any non-localhost client). For LAN-only services pass `TransportSecuritySettings(enable_dns_rebinding_protection=False)`; for public/internet exposure pin `allowed_hosts` explicitly.
 
-### Phase 2 — Lighting specialist subagent
-- [ ] `agents/base.py` — Anthropic client, message-loop helper, tool-result formatter
-- [ ] `agents/skills.py` — markdown skill loader (parse frontmatter, list/load by name)
-- [ ] `agents/lighting_specialist.py` — wraps the lighting MCP server, with skills dir
-- [ ] Seed `mcps/lighting/skills/` with 3 skills: `presentation-mode`, `blackout`, `wake-up`
-- [ ] Add `.env` support (Anthropic API key) — gitignored, document setup in DEPLOY.md
-- [ ] Standalone CLI smoke test: `python -m agents.lighting_specialist "dim the studio"` → it dims
+### Phase 2 — Lighting specialist subagent — CODE LANDED, BLOCKED ON .env
+- [x] `agents/base.py` — `Specialist` class with the Anthropic + MCP message loop (single SSE session per converse(); hard cap of 12 iterations to prevent runaway tool loops; converts MCP tool errors and dispatch exceptions into tool_result blocks the model can react to).
+- [x] `agents/skills.py` — markdown-frontmatter loader, no YAML dep (line-by-line `key: value`). Exposes `load_skills(dir)` and `render_skills_block(skills)`.
+- [x] `agents/lighting_specialist.py` — concrete specialist, CLI entry point, `SCREEN_MGR_MCP_BASE` env override for dev machines pointing at the Pi.
+- [x] Seed skills in `mcps/lighting/skills/`: `presentation-mode.md`, `blackout.md`, `wake-up.md`. All three prefer a matching bridge scene first and fall back to explicit `set_group` writes.
+- [x] `.env.example` template; `.gitignore` patched (`!.env.example` negation so the template stays committed); `agents/__init__.py` auto-loads `.env` via python-dotenv.
+- [x] `docs/DEPLOY.md` — new section "Agents API key" walks through the Pi setup.
+- [ ] CLI smoke test — blocked until `.env` is placed on the Pi with a real `ANTHROPIC_API_KEY`.
 
 ### Phase 3 — Studio orchestrator (Lighting-only first)
 - [ ] `agents/studio_orchestrator.py` — Claude Sonnet, tools: `delegate_to_lighting`, `ask_user`
