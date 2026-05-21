@@ -16,8 +16,11 @@
       </p>
     </div>
     <div style="display:flex;align-items:center;gap:var(--s-2)">
+      <button @click="reloadAll()" class="btn btn-brand">↻ Reload all</button>
 
-      {# Scenes dropdown — references shell scope (scenes, applyScene, sceneDropdownOpen, ...) via Alpine inheritance #}
+      {# Scenes dropdown — to the right of Reload all so the panel opens
+         left-aligned (with right:0) inside the main column instead of
+         drifting under the sidebar. #}
       <div style="position:relative" @click.outside="sceneDropdownOpen = false">
         <button @click="sceneDropdownOpen = !sceneDropdownOpen"
                 class="btn btn-ghost"
@@ -38,8 +41,6 @@
           <div x-show="scenes.length === 0" style="padding:8px 12px;font-size:11px;color:var(--text-dim)">No scenes</div>
         </div>
       </div>
-
-      <button @click="reloadAll()" class="btn btn-brand">↻ Reload all</button>
     </div>
   </div>
 
