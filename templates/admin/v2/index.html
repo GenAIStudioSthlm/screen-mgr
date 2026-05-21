@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Studio · v2</title>
+  <title>Studio</title>
   <link rel="stylesheet" href="/static/css/design-tokens.css?v={{ app_version }}">
   <link rel="stylesheet" href="/static/css/v2.css?v={{ app_version }}">
   {# Factories MUST load before Alpine — Alpine schedules alpine:init in a
@@ -24,7 +24,6 @@
     {# ---------- HEADER ---------- #}
     <header class="v2-header">
       <div style="font-weight:700;letter-spacing:0.04em">Studio</div>
-      <div style="font-size:11px;color:var(--text-dim)">v2</div>
       <div style="flex:1"></div>
 
       <div style="font-size:11px;color:var(--text-dim)" x-text="clock"></div>
@@ -48,8 +47,8 @@
         </div>
         <template x-if="selected">
           <div class="selected-card">
-            <h3 style="margin-bottom:var(--s-2)" x-text="selected.name"></h3>
-            <div class="field-row"><span>id</span>          <span class="val" x-text="selected.id"></span></div>
+            <h3 style="margin-bottom:var(--s-1)" x-text="selected.name"></h3>
+            <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-bottom:var(--s-2)" x-text="selected.id"></div>
             <div class="field-row"><span>screen</span>      <span class="val" x-text="selected.screen ? '#' + selected.screen.id + ' — ' + selected.screen.type : '—'"></span></div>
             <div class="field-row"><span>connected</span>
               <span class="val">

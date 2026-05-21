@@ -1,5 +1,4 @@
-console.log('[studio v2] shell.js LOADED');
-/* shell.js — Alpine x-data factory for the /admin/v2 layout.
+/* shell.js — Alpine x-data factory for the /admin layout.
  *
  * Registered as Alpine data on the `alpine:init` event, which fires
  * before Alpine processes any x-data attribute. This avoids the
@@ -86,5 +85,4 @@ function studioShell() {
 window.studioShell = studioShell;
 document.addEventListener('alpine:init', () => {
   Alpine.data('studioShell', studioShell);
-  console.log('[studio v2] shell registered');
 });
