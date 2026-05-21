@@ -6,11 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Added
+- **Per-type content editor + inline uploads in the v2 Screens view** — the per-zone editor previously had a generic "value" text input that asked operators to type filenames. It now shows the same type-aware UI the legacy admin had: textarea for text, URL input (YouTube URLs continue to auto-embed via the url module's `/youtube/` wrapper), a select-of-existing-media for video/picture/pdf/slideshow, news-mode picker for news, room-id input for screen_share. Each media type has an inline upload widget; picture uploads accept an existing-or-new subfolder. After a successful upload the just-uploaded file becomes the selected value automatically.
+- **`GET /api/videos`, `/api/pdfs`, `/api/slideshows`** — list available media for the new dropdowns. Mirrors the existing `/api/pictures` shape.
+- **Merged `staging/admin-redesign` into `main`** — the redesign branch had been the live deploy target for two days. Merge is a clean fast-forward.
+
 ### Changed
+- **`POST /api/upload/picture` accepts an optional `subfolder` form field** — sanitises the value and creates the subfolder under `static/pictures/` if needed. Lets the v2 Screens view drive picture uploads (and slideshow folder creation) directly without falling back to the legacy admin.
 - **Cutover: `/admin` is the redesigned (formerly v2) admin** (Phase 8 of `TASKS/PLAN_REDESIGN.md`). Sidebar with Screens/Lighting/Modules views, SVG floor plan, scene dropdown, Hue + LED integration, Alpine-driven UI. The previous Tailwind-based admin moved to `/admin/legacy` (kept for one release cycle then removed). `/admin/v2` continues to alias to the new admin so any operator bookmarks still resolve.
 - **`screen.js` does a full frame reload when the content URL changes**. The WS reload message now carries the screen's current content URL; `screen.js` compares to the cached `window.contentUrl` and `window.location.reload()`s the frame on mismatch — which both swaps the visible content and picks up any latest `screen.js`. Same-URL reloads still use the popup `/updating` countdown beat.
 - **`/updating` self-heals stale `screen.js`** — its inline script now `window.opener.location.reload()`s the frame as soon as the popup opens, so older popup-only `screen.js` versions get bootstrapped onto the latest code automatically on the next reload-all.
-- **Scenes dropdown moved out of the top bar** into the Screens view, sitting to the right of the "Reload all" button. Header is now just clock + legacy-admin link + theme toggle. The dropdown is contextual to the view it belongs to.
+- **Scenes dropdown moved out of the top bar** into the Screens view, sitting to the right of the "Reload all" button. The dropdown is contextual to the view it belongs to.
+- **Polish pass on the v2 chrome** — dropped the "v2" suffix from `<title>` and the small grey chip next to "Studio" in the header (cutover is done, no v1 to disambiguate against on `/admin`); removed the diagnostic `[studio v2]` console.logs from `shell.js` and `modules.js`; promoted the zone slug in the Selected-zone sidebar card from a labelled field-row to a small monospaced subtitle; removed the now-redundant "legacy admin" link from the header (still reachable at `/admin/legacy` directly).
+
+### Fixed
+- **`POST /api/screens/{id}/set_content` was silently dropping `news_mode` and `screen_share` updates** — the type-dispatch only handled text/url/video/picture/pdf/slideshow. Now `type=news` writes `news_mode` (validated against the model's portrait/landscape/presentation pattern) and `type=screen_share` writes the `screen_share` field. Pre-existing bug uncovered while wiring the v2 News and Screen Share editors.
+
+### Repo hygiene
+- **Stopped tracking `.claude/`** — Claude Code's per-user `settings.local.json` (a tool-permission whitelist) had been committed accidentally. Widened the existing `.claude/logs` ignore to the whole directory and removed the file from history going forward.
 
 ### Verified
 - 2026-05-18 (round 1): `scripts/deploy.sh` from WSL → preflight passed; Pi was already at latest, so pi-update did nothing; reload-all returned `notified: [4, 5]` and the two stations refreshed.
