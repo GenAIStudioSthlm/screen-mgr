@@ -19,8 +19,21 @@ templates.env.globals["app_version"] = APP_VERSION
 router = APIRouter()
 
 
+# Cutover (2026-05-21): the redesigned admin is now the primary at /admin.
+# /admin/v2 is kept as an alias for one cycle. /admin/legacy still serves the
+# original Tailwind-based admin in case operators need to fall back.
+
+@router.get("/admin", response_class=HTMLResponse)
+async def admin_index(request: Request):
+    return templates.TemplateResponse(
+        "admin/v2/index.html",
+        {"request": request},
+    )
+
+
 @router.get("/admin/v2", response_class=HTMLResponse)
-async def admin_v2_index(request: Request):
+async def admin_v2_alias(request: Request):
+    """Alias kept for one release cycle so anyone bookmarked here still lands."""
     return templates.TemplateResponse(
         "admin/v2/index.html",
         {"request": request},

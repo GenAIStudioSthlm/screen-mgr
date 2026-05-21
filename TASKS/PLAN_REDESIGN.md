@@ -287,10 +287,16 @@ Backing store starts as filesystem (today's pattern, just unified under `storage
 - Migration of existing screen content per profile.
 - **Verify:** Swap from Accenture to a custom profile mid-day, see the room change.
 
-### Phase 8 — Cutover and cleanup
-- `/admin/v2` graduates to `/admin`.
-- Old `/admin` becomes `/admin/legacy` for one release cycle, then removed.
-- Update `docs/MODULES.md` and `docs/ARCHITECTURE.md`.
+### Phase 8 — Cutover and cleanup ✅ (2026-05-21)
+- `/admin/v2` graduates to `/admin` ✅
+- Old `/admin` becomes `/admin/legacy` ✅
+- `/admin/v2` kept as alias for one release cycle ✅
+- Header "legacy admin" link in v2 retargeted to `/admin/legacy` ✅
+- Remaining cleanup (when ready):
+  - Remove `/admin/legacy` route + `templates/admin.html` + `templates/admin/screens.html`
+    etc. after a release cycle of nobody complaining.
+  - Update `docs/MODULES.md` and `docs/ARCHITECTURE.md` references from
+    "the admin" (implicitly v1) to "the v2 admin layout".
 
 ---
 

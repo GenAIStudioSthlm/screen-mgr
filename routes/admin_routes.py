@@ -29,7 +29,7 @@ PDF_FOLDER = "static/pdfs"
 os.makedirs(PDF_FOLDER, exist_ok=True)
 
 
-@router.get("/admin", response_class=HTMLResponse)
+@router.get("/admin/legacy", response_class=HTMLResponse)
 async def admin_page(request: Request):
     picture_subfolders = [
         f

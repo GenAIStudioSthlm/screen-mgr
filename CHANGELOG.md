@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+- **Cutover: `/admin` is the redesigned (formerly v2) admin** (Phase 8 of `TASKS/PLAN_REDESIGN.md`). Sidebar with Screens/Lighting/Modules views, SVG floor plan, scene dropdown, Hue + LED integration, Alpine-driven UI. The previous Tailwind-based admin moved to `/admin/legacy` (kept for one release cycle then removed). `/admin/v2` continues to alias to the new admin so any operator bookmarks still resolve.
+
 ### Verified
 - 2026-05-18 (round 1): `scripts/deploy.sh` from WSL → preflight passed; Pi was already at latest, so pi-update did nothing; reload-all returned `notified: [4, 5]` and the two stations refreshed.
 - 2026-05-18 (round 2): same flow but with a fresh commit on origin/main — exercises the pull + reload path.
