@@ -82,7 +82,7 @@ The MCP servers are not just for our own agents — they're a stable, documented
 ## 3. Repo layout (target)
 
 ```
-mcp/                         # new top-level package
+mcps/                         # new top-level package
   __init__.py
   base.py                    # shared FastMCP plumbing, auth, error mapping
   lighting/
@@ -112,7 +112,7 @@ mcp/                         # new top-level package
 agents/                      # new top-level package
   __init__.py
   base.py                    # Anthropic client setup, message-loop helper
-  skills.py                  # loader: read mcp/<domain>/skills/*.md
+  skills.py                  # loader: read mcps/<domain>/skills/*.md
   studio_orchestrator.py
   lighting_specialist.py
   screens_specialist.py
@@ -140,7 +140,7 @@ The existing `modules/` system stays untouched. MCP servers are a parallel expos
 
 ## 4. MCP tool sketch (per server)
 
-### 4.1 Lighting MCP (`mcp/lighting/`)
+### 4.1 Lighting MCP (`mcps/lighting/`)
 
 | Tool | Wraps | Purpose |
 |---|---|---|
@@ -153,7 +153,7 @@ The existing `modules/` system stays untouched. MCP servers are a parallel expos
 | `all_on` / `all_off` | `POST /api/modules/hue/all/{on,off}` | Master kill / wake |
 | `get_bridge_status` | `GET /api/modules/hue/config` | For diagnostics |
 
-### 4.2 Screens MCP (`mcp/screens/`)
+### 4.2 Screens MCP (`mcps/screens/`)
 
 | Tool | Wraps | Purpose |
 |---|---|---|
@@ -166,7 +166,7 @@ The existing `modules/` system stays untouched. MCP servers are a parallel expos
 | `list_media` | `GET /api/{videos,pictures,pdfs,slideshows}` | What can be shown |
 | `list_modules` | filter `GET /api/modules` to display modules | What content types exist right now |
 
-### 4.3 LED MCP (`mcp/led/`)
+### 4.3 LED MCP (`mcps/led/`)
 
 | Tool | Wraps | Purpose |
 |---|---|---|
@@ -258,19 +258,19 @@ Split into per-server processes only if we hit one of these:
 
 Each phase is a small, deployable increment. Status checkboxes get ticked as we land.
 
-### Phase 1 — Lighting MCP server (in-process)
-- [ ] Add `mcp` package with `base.py` (FastMCP plumbing) and `lighting/` directory
-- [ ] `mcp/lighting/server.py` — FastMCP server exposing the 8 tools above
-- [ ] `routes/mcp_routes.py` — mount at `/mcp/lighting`
-- [ ] Add `mcp` and `anthropic` to `requirements.txt`
-- [ ] Smoke test from `curl` or `mcp-cli`: list tools, invoke `list_lights`
-- [ ] Document the new dependency in `docs/DEPLOY.md`
+### Phase 1 — Lighting MCP server (in-process) — IN PROGRESS
+- [x] Add `mcps` package with `lighting/` directory (skipped `base.py` per YAGNI — pull it out when the second server lands)
+- [x] `mcps/lighting/server.py` — FastMCP server exposing 9 tools (list_lights / list_groups / list_scenes / get_bridge_status / set_light / set_group / recall_scene / all_on / all_off)
+- [x] Mounted on the existing FastAPI app in `main.py` at `/mcp/lighting` (skipped a separate `routes/mcp_routes.py` — MCP servers are ASGI apps, not FastAPI routers; mounting belongs next to other `app.mount` calls)
+- [x] Add `mcp>=1.2.0` to `requirements.txt` (anthropic dep deferred to Phase 2 when the agent lands)
+- [ ] Smoke test from `curl`: `curl -N http://studiopi:8000/mcp/lighting/sse` returns SSE stream
+- [x] Document the new dependency + endpoint in `docs/DEPLOY.md`
 
 ### Phase 2 — Lighting specialist subagent
 - [ ] `agents/base.py` — Anthropic client, message-loop helper, tool-result formatter
 - [ ] `agents/skills.py` — markdown skill loader (parse frontmatter, list/load by name)
 - [ ] `agents/lighting_specialist.py` — wraps the lighting MCP server, with skills dir
-- [ ] Seed `mcp/lighting/skills/` with 3 skills: `presentation-mode`, `blackout`, `wake-up`
+- [ ] Seed `mcps/lighting/skills/` with 3 skills: `presentation-mode`, `blackout`, `wake-up`
 - [ ] Add `.env` support (Anthropic API key) — gitignored, document setup in DEPLOY.md
 - [ ] Standalone CLI smoke test: `python -m agents.lighting_specialist "dim the studio"` → it dims
 

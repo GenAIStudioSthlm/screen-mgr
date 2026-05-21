@@ -90,6 +90,25 @@ That's the common case. uvicorn runs with `--reload`, watching the project tree.
 
 The pi-update.sh detects this by hashing requirements.txt before and after, and only then does it stop the service, install deps, run the maintenance bridge, and start the service. Adds ~10-15s of downtime, bridged by a styled "screen-mgr is restarting" page on `:8000`.
 
+## MCP servers (Phase 1+ of `TASKS/PLAN_AGENTIC.md`)
+
+In-process FastMCP servers are mounted under `/mcp/<domain>` alongside `/api/*`. They're started by the same uvicorn instance — no extra processes, no extra systemd units. As of today:
+
+| Domain | Mount point | Wraps |
+|---|---|---|
+| Lighting | `/mcp/lighting/sse` | `modules/hue/client.py` (Hue Bridge v1 CLIP API) |
+
+Adds one dependency: `mcp>=1.2.0` (the official Anthropic MCP Python SDK). `pi-update.sh` installs it automatically the first time it ships.
+
+**Smoke test from any LAN machine:**
+```bash
+curl -N http://studiopi:8000/mcp/lighting/sse
+# Expect an SSE stream with an initial `event: endpoint` message and
+# a session URL — proves the server is reachable. Ctrl-C to disconnect.
+```
+
+To call a tool you need an MCP client (the agents in Phases 2+ do this from Python). Any external Claude Code session can also be pointed at the SSE URL.
+
 ## What does the deploy script NOT do?
 
 - It does not push for you. You commit + push, then deploy. By design — deploys mirror what's on `origin/main`.
