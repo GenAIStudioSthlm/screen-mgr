@@ -87,7 +87,7 @@
           </select>
         </label>
 
-        {# News-mode dropdown only when type=news #}
+        {# ----- News mode (only when type=news) ----- #}
         <label x-show="editing.type === 'news'" style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
           News mode
           <select x-model="editing.news_mode">
@@ -97,12 +97,105 @@
           </select>
         </label>
 
-        {# Generic value input for everything except default and screen_share #}
-        <label x-show="!['default', 'news'].includes(editing.type)"
-               style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
-          Value
-          <input type="text" x-model="editing.value" :placeholder="_placeholderFor(editing.type)">
+        {# ----- Text ----- #}
+        <label x-show="editing.type === 'text'" style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+          Text
+          <textarea x-model="editing.value" rows="3" placeholder="Hello world"></textarea>
         </label>
+
+        {# ----- URL (also handles YouTube — the url module routes YT links through /youtube/) ----- #}
+        <label x-show="editing.type === 'url'" style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+          URL
+          <input type="text" x-model="editing.value" placeholder="https://example.com  (YouTube URLs auto-embed)">
+        </label>
+
+        {# ----- Screen share ----- #}
+        <label x-show="editing.type === 'screen_share'" style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+          Room ID
+          <input type="text" x-model="editing.value" placeholder="(optional)">
+        </label>
+
+        {# ----- Video: dropdown + upload ----- #}
+        <div x-show="editing.type === 'video'" style="display:flex;flex-direction:column;gap:var(--s-2)">
+          <label style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+            Video
+            <select x-model="editing.value">
+              <option value="">— Select a video —</option>
+              <template x-for="v in videos" :key="v">
+                <option :value="v" x-text="v"></option>
+              </template>
+            </select>
+          </label>
+          <div style="display:flex;gap:var(--s-2);align-items:center;font-size:11px;color:var(--text-dim)">
+            <span>Upload new:</span>
+            <input type="file" accept="video/mp4,video/webm,video/quicktime" x-ref="videoUpload">
+            <button type="button" class="btn btn-ghost" @click="uploadMedia('video', $refs.videoUpload)">↥ Upload</button>
+          </div>
+        </div>
+
+        {# ----- PDF: dropdown + upload ----- #}
+        <div x-show="editing.type === 'pdf'" style="display:flex;flex-direction:column;gap:var(--s-2)">
+          <label style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+            PDF
+            <select x-model="editing.value">
+              <option value="">— Select a PDF —</option>
+              <template x-for="p in pdfs" :key="p">
+                <option :value="p" x-text="p"></option>
+              </template>
+            </select>
+          </label>
+          <div style="display:flex;gap:var(--s-2);align-items:center;font-size:11px;color:var(--text-dim)">
+            <span>Upload new:</span>
+            <input type="file" accept="application/pdf,.pdf" x-ref="pdfUpload">
+            <button type="button" class="btn btn-ghost" @click="uploadMedia('pdf', $refs.pdfUpload)">↥ Upload</button>
+          </div>
+        </div>
+
+        {# ----- Picture: dropdown + upload (with optional subfolder) ----- #}
+        <div x-show="editing.type === 'picture'" style="display:flex;flex-direction:column;gap:var(--s-2)">
+          <label style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+            Picture
+            <select x-model="editing.value">
+              <option value="">— Select a picture —</option>
+              <template x-for="opt in pictureOptions" :key="opt.value">
+                <option :value="opt.value" x-text="opt.folder + ' / ' + opt.label"></option>
+              </template>
+            </select>
+          </label>
+          <div style="display:flex;flex-wrap:wrap;gap:var(--s-2);align-items:center;font-size:11px;color:var(--text-dim)">
+            <span>Upload new:</span>
+            <input type="file" accept="image/png,image/jpeg,image/gif" x-ref="pictureUpload">
+            <select x-model="pictureSubfolder" style="font-size:11px">
+              <option value="">Root</option>
+              <template x-for="f in pictureSubfolders()" :key="f">
+                <option :value="f" x-text="f"></option>
+              </template>
+            </select>
+            <input type="text" x-model="pictureNewSubfolder" placeholder="…or new subfolder" style="font-size:11px;width:160px">
+            <button type="button" class="btn btn-ghost" @click="uploadMedia('picture', $refs.pictureUpload)">↥ Upload</button>
+          </div>
+        </div>
+
+        {# ----- Slideshow: pick an existing picture subfolder ----- #}
+        <div x-show="editing.type === 'slideshow'" style="display:flex;flex-direction:column;gap:var(--s-2)">
+          <label style="display:flex;flex-direction:column;gap:var(--s-1);font-size:11px;color:var(--text-dim)">
+            Slideshow folder
+            <select x-model="editing.value">
+              <option value="">— Select a folder —</option>
+              <template x-for="f in slideshows" :key="f">
+                <option :value="f" x-text="f"></option>
+              </template>
+            </select>
+          </label>
+          <div style="font-size:10px;color:var(--text-dim)">
+            Slideshows play every image in a picture subfolder. Upload more images via the Picture type above and choose the subfolder when uploading.
+          </div>
+        </div>
+
+        {# ----- Upload status line (shared across all upload widgets) ----- #}
+        <div x-show="uploadMsg" style="font-size:11px"
+             :style="uploadOk ? 'color:var(--ok)' : 'color:var(--err)'"
+             x-text="uploadMsg"></div>
 
         <div style="display:flex;gap:var(--s-2);align-items:center">
           <button @click="save(selected)" class="btn btn-brand">Save</button>
@@ -111,10 +204,6 @@
                 x-text="lastAction"></span>
         </div>
 
-      </div>
-
-      <div style="margin-top:var(--s-3);font-size:10px;color:var(--text-dim);border-top:1px solid var(--border);padding-top:var(--s-2)">
-        Uploads for picture / video / pdf / slideshow live in the legacy admin for now (Phase 5 brings them into the v2 shell).
       </div>
 
     </div>

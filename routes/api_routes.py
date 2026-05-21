@@ -33,6 +33,50 @@ async def get_available_pictures():
 
 
 # ---------------------------------------------------------------------
+# Get available videos
+# ---------------------------------------------------------------------
+@router.get("/api/videos", response_class=JSONResponse)
+async def get_available_videos():
+    if not os.path.isdir(VIDEO_FOLDER):
+        return {"videos": []}
+    return {
+        "videos": sorted(
+            f for f in os.listdir(VIDEO_FOLDER)
+            if f.lower().endswith((".mp4", ".webm", ".mov", ".m4v"))
+        )
+    }
+
+
+# ---------------------------------------------------------------------
+# Get available PDFs
+# ---------------------------------------------------------------------
+@router.get("/api/pdfs", response_class=JSONResponse)
+async def get_available_pdfs():
+    if not os.path.isdir(PDF_FOLDER):
+        return {"pdfs": []}
+    return {
+        "pdfs": sorted(
+            f for f in os.listdir(PDF_FOLDER) if f.lower().endswith(".pdf")
+        )
+    }
+
+
+# ---------------------------------------------------------------------
+# Get available slideshows (picture subfolders)
+# ---------------------------------------------------------------------
+@router.get("/api/slideshows", response_class=JSONResponse)
+async def get_available_slideshows():
+    if not os.path.isdir(PICTURE_FOLDER):
+        return {"slideshows": []}
+    return {
+        "slideshows": sorted(
+            f for f in os.listdir(PICTURE_FOLDER)
+            if os.path.isdir(os.path.join(PICTURE_FOLDER, f))
+        )
+    }
+
+
+# ---------------------------------------------------------------------
 # Get current screen content (screens.json)
 # ---------------------------------------------------------------------
 @router.get("/api/screens", response_class=JSONResponse)
@@ -82,6 +126,14 @@ async def set_screen_content(
             screen.pdf = content_value
         elif content_type == "slideshow":
             screen.slideshow = content_value
+        elif content_type == "news":
+            # For news, content_value carries the display mode
+            # (portrait / landscape / presentation) so the model's
+            # pattern validator accepts the assignment.
+            if content_value in {"portrait", "landscape", "presentation"}:
+                screen.news_mode = content_value
+        elif content_type == "screen_share":
+            screen.screen_share = content_value
         # "default" needs no content_value — type alone routes to the studio logo
 
         # Save the updated screens to the file
@@ -120,12 +172,31 @@ async def reload_all_screens():
 # Upload a picture
 # ---------------------------------------------------------------------
 @router.post("/api/upload/picture", response_class=JSONResponse)
-async def upload_picture(file: UploadFile = File(...)):
+async def upload_picture(
+    file: UploadFile = File(...),
+    subfolder: str = Form(""),
+):
     try:
-        file_path = os.path.join(PICTURE_FOLDER, file.filename)
+        # Treat "Root" / "" the same — both mean the top-level pictures dir.
+        # Sanitize subfolder: strip any path separators so we never escape
+        # the pictures directory.
+        sf = (subfolder or "").strip().strip("/\\")
+        if sf.lower() == "root":
+            sf = ""
+        if any(part in ("..", "") for part in sf.split("/")) and sf:
+            raise HTTPException(status_code=400, detail="Invalid subfolder")
+
+        target_folder = os.path.join(PICTURE_FOLDER, sf) if sf else PICTURE_FOLDER
+        os.makedirs(target_folder, exist_ok=True)
+
+        file_path = os.path.join(target_folder, file.filename)
         with open(file_path, "wb") as f:
             f.write(await file.read())
-        return {"message": f"Picture '{file.filename}' uploaded successfully"}
+
+        rel = (sf + "/" + file.filename) if sf else file.filename
+        return {"message": f"Picture '{rel}' uploaded successfully", "path": rel}
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

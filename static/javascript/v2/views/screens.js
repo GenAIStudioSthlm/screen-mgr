@@ -13,8 +13,25 @@ function v2ScreensView() {
     _timer: null,
     _lastSelectedScreenId: null,
 
+    // Media libraries (populated by _loadMedia)
+    videos: [],
+    pdfs: [],
+    slideshows: [],
+    pictures: {},        // { folder: [filename, ...] }
+    pictureOptions: [],  // flattened [{ value: 'folder/file' | 'file', label, folder }]
+
+    // Upload UI state
+    uploadMsg: '',
+    uploadOk: true,
+    pictureSubfolder: '',
+    pictureNewSubfolder: '',
+
     async load() {
-      await Promise.all([this._loadScreens(), this._loadModules()]);
+      await Promise.all([
+        this._loadScreens(),
+        this._loadModules(),
+        this._loadMedia(),
+      ]);
       clearTimeout(this._timer);
       this._timer = setTimeout(() => this.load(), 6000);
     },
@@ -33,6 +50,31 @@ function v2ScreensView() {
           m.type.includes('display') && m.enabled
         );
       } catch (e) { console.error('modules load failed', e); }
+    },
+    async _loadMedia() {
+      try {
+        const [v, p, pd, ss] = await Promise.all([
+          fetch('/api/videos').then(r => r.json()),
+          fetch('/api/pictures').then(r => r.json()),
+          fetch('/api/pdfs').then(r => r.json()),
+          fetch('/api/slideshows').then(r => r.json()),
+        ]);
+        this.videos = v.videos || [];
+        this.pdfs = pd.pdfs || [];
+        this.slideshows = ss.slideshows || [];
+        this.pictures = p.pictures || {};
+        // Flatten pictures into an options list with stable "folder/file" values.
+        // "Root" (top-level) entries use just the filename as value to match how
+        // the legacy admin stored them in screens.json.
+        const opts = [];
+        Object.keys(this.pictures).sort().forEach(folder => {
+          (this.pictures[folder] || []).slice().sort().forEach(file => {
+            const value = folder === 'Root' ? file : (folder + '/' + file);
+            opts.push({ value, label: file, folder });
+          });
+        });
+        this.pictureOptions = opts;
+      } catch (e) { console.error('media load failed', e); }
     },
 
     screenFor(zone) {
@@ -70,13 +112,64 @@ function v2ScreensView() {
     _placeholderFor(type) {
       switch (type) {
         case 'text': return 'Hello world';
-        case 'url': return 'https://example.com';
-        case 'video': return 'video.mp4 (must already be uploaded)';
-        case 'picture': return 'subfolder/image.jpg (must already be uploaded)';
-        case 'pdf': return 'doc.pdf (must already be uploaded)';
-        case 'slideshow': return 'subfolder (must already exist under static/pictures)';
+        case 'url': return 'https://example.com  (YouTube URLs auto-embed)';
         case 'screen_share': return 'room-id';
-        default: return '(no value needed)';
+        default: return '';
+      }
+    },
+
+    pictureSubfolders() {
+      // Folders we can upload INTO. "Root" maps to the empty string on POST.
+      return Object.keys(this.pictures).sort();
+    },
+
+    async uploadMedia(kind, fileInputEl) {
+      const file = fileInputEl?.files?.[0];
+      if (!file) {
+        this.uploadMsg = 'no file selected';
+        this.uploadOk = false;
+        return;
+      }
+      this.uploadMsg = 'uploading ' + file.name + '…';
+      this.uploadOk = true;
+      const fd = new FormData();
+      fd.append('file', file);
+      let endpoint;
+      if (kind === 'video')   endpoint = '/api/upload/video';
+      else if (kind === 'pdf')     endpoint = '/api/upload/pdf';
+      else if (kind === 'picture') {
+        endpoint = '/api/upload/picture';
+        const sf = (this.pictureNewSubfolder || this.pictureSubfolder || '').trim();
+        if (sf) fd.append('subfolder', sf);
+      } else {
+        this.uploadMsg = 'unknown kind: ' + kind;
+        this.uploadOk = false;
+        return;
+      }
+      try {
+        const r = await fetch(endpoint, { method: 'POST', body: fd });
+        const d = await r.json();
+        if (r.ok) {
+          this.uploadMsg = 'uploaded ' + (d.path || file.name) + ' ✓';
+          this.uploadOk = true;
+          fileInputEl.value = '';
+          this.pictureNewSubfolder = '';
+          await this._loadMedia();
+          // If the active editor is for this kind, auto-select the just-uploaded file.
+          if (kind === 'picture' && this.editing.type === 'picture') {
+            this.editing.value = d.path || file.name;
+          } else if (kind === 'video' && this.editing.type === 'video') {
+            this.editing.value = file.name;
+          } else if (kind === 'pdf' && this.editing.type === 'pdf') {
+            this.editing.value = file.name;
+          }
+        } else {
+          this.uploadMsg = 'failed: ' + (d.detail || JSON.stringify(d));
+          this.uploadOk = false;
+        }
+      } catch (e) {
+        this.uploadMsg = 'failed: ' + e;
+        this.uploadOk = false;
       }
     },
 
