@@ -27,31 +27,6 @@
       <div style="font-size:11px;color:var(--text-dim)">v2</div>
       <div style="flex:1"></div>
 
-      {# Scenes dropdown #}
-      <div style="position:relative" @click.outside="sceneDropdownOpen = false">
-        <button @click="sceneDropdownOpen = !sceneDropdownOpen"
-                class="btn btn-ghost" style="font-size:11px"
-                :disabled="scenes.length === 0">
-          <span x-text="'Scenes (' + scenes.length + ')'"></span>
-          <span style="margin-left:4px">▾</span>
-        </button>
-        <div x-show="sceneDropdownOpen" x-transition style="position:absolute;top:34px;right:0;min-width:240px;background:var(--card);border:1px solid var(--border);box-shadow:0 4px 12px rgba(0,0,0,0.2);z-index:50">
-          <template x-for="s in scenes" :key="s.id">
-            <button @click="applyScene(s.id)"
-                    class="btn btn-ghost"
-                    style="display:block;width:100%;text-align:left;border:none;padding:8px 12px;font-size:12px">
-              <div style="font-weight:600" x-text="s.name"></div>
-              <div style="font-size:10px;color:var(--text-dim);margin-top:2px" x-text="s.description || s.id"></div>
-            </button>
-          </template>
-          <div x-show="scenes.length === 0" style="padding:8px 12px;font-size:11px;color:var(--text-dim)">No scenes</div>
-        </div>
-      </div>
-
-      <div x-show="sceneActionMsg" style="font-size:10px"
-           :style="sceneActionOk ? 'color:var(--ok)' : 'color:var(--err)'"
-           x-text="sceneActionMsg"></div>
-
       <div style="font-size:11px;color:var(--text-dim)" x-text="clock"></div>
       <a href="/admin/legacy" class="btn btn-ghost" style="font-size:10px">legacy admin</a>
       <button id="studio-theme-toggle" class="btn btn-icon" aria-label="Toggle theme">☀</button>
