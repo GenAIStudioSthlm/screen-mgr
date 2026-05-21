@@ -258,13 +258,16 @@ Split into per-server processes only if we hit one of these:
 
 Each phase is a small, deployable increment. Status checkboxes get ticked as we land.
 
-### Phase 1 — Lighting MCP server (in-process) — IN PROGRESS
+### Phase 1 — Lighting MCP server (in-process) — DONE 2026-05-21
 - [x] Add `mcps` package with `lighting/` directory (skipped `base.py` per YAGNI — pull it out when the second server lands)
 - [x] `mcps/lighting/server.py` — FastMCP server exposing 9 tools (list_lights / list_groups / list_scenes / get_bridge_status / set_light / set_group / recall_scene / all_on / all_off)
 - [x] Mounted on the existing FastAPI app in `main.py` at `/mcp/lighting` (skipped a separate `routes/mcp_routes.py` — MCP servers are ASGI apps, not FastAPI routers; mounting belongs next to other `app.mount` calls)
 - [x] Add `mcp>=1.2.0` to `requirements.txt` (anthropic dep deferred to Phase 2 when the agent lands)
-- [ ] Smoke test from `curl`: `curl -N http://studiopi:8000/mcp/lighting/sse` returns SSE stream
+- [x] Disable DNS-rebinding protection — LAN-only deployment, no browser MCP client. Documented re-enable path in `server.py`.
+- [x] Smoke test: `mcp.client.sse` from the Pi initialised the session, listed all 9 tools, called `list_lights` and `list_groups` — got real Hue state back (Maker room with lights 5/7/8/9, Studio room separate).
 - [x] Document the new dependency + endpoint in `docs/DEPLOY.md`
+
+**Gotcha for future MCP servers:** the mcp library defaults to localhost-only via DNS-rebinding protection (`Invalid Host header` from any non-localhost client). For LAN-only services pass `TransportSecuritySettings(enable_dns_rebinding_protection=False)`; for public/internet exposure pin `allowed_hosts` explicitly.
 
 ### Phase 2 — Lighting specialist subagent
 - [ ] `agents/base.py` — Anthropic client, message-loop helper, tool-result formatter
