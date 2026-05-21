@@ -23,6 +23,23 @@
 <h1>Updating<span class="dots"></span></h1>
 <p>Returning in <span id="countdown">10</span>s</p>
 <script>
+  // The /updating page is opened in the named "contentWindow" popup that
+  // the station's screen.js controls. Force-refresh the opener (the
+  // /screen/{id} frame) on every visit — this guarantees the frame
+  // re-fetches the latest screen.js and re-computes window.contentUrl,
+  // even when older popup-only screen.js code paths would have left the
+  // frame stuck on stale state. After the frame reloads, its 1-second
+  // setTimeout calls window.open(currentContentUrl, "contentWindow"),
+  // which navigates THIS popup to the new content URL — taking over
+  // before the countdown below finishes.
+  try {
+    if (window.opener && !window.opener.closed) {
+      window.opener.location.reload();
+    }
+  } catch (e) {
+    console.warn("could not reload opener", e);
+  }
+
   const params = new URLSearchParams(window.location.search);
   const returnTo = params.get("return_to") || "/";
   const duration = parseInt(params.get("duration") || "10", 10);
