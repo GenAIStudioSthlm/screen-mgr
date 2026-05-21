@@ -14,12 +14,20 @@ from __future__ import annotations
 from typing import Any
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from modules import registry
 from modules.hue.client import HueClient
 
 
-server = FastMCP("lighting")
+# The MCP server lives behind the LAN-only studiopi firewall and is
+# called by trusted clients (our own agents, Claude Code on the same
+# LAN). DNS-rebinding protection exists to defeat browser-side attacks
+# against localhost MCP servers, which doesn't match this deployment.
+# Re-enable + pin allowed_hosts if this service is ever exposed publicly.
+_TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
+
+server = FastMCP("lighting", transport_security=_TRANSPORT)
 
 
 # --------------------------------------------------------------------------
