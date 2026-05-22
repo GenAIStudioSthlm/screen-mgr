@@ -23,6 +23,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcps.audio.microphones import (
     discover_microphones as _discover_microphones,
     get_microphone_state as _get_microphone_state,
+    run_mic_test as _run_mic_test,
     set_microphone_mute as _set_microphone_mute,
 )
 from mcps.audio.streams import discover_streams as _discover_streams
@@ -155,6 +156,19 @@ def mute_microphone(mic_id: str) -> dict:
 def unmute_microphone(mic_id: str) -> dict:
     """Unmute a microphone via its SSC API."""
     return _set_microphone_mute(mic_id, False)
+
+
+@server.tool()
+def run_mic_test(mic_id: str, probes: int = 3) -> dict:
+    """Reachability self-test for a microphone — runs N HTTPS
+    handshakes against the device and reports per-probe status +
+    latency. Useful "is this mic on the network and answering" check.
+
+    Note: this is *not* the LED-flash test originally planned. The
+    TCC's SSC REST endpoints return 404 on the current firmware;
+    real LED flash / mute control needs SSC2 (JSON-RPC over
+    WebSockets) implemented — tracked in PLAN_AGENTIC Phase 11."""
+    return _run_mic_test(mic_id, probes=probes)
 
 
 @server.tool()

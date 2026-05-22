@@ -54,6 +54,13 @@
           <a :href="m.control_url" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:10px;text-decoration:none">↗ Admin UI</a>
           <button @click="muteMic(m, true)" class="btn btn-ghost" style="font-size:10px">Mute</button>
           <button @click="muteMic(m, false)" class="btn btn-ghost" style="font-size:10px">Unmute</button>
+          <button @click="testMic(m)"
+                  :disabled="m._testing"
+                  class="btn btn-ghost" style="font-size:10px"
+                  title="3× HTTPS reachability probe with latency. SSC2-over-WebSockets (real LED flash / mute control) is tracked as a follow-up.">
+            <span x-show="!m._testing">▶ Test</span>
+            <span x-show="m._testing">⏳</span>
+          </button>
         </div>
       </template>
     </div>

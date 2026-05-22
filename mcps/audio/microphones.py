@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+import time
 from typing import Any, Optional
 
 import requests
@@ -201,6 +202,90 @@ def get_microphone_state(mic_id: str) -> dict:
         return {"mic": mic, "state": r.json()}
     except ValueError:
         return {"error": "SSC returned non-JSON", "url": url, "body": r.text[:500]}
+
+
+def _read_mute(mic: dict) -> Optional[bool]:
+    """Best-effort read of the current mute state from /api/ssc/state.
+    Returns None if the field can't be located — different TCC firmware
+    nests it differently."""
+    url = _ssc_url(mic, "/api/ssc/state")
+    try:
+        r = requests.get(url, verify=False, timeout=SSC_TIMEOUT_S)
+        if r.status_code >= 400:
+            return None
+        state = r.json()
+    except (requests.RequestException, ValueError):
+        return None
+    # Try the common paths first.
+    candidates = (state, state.get("audio") if isinstance(state, dict) else None)
+    for blob in candidates:
+        if isinstance(blob, dict):
+            v = blob.get("mute")
+            if isinstance(v, bool):
+                return v
+            if isinstance(v, dict) and isinstance(v.get("value"), bool):
+                return v["value"]
+    return None
+
+
+def run_mic_test(mic_id: str, probes: int = 3) -> dict:
+    """Network reachability self-test for a microphone.
+
+    Originally designed to flash the LED ring by toggling mute via the
+    SSC REST API — but field tests showed the TCC M S W firmware
+    returns 404 for every common SSC REST path (`/api/ssc/state`,
+    `/api/v1/state`, etc). Sennheiser's modern SSC2 protocol is
+    JSON-RPC over WebSockets, not REST, and implementing that
+    correctly requires more API work (see PLAN_AGENTIC.md Phase 11).
+
+    Until that lands, this is a useful "is the mic reachable" probe:
+    runs `probes` HTTPS handshakes against the mic, reports per-probe
+    status code + latency. Confirms LAN routing + the device's TLS
+    listener even though SSC control is still pending.
+    """
+    mic = _find_mic(mic_id)
+    if mic is None:
+        return {"error": f"microphone {mic_id!r} not found via mDNS"}
+
+    probes = max(1, min(10, int(probes)))
+    url = _ssc_url(mic, "/")
+    samples: list[dict] = []
+    for i in range(probes):
+        t0 = time.monotonic()
+        status: Optional[int] = None
+        err: Optional[str] = None
+        try:
+            r = requests.get(url, verify=False, timeout=SSC_TIMEOUT_S)
+            status = r.status_code
+        except requests.RequestException as e:
+            err = repr(e)
+        elapsed_ms = (time.monotonic() - t0) * 1000
+        samples.append(
+            {
+                "probe": i + 1,
+                "http_status": status,
+                "latency_ms": round(elapsed_ms, 1),
+                "error": err,
+            }
+        )
+        if i < probes - 1:
+            time.sleep(0.2)
+
+    ok = all(s["http_status"] is not None for s in samples)
+    return {
+        "mic_id": mic["id"],
+        "ip": mic["ip"],
+        "url": url,
+        "probes": probes,
+        "ok": ok,
+        "samples": samples,
+        "note": (
+            "Reachability probe only — the mic responds to TLS but its "
+            "SSC REST endpoints aren't exposed on this firmware. "
+            "Real LED-flash / mute control needs SSC2 (JSON-RPC over "
+            "WebSockets) wired in; see PLAN_AGENTIC Phase 11."
+        ),
+    }
 
 
 def set_microphone_mute(mic_id: str, muted: bool) -> dict:

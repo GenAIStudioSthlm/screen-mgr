@@ -68,6 +68,44 @@ function v2AudioView() {
       }
     },
 
+    async testMic(mic) {
+      if (mic._testing) return;
+      mic._testing = true;
+      this.micsLastAction = 'reachability test ' + (mic.friendly_name || mic.hostname) + '…';
+      this.micsLastOk = true;
+      try {
+        const r = await fetch(
+          '/api/audio/microphones/' + encodeURIComponent(mic.id) + '/test',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ probes: 3 }),
+          },
+        );
+        const d = await r.json();
+        if (d.error) {
+          this.micsLastAction = 'test ✗ ' + d.error;
+          this.micsLastOk = false;
+        } else {
+          const samples = d.samples || [];
+          const latencies = samples
+            .filter(s => s.latency_ms != null)
+            .map(s => s.latency_ms);
+          const avg = latencies.length
+            ? (latencies.reduce((a, b) => a + b, 0) / latencies.length).toFixed(1)
+            : '—';
+          const codes = samples.map(s => s.http_status ?? 'err').join(', ');
+          this.micsLastAction = `test ${d.ok ? '✓' : '✗'} — ${d.probes} probes, avg ${avg}ms, statuses [${codes}]`;
+          this.micsLastOk = !!d.ok;
+        }
+      } catch (e) {
+        this.micsLastAction = 'test ✗ ' + e;
+        this.micsLastOk = false;
+      } finally {
+        mic._testing = false;
+      }
+    },
+
     async muteMic(mic, muted) {
       this.micsLastAction = (muted ? 'muting ' : 'unmuting ') + (mic.friendly_name || mic.hostname) + '…';
       this.micsLastOk = true;

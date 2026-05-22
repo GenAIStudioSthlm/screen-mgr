@@ -349,6 +349,23 @@ own friendly-name prefix as not-ours.
 - [x] Audio admin tab surfaces every discovered mic with Mute /
       Unmute / "↗ Admin UI" buttons.
 
+**SSC2 / WebSocket control (open):**
+- **Field finding 2026-05-22:** the TCC M S W on `192.168.2.220`
+  responds to TLS handshakes but returns HTTP 404 for every common
+  Sennheiser SSC REST path (`/api/ssc/state`, `/api/v1/state`,
+  `/api/ssc2/state`, `/api/state`, root, …). The mDNS advertisement
+  (`_ssc-https._tcp`) implies the control protocol is exposed over
+  HTTPS, and the firmware ships TLS — so the most likely surface is
+  **Sennheiser SSC2 over WebSockets** (JSON-RPC 2.0 over `wss://`).
+- [ ] Implement an SSC2 WebSocket client (`mcps/audio/ssc2_client.py`):
+        - WSS upgrade against `wss://<ip>/` with subprotocol negotiation
+        - JSON-RPC 2.0 framing: `{"jsonrpc":"2.0","id":N,"method":"GET","params":{"path":"/audio/mute"}}`
+        - Update `set_microphone_mute` / `_read_mute` to use it.
+        - Adds `websockets` to requirements.txt.
+- [ ] Until SSC2 is wired, `run_mic_test` does a reachability probe
+      only (HTTPS handshake + latency); the LED-flash variant is
+      shelved.
+
 **Stream discovery (landed 2026-05-22):**
 - [x] `mcps/audio/streams.py` — SAP listener on `239.255.255.255:9875`.
       Parses SAP header + SDP, surfaces `(source_ip, name,

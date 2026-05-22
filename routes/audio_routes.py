@@ -87,6 +87,14 @@ async def mute_microphone(mic_id: str, payload: dict = Body(default={})):
     return set_microphone_mute(mic_id, muted)
 
 
+@router.post("/api/audio/microphones/{mic_id}/test", response_class=JSONResponse)
+async def test_microphone(mic_id: str, payload: dict = Body(default={})):
+    """Mic reachability test — N HTTPS handshakes with timings."""
+    from mcps.audio.microphones import run_mic_test
+    probes = int((payload or {}).get("probes", 3))
+    return run_mic_test(mic_id, probes=probes)
+
+
 # ---------------------------------------------------------------------
 # Dante / AES67 stream discovery (real).
 # Listens passively to SAP on 239.255.255.255:9875.
