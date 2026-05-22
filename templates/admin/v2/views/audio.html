@@ -9,12 +9,57 @@
     <div>
       <h1 style="margin:0">Audio</h1>
       <p style="margin:var(--s-1) 0 0;color:var(--text-dim);font-size:12px">
-        System mixer, microphones, sound playback.
+        Microphones (real) · sinks/playback (stub, pending PulseAudio wiring).
       </p>
     </div>
-    <div>
-      <span class="pill pill-err">stub</span>
+    <div style="display:flex;gap:var(--s-1)">
+      <span class="pill pill-ok">mics: real</span>
+      <span class="pill pill-err">sinks: stub</span>
     </div>
+  </div>
+
+  {# ---------- Microphones (real) ---------- #}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
+      <h3 style="margin:0;font-size:13px">Microphones on the LAN</h3>
+      <button @click="loadMics()" :disabled="micsLoading" class="btn btn-ghost" style="font-size:11px">
+        <span x-show="!micsLoading">↻ Rescan</span>
+        <span x-show="micsLoading">⏳ Scanning…</span>
+      </button>
+    </div>
+    <p style="margin:0 0 var(--s-2);font-size:11px;color:var(--text-dim)">
+      Passive mDNS discovery of <code>_ssc-https._tcp</code> services (Sennheiser TeamConnect family). Re-scan takes ~6s.
+    </p>
+
+    <template x-if="!mics || mics.length === 0">
+      <div x-show="!micsLoading" style="color:var(--text-dim);font-size:11px;font-style:italic">
+        No microphones discovered. Make sure the TCC is on the same LAN as studiopi and powered on.
+      </div>
+    </template>
+    <template x-if="mics && mics.length === 1 && mics[0].error">
+      <div style="color:var(--err);font-size:11px;font-family:var(--font-mono)" x-text="mics[0].error"></div>
+    </template>
+
+    <div style="display:flex;flex-direction:column;gap:var(--s-2)">
+      <template x-for="m in (mics || []).filter(x => !x.error)" :key="m.id">
+        <div style="display:flex;align-items:center;gap:var(--s-3);padding:var(--s-2);border:1px solid var(--border);flex-wrap:wrap">
+          <div style="flex:1;min-width:0">
+            <div style="font-weight:600;font-size:12px" x-text="m.friendly_name || m.hostname"></div>
+            <div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono)">
+              <span x-text="m.ip"></span>
+              · <span x-text="m.hostname"></span>
+              · <span x-text="m.vendor + ' ' + m.model"></span>
+            </div>
+          </div>
+          <a :href="m.control_url" target="_blank" rel="noopener" class="btn btn-ghost" style="font-size:10px;text-decoration:none">↗ Admin UI</a>
+          <button @click="muteMic(m, true)" class="btn btn-ghost" style="font-size:10px">Mute</button>
+          <button @click="muteMic(m, false)" class="btn btn-ghost" style="font-size:10px">Unmute</button>
+        </div>
+      </template>
+    </div>
+    <div x-show="micsLastAction" style="margin-top:var(--s-2);font-size:11px"
+         :style="micsLastOk ? 'color:var(--ok)' : 'color:var(--err)'"
+         x-text="micsLastAction"></div>
   </div>
 
   {# ---------- Backend status card ---------- #}

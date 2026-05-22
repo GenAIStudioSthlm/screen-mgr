@@ -60,3 +60,28 @@ async def play_sound(payload: dict = Body(default={})):
         file_path=(payload or {}).get("file_path"),
         sink_id=(payload or {}).get("sink_id"),
     )
+
+
+# ---------------------------------------------------------------------
+# Microphones — REAL (first non-stub Audio surface).
+# Wraps mcps/audio/microphones.py. Shared with the MCP tools.
+# ---------------------------------------------------------------------
+
+
+@router.get("/api/audio/microphones", response_class=JSONResponse)
+async def list_microphones():
+    from mcps.audio.microphones import discover_microphones
+    return {"microphones": discover_microphones()}
+
+
+@router.get("/api/audio/microphones/{mic_id}/state", response_class=JSONResponse)
+async def microphone_state(mic_id: str):
+    from mcps.audio.microphones import get_microphone_state
+    return get_microphone_state(mic_id)
+
+
+@router.post("/api/audio/microphones/{mic_id}/mute", response_class=JSONResponse)
+async def mute_microphone(mic_id: str, payload: dict = Body(default={})):
+    from mcps.audio.microphones import set_microphone_mute
+    muted = bool((payload or {}).get("muted", True))
+    return set_microphone_mute(mic_id, muted)

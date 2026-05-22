@@ -20,6 +20,12 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from mcps.audio.microphones import (
+    discover_microphones as _discover_microphones,
+    get_microphone_state as _get_microphone_state,
+    set_microphone_mute as _set_microphone_mute,
+)
+
 
 _TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
 server = FastMCP("audio", transport_security=_TRANSPORT)
@@ -103,3 +109,48 @@ def play_sound(file_path: str, sink_id: Optional[str] = None) -> dict:
     STUB. Real impl: spawn `paplay <file>` (or `aplay` for ALSA).
     Asynchronous in practice — return as soon as playback starts."""
     return _stub("play_sound", file_path=file_path, sink_id=sink_id)
+
+
+# --------------------------------------------------------------------------
+# Tools — microphones (REAL — first non-stub of the Audio MCP)
+# --------------------------------------------------------------------------
+
+
+@server.tool()
+def list_microphones() -> dict:
+    """Discover networked microphones on the LAN.
+
+    Uses mDNS (`_ssc-https._tcp`) to find Sennheiser TeamConnect
+    ceiling mics — including the TCC M S W in the studio. Future
+    revisions will also browse Dante (`_netaudio-*`), USB devices,
+    and any other registered input-device modules.
+
+    Each entry includes: ``id`` (use with the other mic tools),
+    ``friendly_name``, ``hostname``, ``ip``, ``vendor``, ``model``,
+    and ``control_url`` (the device's HTTPS admin page).
+    """
+    return {"microphones": _discover_microphones()}
+
+
+@server.tool()
+def get_microphone_state(mic_id: str) -> dict:
+    """Fetch the full SSC state from a mic by id, hostname, or IP.
+
+    Returns whatever the device exposes at ``/api/ssc/state`` — for
+    Sennheiser TCC this is a deep JSON tree covering channel levels,
+    mute, gain, identify, beam steering, etc. Useful for "what is
+    this mic actually doing right now" diagnostics."""
+    return _get_microphone_state(mic_id)
+
+
+@server.tool()
+def mute_microphone(mic_id: str) -> dict:
+    """Mute a microphone via its SSC API (Sennheiser TCC family).
+    Returns the HTTP status + any body the device returns."""
+    return _set_microphone_mute(mic_id, True)
+
+
+@server.tool()
+def unmute_microphone(mic_id: str) -> dict:
+    """Unmute a microphone via its SSC API."""
+    return _set_microphone_mute(mic_id, False)

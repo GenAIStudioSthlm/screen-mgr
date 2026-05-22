@@ -329,6 +329,61 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - [ ] Conversation persistence (Phase B optional)
 - [ ] Wake-word in room voice (Phase B optional)
 
+### Phase 11 — Networked mics + room voice → chat pipeline (added 2026-05-22)
+
+The studio has a Sennheiser TeamConnect Ceiling Medium (TCC M S W) on
+the ComHem LAN — discoverable today via mDNS at
+`TCCM-001B664130B7.local` (192.168.2.220, friendly name `GenAi-…`).
+A neighbour's TCC is also visible at .219; treat anything outside our
+own friendly-name prefix as not-ours.
+
+**Today (landed):**
+- [x] `mcps/audio/microphones.py` — passive mDNS discovery via
+      `avahi-browse -p _ssc-https._tcp`, vendor/model tagging for the
+      Sennheiser TCC family, and a thin Sennheiser SSC client for
+      state + mute. No new Python dependencies (uses `requests`,
+      already a transitive dep via spotipy).
+- [x] MCP tools: `list_microphones`, `get_microphone_state`,
+      `mute_microphone`, `unmute_microphone`.
+- [x] HTTP routes: `/api/audio/microphones[/{id}/state|/mute]`.
+- [x] Audio admin tab surfaces every discovered mic with Mute /
+      Unmute / "↗ Admin UI" buttons.
+
+**Future — room voice into the chat panel:**
+- [ ] **Audio receive on the Pi.** The TCC streams Dante (which is
+      AES67-compatible). Realistic options:
+        - **AES67 receive** (open standard): GStreamer pipeline on the
+          Pi reads the `_netaudio-chan._udp` stream the TCC announces
+          and writes a PCM ring buffer.
+        - **Dante Virtual Soundcard** (Audinate licence, Windows/Mac
+          only — not viable on the Pi).
+        - **USB out from the TCC's analog/USB option** if the unit
+          has one wired — bypasses network audio entirely.
+- [ ] **STT on the Pi.** `faster-whisper` (small or medium model)
+      with VAD-driven utterance segmentation. Realistic on a Pi 4 at
+      ~1× realtime for the small.en model.
+- [ ] **Voice daemon.** `scripts/room_voice.py` — connects mic stream
+      → VAD → Whisper → `POST /api/chat` with `session_id="room"`.
+      Push-to-talk via a GPIO button OR wake-word
+      (`openWakeWord`) — keep PTT default to avoid false triggers.
+- [ ] **Chat panel.** When a room-voice transcript arrives, render
+      with a 🎤 chip so the operator can tell room vs. browser input
+      apart. The orchestrator gets a `source: "room"` field in the
+      message metadata.
+
+**Future — mic as a generic input for other modules:**
+- [ ] **`InputDeviceModule` base** in `modules/base.py` — peer to
+      `DisplayModule` / `ServiceModule`. Each input module declares
+      `is_available()` + an async `stream()` that yields chunks.
+- [ ] **`modules/sennheiser_tcc/`** — concrete `InputDeviceModule`
+      wrapping the SSC + AES67 receive pipeline. Registers itself
+      via the registry so any module wanting an audio input (room
+      voice daemon, a future transcription service, a noise-level
+      monitor for the LED matrix) can iterate `registry.list()` and
+      pick one.
+- [ ] **Registry filter helpers** — `registry.list(kind="input")`
+      mirrors the existing `kind="display"` / `kind="service"` slices.
+
 ### Phase 10 — Audio + Music MCPs (added 2026-05-22)
 - [x] **Audio MCP — STUB** at `/mcp/audio/sse`. 8 tools (`list_audio_sinks`, `list_audio_sources`, `get_volume`, `is_muted`, `set_volume`, `mute`, `unmute`, `play_sound`). All return `{"stub": true, ...}` until a real backend (PulseAudio `pactl`) is wired. Tool signatures are the API contract.
 - [x] **Music MCP — Spotify** at `/mcp/music/sse`. 8 tools (`get_now_playing`, `list_devices`, `search`, `play`, `pause`, `next_track`, `previous_track`, `set_volume`). Backed by `spotipy`; graceful `{"error": "spotify not configured"}` until the user runs the one-time OAuth flow.

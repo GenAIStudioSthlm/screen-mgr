@@ -122,19 +122,27 @@ Wraps every registered LED panel ServiceModule. Today there's one
 | `set_display_enabled` | Flip the registry enabled flag (doesn't touch systemd). |
 | `run_display_test` | Lifecycle sanity test: stop → 3s pause → start, with before/mid/after status snapshots. |
 
-### Audio MCP — `/mcp/audio/sse` _(stub)_
+### Audio MCP — `/mcp/audio/sse`
 
-API surface for system audio (sinks, sources, volume, mute, sound
-playback). Tools currently return `{"stub": true, ...}` — wire to
-PulseAudio (`pactl`) when implementing for real. The tool *signatures*
-are the API contract; keep them stable.
+Mixed state: **microphones are real** (mDNS discovery + Sennheiser SSC
+control); **sinks/sources/playback are stubs** pending PulseAudio
+wiring. The Audio admin tab reflects that split with separate `mics:
+real` / `sinks: stub` pills.
 
-| Tool | Purpose |
-|---|---|
-| `list_audio_sinks` / `list_audio_sources` | Output devices / input mics. |
-| `get_volume` / `set_volume` | Sink volume 0–100. |
-| `is_muted` / `mute` / `unmute` | Mute state for a sink. |
-| `play_sound` | Play a local sound file on a sink. |
+| Tool | State | Purpose |
+|---|---|---|
+| `list_microphones` | ✅ real | Discover networked mics via mDNS (`_ssc-https._tcp`). Today finds the studio's Sennheiser TeamConnect Ceiling Medium. |
+| `get_microphone_state` | ✅ real | Fetch the full SSC state from a mic (channel levels, mute, gain, etc). |
+| `mute_microphone` / `unmute_microphone` | ✅ real | Set mute via the Sennheiser SSC HTTPS API. |
+| `list_audio_sinks` / `list_audio_sources` | 🚧 stub | Output devices / system input devices. |
+| `get_volume` / `set_volume` | 🚧 stub | Sink volume 0–100. |
+| `is_muted` / `mute` / `unmute` | 🚧 stub | Mute state for a sink. |
+| `play_sound` | 🚧 stub | Play a local sound file on a sink. |
+
+The microphone surface is the seed for the future room-voice → chat
+pipeline (PLAN_AGENTIC.md Phase 11): AES67 receive on the Pi +
+`faster-whisper` STT + a small daemon pushing transcripts to
+`POST /api/chat` with `session_id="room"`.
 
 ### Music — Spotify Web Player + (optional) MCP
 
