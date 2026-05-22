@@ -26,6 +26,10 @@ from mcps.music.speaker_test import (
     DEFAULT_VOLUME_PCT,
     run_speaker_test as _run_speaker_test,
 )
+from mcps.music.presets import (
+    play_preset as _play_preset,
+    preset_manager as _preset_manager,
+)
 
 
 _TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
@@ -174,4 +178,39 @@ async def run_speaker_test(
         volume_pct=volume_pct,
         track_query=track_query,
         play_seconds=play_seconds,
+    )
+
+
+@server.tool()
+def list_presets() -> dict:
+    """List the named music presets the operator can fire with one click.
+
+    Each preset bundles a search query (resolved against Spotify at
+    play-time), a target Spotify Connect device, and a default volume.
+    Today's presets are seeded in `data/music_presets.json`:
+    ``chill-vibes`` (Lo-Fi Girl), ``energy`` (Northern House Rarities),
+    ``chaotic`` (jazz fusion)."""
+    return {"presets": [p.model_dump() for p in _preset_manager.presets]}
+
+
+@server.tool()
+async def play_preset(
+    preset_id: str,
+    device_query: Optional[str] = None,
+    volume_pct: Optional[int] = None,
+) -> dict:
+    """Play a named music preset on its target Spotify Connect device.
+
+    - ``preset_id``: one of the ids from `list_presets`.
+    - ``device_query``: optional — override the preset's default device
+      (case-insensitive substring match against `list_devices`).
+    - ``volume_pct``: optional — override the preset's default volume.
+
+    Does NOT auto-pause — the preset keeps playing until the operator
+    stops it (via Spotify or the Music view). Returns a per-step
+    summary with what was matched + what played."""
+    return await _play_preset(
+        preset_id=preset_id,
+        device_query_override=device_query,
+        volume_pct_override=volume_pct,
     )

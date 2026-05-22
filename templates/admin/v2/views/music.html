@@ -39,10 +39,37 @@
     </div>
   </div>
 
-  {# ---------- Result line for the speaker test ---------- #}
+  {# ---------- Result line for the speaker test / preset playback ---------- #}
   <div x-show="lastAction" style="font-size:11px"
        :style="lastActionOk ? 'color:var(--ok)' : 'color:var(--err)'"
        x-text="lastAction"></div>
+
+  {# ---------- Presets ---------- #}
+  <div class="card" x-show="presets.length > 0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
+      <h3 style="margin:0;font-size:13px">Presets</h3>
+      <span style="font-size:10px;color:var(--text-dim)">
+        edit <code>data/music_presets.json</code> to customise
+      </span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:var(--s-2)">
+      <template x-for="p in presets" :key="p.id">
+        <button @click="playPreset(p)"
+                :disabled="!configured || playingPresetId !== null"
+                class="btn"
+                :class="p.id === playingPresetId ? 'btn-brand' : 'btn-ghost'"
+                style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:var(--s-2) var(--s-3);min-width:160px">
+          <span style="font-size:13px;font-weight:600">
+            <span x-show="p.icon" x-text="p.icon + ' '"></span><span x-text="p.name"></span>
+          </span>
+          <span style="font-size:10px;color:var(--text-dim);font-weight:400"
+                x-text="p.description"></span>
+          <span style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono)"
+                x-text="'→ ' + p.device_query + ' @ ' + p.default_volume_pct + '%'"></span>
+        </button>
+      </template>
+    </div>
+  </div>
 
   {# ---------- Setup nudge if .env is missing (only affects the test
       button; the embedded player works without it) ---------- #}
