@@ -4,6 +4,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from routes import router
 from mcps.lighting.server import server as lighting_mcp_server
+from mcps.screens.server import server as screens_mcp_server
 
 
 app = FastAPI()
@@ -19,6 +20,7 @@ app.include_router(router)
 # Each one wraps the corresponding domain's Python module APIs and is
 # usable by any MCP client (Claude Code, our own agents in later phases).
 app.mount("/mcp/lighting", lighting_mcp_server.sse_app())
+app.mount("/mcp/screens", screens_mcp_server.sse_app())
 
 if __name__ == "__main__":
     uvicorn.run(

@@ -299,8 +299,16 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - [ ] Mic permission UX: clear ask on first push-to-talk
 
 ### Phase 6 — Screens MCP + specialist (copy-paste pattern)
-- [ ] Repeat Phase 1+2 for Screens (tools per §4.2, skills for common patterns)
-- [ ] Orchestrator gains `delegate_to_screens` tool
+- [x] **Screens MCP server** — `mcps/screens/server.py`, mounted at `/mcp/screens`. Wraps `screen_manager` + `scene_manager` + the module registry directly (same in-process pattern as Lighting MCP). 9 tools: `list_screens`, `list_scenes`, `list_content_types`, `list_media`, `set_screen_content`, `reload_screen`, `reload_all_screens`, `apply_scene`, `run_content_walkthrough`.
+- [x] **`SceneManager.apply()` refactor** — moved the apply-scene logic from `routes/scenes_routes.py` onto the manager so the MCP tool and the HTTP route share one source of truth (per the plan's "no duplicated logic" rule). The route is now a 3-liner that translates `KeyError → HTTP 404`.
+- [x] **Content walkthrough self-test** — `mcps/screens/walkthrough.py` cycles a target screen through picture → url (web) → url (YouTube) → pdf → news → default settle. Exposed as MCP tool `run_content_walkthrough` and as a CLI (`scripts/screens_walkthrough_test.py`). Picture/pdf states are skipped gracefully if the static/ folders are empty. ~24s end-to-end.
+- [x] Out-of-order vs original phasing — built before Phases 4/5 (chat panel / browser voice) so we have a second MCP up before agent UI work begins.
+- [ ] **Screens specialist subagent** — deferred until the .env API key blocker is unstuck (no point adding a second specialist while neither can run end-to-end).
+- [ ] Orchestrator gains `delegate_to_screens` tool — pairs with the specialist.
+
+**Smoke-test caveats from the first walkthrough run:**
+- All 8 screens currently show `connected=False` (no live WebSockets to the server), so `set_screen_content` saves state but `notified=False` for every step. Walkthrough sequencing + data writes verified via `/api/screens` post-run inspection.
+- `static/pictures` and `static/pdfs` are empty on this Pi, so those steps skip. Upload at least one of each to exercise those states visibly.
 
 ### Phase 7 — LED MCP + specialist (smallest)
 - [ ] Repeat for LED. Likely also extends the `rgbdisplay` module to expose more than start/stop.
