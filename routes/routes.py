@@ -18,6 +18,8 @@ from routes.admin_v2_routes import router as admin_v2_router
 from routes.zones_routes import router as zones_router
 from routes.scenes_routes import router as scenes_router
 from routes.chat_routes import router as chat_router
+from routes.audio_routes import router as audio_router
+from routes.music_routes import router as music_router
 
 
 router = APIRouter()
@@ -35,3 +37,5 @@ router.include_router(admin_v2_router)
 router.include_router(zones_router)
 router.include_router(scenes_router)
 router.include_router(chat_router)
+router.include_router(audio_router)
+router.include_router(music_router)
