@@ -16,6 +16,7 @@ from typing import Any
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from mcps.lighting.startup_test import run_startup_test as _run_startup_test
 from modules import registry
 from modules.hue.client import HueClient
 
@@ -244,3 +245,28 @@ def all_off() -> dict:
     """Turn off every light known to the bridge (group 0). Convenience
     alias for set_group("0", on=False)."""
     return _client().all_off()
+
+
+# --------------------------------------------------------------------------
+# Tools — diagnostics
+# --------------------------------------------------------------------------
+
+
+@server.tool()
+async def run_startup_test() -> dict:
+    """Run the Studio lights startup sequence: rainbow walk + intensity
+    test + settle.
+
+    Takes ~12 seconds end-to-end:
+      - Rainbow (~5s): each of the 13 Studio lights starts at a distinct
+        hue around the color wheel, then the whole rainbow rotates one
+        full turn at 80% brightness.
+      - Intensity (~5s): the Studio group is driven through 10/80/40/80%
+        brightness levels.
+      - Settle: the room is left at 60% / 3000K warm white so it's usable.
+
+    Useful as a one-shot health check that every light is reachable and
+    can render colors + dim correctly. Safe to re-run; the only state it
+    leaves behind is the final settle. Returns a summary of what ran.
+    """
+    return await _run_startup_test(_client())
