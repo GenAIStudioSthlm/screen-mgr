@@ -19,6 +19,13 @@ from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
 from mcps.music.spotify_client import call
+from mcps.music.speaker_test import (
+    DEFAULT_DEVICE_QUERY,
+    DEFAULT_PLAY_SECONDS,
+    DEFAULT_TRACK_QUERY,
+    DEFAULT_VOLUME_PCT,
+    run_speaker_test as _run_speaker_test,
+)
 
 
 _TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
@@ -129,3 +136,42 @@ def set_volume(volume_pct: int, device_id: Optional[str] = None) -> dict:
         c.volume(vol, device_id=device_id)
         return {"volume_pct": vol, "device_id": device_id}
     return call(_do)
+
+
+# --------------------------------------------------------------------------
+# Tools — diagnostics
+# --------------------------------------------------------------------------
+
+
+@server.tool()
+async def run_speaker_test(
+    device_query: str = DEFAULT_DEVICE_QUERY,
+    volume_pct: int = DEFAULT_VOLUME_PCT,
+    track_query: str = DEFAULT_TRACK_QUERY,
+    play_seconds: int = DEFAULT_PLAY_SECONDS,
+) -> dict:
+    """Play a full-spectrum reference track on a named Spotify Connect
+    device at a fixed volume, then pause.
+
+    - ``device_query``: case-insensitive substring matched against the
+      device names from `list_devices`. Default ``"bose"`` (the studio's
+      Bose speakers).
+    - ``volume_pct``: 0–100. Default 20.
+    - ``track_query``: free-text Spotify search; first track result is
+      used. Default ``"Hotel California Eagles"`` (a standard audiophile
+      reference — clean lows from the kick drum, mids from the vocals,
+      highs from the 12-string guitar).
+    - ``play_seconds``: how long to play before pausing. 1–120. Default 20.
+
+    Returns a per-step summary: which devices were visible, which device
+    + track were matched, whether volume + play + pause all landed.
+
+    Requires Spotify to be configured. Returns
+    ``{"error": "spotify not configured", ...}`` if it isn't — see
+    docs/DEPLOY.md → Spotify setup."""
+    return await _run_speaker_test(
+        device_query=device_query,
+        volume_pct=volume_pct,
+        track_query=track_query,
+        play_seconds=play_seconds,
+    )
