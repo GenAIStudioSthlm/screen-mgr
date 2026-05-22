@@ -58,6 +58,13 @@
                   class="btn" style="background:var(--err);color:#fff">
             ■ Stop
           </button>
+          <button @click="runTestPattern(panel)"
+                  :disabled="panel.testRunning"
+                  class="btn btn-ghost"
+                  title="Show grid + 4-corner clock + center diamond for ~15s, then revert">
+            <span x-show="!panel.testRunning">▶ Run test</span>
+            <span x-show="panel.testRunning">⏳ Running…</span>
+          </button>
           <div x-show="panel.lastAction" style="font-size:11px;text-align:center"
                :style="panel.lastActionOk ? 'color:var(--ok)' : 'color:var(--err)'">
             <span x-text="panel.lastAction"></span>

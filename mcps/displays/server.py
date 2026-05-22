@@ -174,3 +174,26 @@ async def run_display_test(display_id: str) -> dict:
         "start_result": start_result,
         "after": after,
     }
+
+
+@server.tool()
+async def run_grid_test_pattern(display_id: str, duration_seconds: int = 15) -> dict:
+    """Run the grid + 4-corner-clock + center-diamond test pattern on
+    the display for ~``duration_seconds`` (default 15, capped at 120),
+    then revert to whatever was running before.
+
+    Specifically: writes a mode marker, restarts the display unit so
+    `start_display.sh` launches `led_test_pattern.py` instead of the
+    default content; sleeps; writes the marker back and restarts again.
+
+    Useful as a visible self-test of the matrix — confirms every panel
+    + every pixel column/row is alive, and that text rendering works.
+    Today only the ``rgbdisplay`` module supports this; other display
+    modules will respond with an error."""
+    m = _get(display_id)
+    fn = getattr(m, "run_test_pattern", None)
+    if fn is None:
+        return {
+            "error": f"display {display_id!r} does not support run_test_pattern",
+        }
+    return await fn(duration_seconds=duration_seconds)
