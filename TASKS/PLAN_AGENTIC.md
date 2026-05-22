@@ -278,10 +278,12 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - [x] `docs/DEPLOY.md` — new section "Agents API key" walks through the Pi setup.
 - [ ] CLI smoke test — blocked until `.env` is placed on the Pi with a real `ANTHROPIC_API_KEY`.
 
-### Phase 3 — Studio orchestrator (Lighting-only first)
-- [ ] `agents/studio_orchestrator.py` — Claude Sonnet, tools: `delegate_to_lighting`, `ask_user`
-- [ ] When a user message arrives, orchestrator decides if it's lighting-related; delegates if so
-- [ ] CLI smoke test: `python -m agents.studio_orchestrator "warm up the studio for a meeting"`
+### Phase 3 — Studio orchestrator (Lighting-only first) — CODE LANDED, BLOCKED ON .env
+- [x] `agents/studio_orchestrator.py` — `Orchestrator` class, Claude Sonnet, tools: `delegate_to_lighting` (in-process call to `LightingSpecialist.ask()`), `ask_user`.
+- [x] Sibling to `Specialist` rather than a shared base — the orchestrator has no MCP session of its own, so the only thing they'd share are two small helpers. Refactor when a third caller shows up.
+- [x] Off-domain / chit-chat messages get a plain-text reply (no tool call) per the system prompt.
+- [x] `ask_user` is a real tool so Phase 4's chat UI can render a question chip; its tool_result is a delivery confirmation so the loop ends cleanly. `Orchestrator.pending_questions` exposes the questions raised in the most recent run.
+- [ ] CLI smoke test — blocked on the same `.env` issue as Phase 2 (the `.env` on studiopi currently has a 17-char `ANTHROPIC_API_KEY`, which is too short to be a real Anthropic key).
 
 ### Phase 4 — Chat panel in `/admin` right pane
 - [ ] `routes/chat_routes.py` — `POST /api/chat` with SSE response
