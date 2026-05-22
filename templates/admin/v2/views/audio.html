@@ -62,6 +62,55 @@
          x-text="micsLastAction"></div>
   </div>
 
+  {# ---------- Network audio streams (Dante / AES67 via SAP) ---------- #}
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
+      <h3 style="margin:0;font-size:13px">Network audio streams (Dante / AES67)</h3>
+      <button @click="loadStreams()" :disabled="streamsLoading" class="btn btn-ghost" style="font-size:11px">
+        <span x-show="!streamsLoading">↻ Listen (5s)</span>
+        <span x-show="streamsLoading">⏳ Listening…</span>
+      </button>
+    </div>
+    <p style="margin:0 0 var(--s-2);font-size:11px;color:var(--text-dim)">
+      Passive SAP listener on <code>239.255.255.255:9875</code>. One row per active multicast stream.
+    </p>
+
+    <template x-if="streams && streams.length === 1 && streams[0]._error">
+      <div style="color:var(--err);font-size:11px;font-family:var(--font-mono)" x-text="streams[0]._error"></div>
+    </template>
+    <template x-if="streams && streams.length === 0 && !streamsLoading">
+      <div style="font-size:11px;color:var(--text-dim);line-height:1.6">
+        <div style="font-style:italic">No SAP announcements seen in the last listen window.</div>
+        <div style="margin-top:6px">
+          That's expected if the TCC isn't in <strong>AES67 mode</strong>. Dante devices only emit SAP when AES67 is explicitly enabled in <a href="https://my.audinate.com/products/dante-controller" target="_blank" rel="noopener">Dante Controller</a> (per-device toggle, plus an AES67-tagged multicast flow). The TCC's Dante control plane is reachable today (see Microphones above) — only the audio streams aren't announcing.
+        </div>
+      </div>
+    </template>
+
+    <div style="display:flex;flex-direction:column;gap:var(--s-2)">
+      <template x-for="(s, idx) in (streams || []).filter(x => !x._error)" :key="idx">
+        <div style="padding:var(--s-2);border:1px solid var(--border);font-size:11px">
+          <div style="display:flex;align-items:center;gap:var(--s-2);flex-wrap:wrap">
+            <span style="font-weight:600" x-text="s.name || '(unnamed stream)'"></span>
+            <span class="pill" x-show="s.codec" x-text="s.codec + (s.sample_rate ? ' ' + s.sample_rate + 'Hz' : '')"></span>
+            <span class="pill" x-show="s.channels" x-text="s.channels + ' ch'"></span>
+            <span x-show="s.deletion" class="pill pill-err">deletion</span>
+          </div>
+          <div style="margin-top:4px;font-family:var(--font-mono);color:var(--text-dim);font-size:10px">
+            from <span x-text="s.source_ip"></span>
+            → <span x-text="s.multicast_group + ':' + s.port"></span>
+            <span x-show="s.payload_type !== undefined">· pt=<span x-text="s.payload_type"></span></span>
+            <span x-show="s.ptime_ms">· ptime=<span x-text="s.ptime_ms"></span>ms</span>
+          </div>
+          <details style="margin-top:4px">
+            <summary style="font-size:10px;color:var(--text-dim);cursor:pointer">raw SDP</summary>
+            <pre style="font-size:9px;background:var(--bg);padding:var(--s-1);overflow-x:auto;margin:4px 0 0" x-text="s.raw_sdp"></pre>
+          </details>
+        </div>
+      </template>
+    </div>
+  </div>
+
   {# ---------- Backend status card ---------- #}
   <div class="card" style="border-color:var(--err)">
     <h3 style="margin:0 0 var(--s-2);color:var(--err)">Backend not wired</h3>

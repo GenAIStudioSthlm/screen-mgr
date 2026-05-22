@@ -13,12 +13,32 @@ function v2AudioView() {
     micsLastAction: '',
     micsLastOk: true,
 
+    // Network audio streams (Dante / AES67 via SAP, real)
+    streams: null,
+    streamsLoading: false,
+
     // Sinks / sources (stub)
     sinks: null,
     sources: null,
 
     async load() {
-      await Promise.all([this.loadMics(), this.loadStubs()]);
+      await Promise.all([this.loadMics(), this.loadStubs(), this.loadStreams()]);
+    },
+
+    async loadStreams() {
+      if (this.streamsLoading) return;
+      this.streamsLoading = true;
+      try {
+        // The endpoint blocks ~5s while listening to SAP — set the
+        // fetch up so the spinner shows the whole time.
+        const r = await fetch('/api/audio/streams?timeout=5');
+        const d = await r.json();
+        this.streams = d.streams || [];
+      } catch (e) {
+        this.streams = [{ _error: 'fetch failed: ' + e }];
+      } finally {
+        this.streamsLoading = false;
+      }
     },
 
     async loadStubs() {

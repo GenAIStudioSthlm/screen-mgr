@@ -349,12 +349,41 @@ own friendly-name prefix as not-ours.
 - [x] Audio admin tab surfaces every discovered mic with Mute /
       Unmute / "↗ Admin UI" buttons.
 
+**Stream discovery (landed 2026-05-22):**
+- [x] `mcps/audio/streams.py` — SAP listener on `239.255.255.255:9875`.
+      Parses SAP header + SDP, surfaces `(source_ip, name,
+      multicast_group, port, codec, sample_rate, channels,
+      payload_type, ptime_ms, ts_refclk)` per stream.
+- [x] MCP tool `list_audio_streams` + HTTP route `GET /api/audio/streams`.
+- [x] Audio admin tab shows a "Network audio streams" card with
+      raw SDP details on demand.
+- [x] **Field finding 2026-05-22:** the TCC at 192.168.2.220 isn't
+      currently emitting SAP. tcpdump confirmed 0 SAP packets in 5s
+      while general multicast was active. Dante devices only emit SAP
+      when **AES67 mode** is explicitly enabled in Dante Controller
+      (per-device toggle + an AES67-tagged multicast flow). Once
+      enabled, `/api/audio/streams` should surface the TCC's audio
+      multicast group and a GStreamer receive pipeline becomes
+      possible.
+
 **Future — room voice into the chat panel:**
-- [ ] **Audio receive on the Pi.** The TCC streams Dante (which is
-      AES67-compatible). Realistic options:
+- [ ] **Enable AES67 on the TCC** (external action, requires Dante
+      Controller on a Mac/Windows machine on the same LAN as the
+      TCC). Set AES67 multicast flow on `LocalOut@TCCM-…` first.
+- [ ] **Audio receive on the Pi.** Once AES67 is on, the TCC streams
+      Dante AES67-compatible. Realistic options:
         - **AES67 receive** (open standard): GStreamer pipeline on the
-          Pi reads the `_netaudio-chan._udp` stream the TCC announces
-          and writes a PCM ring buffer.
+          Pi reads the multicast group SAP discovery surfaces and
+          writes a PCM ring buffer. Template:
+          ```
+          gst-launch-1.0 udpsrc multicast-group=<from SAP> \
+            auto-multicast=true address=<from SAP> port=<from SAP> \
+            ! application/x-rtp,media=audio,clock-rate=48000,\
+              encoding-name=L24,channels=2,payload=96 \
+            ! rtpL24depay ! audioconvert ! audioresample \
+            ! audio/x-raw,rate=16000,channels=1 \
+            ! fdsink fd=1
+          ```
         - **Dante Virtual Soundcard** (Audinate licence, Windows/Mac
           only — not viable on the Pi).
         - **USB out from the TCC's analog/USB option** if the unit

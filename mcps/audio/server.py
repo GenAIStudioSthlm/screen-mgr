@@ -25,6 +25,7 @@ from mcps.audio.microphones import (
     get_microphone_state as _get_microphone_state,
     set_microphone_mute as _set_microphone_mute,
 )
+from mcps.audio.streams import discover_streams as _discover_streams
 
 
 _TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
@@ -154,3 +155,22 @@ def mute_microphone(mic_id: str) -> dict:
 def unmute_microphone(mic_id: str) -> dict:
     """Unmute a microphone via its SSC API."""
     return _set_microphone_mute(mic_id, False)
+
+
+@server.tool()
+def list_audio_streams(timeout_seconds: float = 5.0) -> dict:
+    """Discover Dante / AES67 audio streams on the LAN by passively
+    listening to SAP (Session Announcement Protocol) announcements
+    for ``timeout_seconds`` (default 5s, capped at 30s).
+
+    Each entry carries the SDP-derived parameters a downstream
+    receiver needs to consume the stream: ``multicast_group``,
+    ``port``, ``codec`` (typically ``L24`` or ``L16``),
+    ``sample_rate``, ``channels``, ``payload_type``, plus the
+    ``source_ip`` of the announcer.
+
+    Use this to confirm a mic is actively producing audio (vs. just
+    being on the network) and to grab the multicast group + port a
+    GStreamer / FFmpeg pipeline will need."""
+    timeout = max(0.5, min(30.0, float(timeout_seconds)))
+    return {"streams": _discover_streams(timeout=timeout)}

@@ -85,3 +85,18 @@ async def mute_microphone(mic_id: str, payload: dict = Body(default={})):
     from mcps.audio.microphones import set_microphone_mute
     muted = bool((payload or {}).get("muted", True))
     return set_microphone_mute(mic_id, muted)
+
+
+# ---------------------------------------------------------------------
+# Dante / AES67 stream discovery (real).
+# Listens passively to SAP on 239.255.255.255:9875.
+# ---------------------------------------------------------------------
+
+
+@router.get("/api/audio/streams", response_class=JSONResponse)
+async def list_audio_streams(timeout: float = 5.0):
+    """Discover network audio streams via SAP. `timeout` defaults to
+    5s; clamped to [0.5, 30]."""
+    from mcps.audio.streams import discover_streams
+    t = max(0.5, min(30.0, float(timeout)))
+    return {"streams": discover_streams(timeout=t)}
