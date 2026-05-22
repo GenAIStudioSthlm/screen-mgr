@@ -10,6 +10,7 @@ function v2ScreensView() {
     editing: { type: '', value: '', news_mode: 'landscape' },
     lastAction: '',
     lastActionOk: true,
+    testRunning: false,
     _timer: null,
     _lastSelectedScreenId: null,
 
@@ -215,6 +216,38 @@ function v2ScreensView() {
       } catch (e) {
         this.lastAction = 'failed: ' + e;
         this.lastActionOk = false;
+      }
+    },
+
+    /* Fleet demo: cycle every available screen through URL web → URL
+     * YouTube → default → settle on the AI News scene. Long-running
+     * (~20s) — disable the button while in flight, surface a one-line
+     * result when done. */
+    async runFleetDemo() {
+      if (this.testRunning) return;
+      this.testRunning = true;
+      this.lastAction = 'fleet demo running… (~20s)';
+      this.lastActionOk = true;
+      try {
+        const r = await fetch('/api/screens/run_fleet_demo', { method: 'POST' });
+        const d = await r.json();
+        if (r.ok) {
+          const targets = (d.targets || []).length;
+          const source = d.target_source || '?';
+          const reloaded = (d.settle_result?.reloaded || []).length;
+          const settle = d.settle_scene_id || '?';
+          this.lastAction = `fleet demo ✓ — ${targets} target screens (${source}), settled on '${settle}' (${reloaded} reloaded)`;
+          this.lastActionOk = true;
+        } else {
+          this.lastAction = 'fleet demo ✗ ' + (d.detail || JSON.stringify(d));
+          this.lastActionOk = false;
+        }
+      } catch (e) {
+        this.lastAction = 'fleet demo ✗ ' + e;
+        this.lastActionOk = false;
+      } finally {
+        this.testRunning = false;
+        await this._loadScreens();
       }
     },
   };

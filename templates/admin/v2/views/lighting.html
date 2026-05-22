@@ -16,6 +16,10 @@
       </p>
     </div>
     <div style="display:flex;gap:var(--s-2)">
+      <button @click="runStartupTest()" :disabled="!hue.available || testRunning" class="btn btn-ghost" title="Rainbow walk + intensity sweep + settle (~12s)">
+        <span x-show="!testRunning">▶ Run test</span>
+        <span x-show="testRunning">⏳ Running…</span>
+      </button>
       <button @click="allOn()"  :disabled="!hue.available" class="btn" style="background:var(--yellow);color:#000">☀ All on</button>
       <button @click="allOff()" :disabled="!hue.available" class="btn btn-ghost">☾ All off</button>
     </div>
