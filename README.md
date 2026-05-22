@@ -49,8 +49,12 @@ Single-page app with four views in the left sidebar:
 | **LED screens** | Start/stop the LED matrix service. |
 | **Modules** | Module registry — enable / disable / inspect each module. |
 
-The right column is reserved for the future chat panel (Phase 4 of
-[`TASKS/PLAN_AGENTIC.md`](TASKS/PLAN_AGENTIC.md)).
+The right column hosts the **agent chat panel** — text input + push-to-talk
+voice (hold the 🎤 button or hold `Space` when the textarea isn't focused).
+The frontend is real and SSE-driven; the backend (`POST /api/chat`) is
+currently a stub that replies with a clear "not implemented" error
+until the `.env` API key on the Pi is set. See
+[`TASKS/PLAN_AGENTIC.md`](TASKS/PLAN_AGENTIC.md) Phases 2-4.
 
 The original Tailwind-based admin still lives at `/admin/legacy` as a
 fallback for one release cycle (cutover was 2026-05-21).

@@ -15,6 +15,7 @@
   <script defer src="/static/javascript/v2/views/lighting.js?v={{ app_version }}"></script>
   <script defer src="/static/javascript/v2/views/led_screens.js?v={{ app_version }}"></script>
   <script defer src="/static/javascript/v2/views/modules.js?v={{ app_version }}"></script>
+  <script defer src="/static/javascript/v2/views/chat.js?v={{ app_version }}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 </head>
 <body class="studio-shell" x-data="studioShell()" x-init="load()">
@@ -84,14 +85,16 @@
 
     </main>
 
-    {# ---------- RIGHT PANEL (reserved for agent) ---------- #}
-    <aside class="v2-controls">
-      <h2>Agent</h2>
-      <p>Reserved for the chat/voice agent (Phase 6).</p>
+    {# ---------- RIGHT PANEL (agent chat + quick facts) ---------- #}
+    <aside class="v2-controls" style="display:flex;flex-direction:column;gap:var(--s-4);min-height:0">
 
-      <h2 style="margin-top:var(--s-5)">Quick facts</h2>
-      <div class="field-row" style="font-size:10px"><span>zones</span><span class="val" x-text="zones.length"></span></div>
-      <div class="field-row" style="font-size:10px"><span>connected</span><span class="val" x-text="zones.filter(z => z.screen?.connected).length"></span></div>
+      {% include "admin/v2/views/chat.html" %}
+
+      <div>
+        <h2>Quick facts</h2>
+        <div class="field-row" style="font-size:10px"><span>zones</span><span class="val" x-text="zones.length"></span></div>
+        <div class="field-row" style="font-size:10px"><span>connected</span><span class="val" x-text="zones.filter(z => z.screen?.connected).length"></span></div>
+      </div>
     </aside>
 
   </div>

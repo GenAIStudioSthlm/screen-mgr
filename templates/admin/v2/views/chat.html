@@ -1,0 +1,76 @@
+{# views/chat.html — agent chat panel (right column of the admin).
+   chat.js loads from index.html's <head>; no <script> tag here. #}
+
+<div x-data="v2ChatView()" x-init="init()"
+     style="display:flex;flex-direction:column;gap:var(--s-3);height:100%;min-height:0">
+
+  {# ---------- Header ---------- #}
+  <div style="display:flex;justify-content:space-between;align-items:center">
+    <h2 style="margin:0;text-transform:none;font-size:14px">Agent</h2>
+    <span class="pill" :class="backendReady ? 'pill-ok' : 'pill-err'"
+          x-text="backendReady ? 'ready' : 'stub'"></span>
+  </div>
+
+  {# ---------- Messages ---------- #}
+  <div x-ref="log"
+       style="flex:1;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-2);background:var(--card);border:1px solid var(--border);font-size:11px">
+    <template x-if="messages.length === 0 && !sending">
+      <div style="color:var(--text-dim);font-style:italic">
+        Type or hold <kbd>Space</kbd> to talk. The agent backend isn't wired up yet — every message will reply with a stub error until the .env API key is set on the Pi.
+      </div>
+    </template>
+    <template x-for="(m, idx) in messages" :key="idx">
+      <div :style="m.role === 'user'
+                   ? 'align-self:flex-end;max-width:90%;background:var(--brand);color:#000;padding:6px 8px'
+                   : (m.role === 'error'
+                      ? 'align-self:stretch;background:var(--err);color:#fff;padding:6px 8px;font-family:var(--font-mono);font-size:10px;white-space:pre-wrap'
+                      : 'align-self:flex-start;max-width:90%;background:var(--bg);color:var(--text);padding:6px 8px;border:1px solid var(--border)')">
+        <span x-text="m.content"></span>
+      </div>
+    </template>
+    <template x-if="sending">
+      <div style="align-self:flex-start;color:var(--text-dim);font-style:italic">thinking…</div>
+    </template>
+  </div>
+
+  {# ---------- Voice indicator ---------- #}
+  <div x-show="voiceListening || voiceTranscript"
+       style="font-size:11px;color:var(--text-mid);font-style:italic"
+       x-text="voiceListening
+                 ? ('🎤 listening… ' + (voiceTranscript || ''))
+                 : (voiceTranscript ? '🎤 ' + voiceTranscript : '')"></div>
+
+  {# ---------- Input ---------- #}
+  <div style="display:flex;gap:var(--s-2);align-items:flex-end">
+    <textarea x-model="input"
+              x-ref="input"
+              :disabled="sending"
+              @keydown.enter.prevent="if (!$event.shiftKey) send()"
+              placeholder="Ask the studio…"
+              rows="2"
+              style="flex:1;font-size:11px;resize:vertical;min-height:40px;font-family:inherit"></textarea>
+    <div style="display:flex;flex-direction:column;gap:var(--s-1)">
+      <button @click="send()"
+              :disabled="sending || !input.trim()"
+              class="btn btn-brand"
+              style="font-size:11px;padding:6px 10px">Send</button>
+      <button @mousedown.prevent="startVoice()"
+              @mouseup="stopVoice()"
+              @mouseleave="stopVoice()"
+              @touchstart.prevent="startVoice()"
+              @touchend="stopVoice()"
+              :disabled="!voiceSupported || sending"
+              :class="voiceListening ? 'btn' : 'btn btn-ghost'"
+              :style="voiceListening ? 'background:var(--err);color:#fff;font-size:11px;padding:6px 10px' : 'font-size:11px;padding:6px 10px'"
+              :title="voiceSupported ? 'Hold to talk (or hold Space when chat input is unfocused)' : 'Browser does not support SpeechRecognition'">
+        <span x-show="!voiceListening">🎤 Talk</span>
+        <span x-show="voiceListening">● Recording</span>
+      </button>
+    </div>
+  </div>
+
+  <div x-show="!voiceSupported" style="font-size:10px;color:var(--text-dim);font-style:italic">
+    Voice input requires Chrome/Edge (Web Speech API).
+  </div>
+
+</div>

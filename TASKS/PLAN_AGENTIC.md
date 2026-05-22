@@ -285,18 +285,20 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - [x] `ask_user` is a real tool so Phase 4's chat UI can render a question chip; its tool_result is a delivery confirmation so the loop ends cleanly. `Orchestrator.pending_questions` exposes the questions raised in the most recent run.
 - [ ] CLI smoke test — blocked on the same `.env` issue as Phase 2 (the `.env` on studiopi currently has a 17-char `ANTHROPIC_API_KEY`, which is too short to be a real Anthropic key).
 
-### Phase 4 — Chat panel in `/admin` right pane
-- [ ] `routes/chat_routes.py` — `POST /api/chat` with SSE response
-- [ ] `templates/admin/v2/views/chat.html` + `static/javascript/v2/views/chat.js`
-- [ ] Right panel switches from "Reserved for chat agent" to the actual chat
-- [ ] Visual chips for tool use ("delegating to Lighting…" → ✓ summary)
-- [ ] Wire to existing `studioShell` view-toggle (chat is always visible in the right panel, not a view)
+### Phase 4 — Chat panel in `/admin` right pane — SCAFFOLD LANDED, BACKEND STUB
+- [x] `routes/chat_routes.py` — `POST /api/chat` with SSE response. Backend is a STUB that emits a single `event: error` with a clear "not wired up yet" message + an `event: done`. Real orchestrator wiring goes in `_stream` — same event names, same payload shapes (`token` / `tool_use` / `tool_result` / `error` / `done`).
+- [x] `templates/admin/v2/views/chat.html` + `static/javascript/v2/views/chat.js` — the chat panel renders, sends, and consumes SSE today. Frontend is written against the final event contract so the swap is server-side only.
+- [x] Right panel in `templates/admin/v2/index.html` now embeds the chat panel above Quick facts (was "Reserved for chat agent" placeholder).
+- [x] Error / tool-use / tool-result messages render with distinct styles in the message list.
+- [ ] Real backend — Anthropic + delegate-to-specialist loop — lands when the .env API key blocker is unstuck.
 
-### Phase 5 — Browser voice (push-to-talk)
-- [ ] `chat.js` listens for spacebar (configurable) → Web Speech API
-- [ ] Live transcript shown in chat input; final transcript sent on key-up
-- [ ] Fallback message if browser lacks SpeechRecognition
-- [ ] Mic permission UX: clear ask on first push-to-talk
+### Phase 5 — Browser voice (push-to-talk) — SCAFFOLD LANDED
+- [x] `chat.js` integrates `window.SpeechRecognition` (webkit fallback) with two trigger paths:
+  - On-screen 🎤 button (hold to talk — mouse or touch)
+  - Hold `Space` when no input/textarea is focused (skip if user is typing)
+- [x] Live interim transcript flows into the chat input; final transcript auto-sends on `recognition.onend`.
+- [x] Graceful fallback when `SpeechRecognition` isn't supported (Safari / Firefox): the voice button disables and a small hint is shown.
+- [ ] Mic permission first-run UX — relying on the browser's built-in prompt for now; revisit if it's confusing in practice.
 
 ### Phase 6 — Screens MCP + specialist (copy-paste pattern)
 - [x] **Screens MCP server** — `mcps/screens/server.py`, mounted at `/mcp/screens`. Wraps `screen_manager` + `scene_manager` + the module registry directly (same in-process pattern as Lighting MCP). 9 tools: `list_screens`, `list_scenes`, `list_content_types`, `list_media`, `set_screen_content`, `reload_screen`, `reload_all_screens`, `apply_scene`, `run_content_walkthrough`.
