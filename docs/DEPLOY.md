@@ -121,8 +121,41 @@ In-process FastMCP servers are mounted under `/mcp/<domain>` alongside `/api/*`.
 | Domain | Mount point | Wraps |
 |---|---|---|
 | Lighting | `/mcp/lighting/sse` | `modules/hue/client.py` (Hue Bridge v1 CLIP API) |
+| Screens | `/mcp/screens/sse` | `screen_manager` + `scene_manager` + module registry |
+| Displays | `/mcp/displays/sse` | Every LED-panel `ServiceModule` (today: `rgbdisplay`) |
+| Audio | `/mcp/audio/sse` | _Stub._ Wire to `pactl` when implementing. |
+| Music | `/mcp/music/sse` | Spotify Web API via `spotipy`. Needs OAuth setup — see Spotify section below. |
 
-Adds one dependency: `mcp>=1.2.0` (the official Anthropic MCP Python SDK). `pi-update.sh` installs it automatically the first time it ships.
+Adds these dependencies: `mcp>=1.2.0` (Anthropic MCP Python SDK), `spotipy>=2.23.0` (Spotify client). `pi-update.sh` installs them automatically the first time the new requirements ship.
+
+## Spotify setup (for the Music MCP)
+
+The Music MCP gracefully reports `{"error": "spotify not configured"}` until three env vars are set on the Pi. Do this **once** from a dev machine with a browser, then copy the result to the Pi.
+
+1. **Create a Spotify Developer app** at <https://developer.spotify.com/dashboard>. Add redirect URI `http://localhost:8888/callback` in the app's "Edit Settings". Note the Client ID + Client Secret.
+
+2. **Run the auth helper on your dev machine** (not the headless Pi):
+
+   ```bash
+   export SPOTIFY_CLIENT_ID=...
+   export SPOTIFY_CLIENT_SECRET=...
+   pip install spotipy
+   python scripts/spotify_auth.py
+   ```
+
+   This opens your browser to Spotify's consent screen. After you approve, the script prints a refresh token.
+
+3. **Add the three vars to the Pi's `.env`** (alongside `ANTHROPIC_API_KEY`):
+
+   ```
+   SPOTIFY_CLIENT_ID=...
+   SPOTIFY_CLIENT_SECRET=...
+   SPOTIFY_REFRESH_TOKEN=...
+   ```
+
+4. Wait for `uvicorn --reload` (or `sudo systemctl restart screen-mgr`). The Music MCP tools start returning real data on the next call.
+
+The token cache at `data/spotify_token.json` is gitignored. Spotipy refreshes the access token automatically from the refresh token; the refresh token itself is long-lived (rotate if you suspect leakage).
 
 **Smoke test from any LAN machine:**
 ```bash

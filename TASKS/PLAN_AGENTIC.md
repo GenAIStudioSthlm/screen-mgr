@@ -327,6 +327,14 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - [ ] Conversation persistence (Phase B optional)
 - [ ] Wake-word in room voice (Phase B optional)
 
+### Phase 10 — Audio + Music MCPs (added 2026-05-22)
+- [x] **Audio MCP — STUB** at `/mcp/audio/sse`. 8 tools (`list_audio_sinks`, `list_audio_sources`, `get_volume`, `is_muted`, `set_volume`, `mute`, `unmute`, `play_sound`). All return `{"stub": true, ...}` until a real backend (PulseAudio `pactl`) is wired. Tool signatures are the API contract.
+- [x] **Music MCP — Spotify** at `/mcp/music/sse`. 8 tools (`get_now_playing`, `list_devices`, `search`, `play`, `pause`, `next_track`, `previous_track`, `set_volume`). Backed by `spotipy`; graceful `{"error": "spotify not configured"}` until the user runs the one-time OAuth flow.
+- [x] One-time auth helper `scripts/spotify_auth.py` — runs on a dev machine with a browser, prints the refresh token to paste into the Pi's `.env`.
+- [x] `docs/DEPLOY.md` updated with a Spotify setup section + the full MCP server table.
+- [ ] Real PulseAudio backend for Audio MCP — swap each tool stub for a `pactl` call.
+- [ ] Audio + Music specialist subagents — deferred until the .env API key blocker is unstuck.
+
 ---
 
 ## 9. Tech choices

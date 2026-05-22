@@ -118,12 +118,37 @@ Wraps every registered LED panel ServiceModule. Today there's one
 | `set_display_enabled` | Flip the registry enabled flag (doesn't touch systemd). |
 | `run_display_test` | Lifecycle sanity test: stop → 3s pause → start, with before/mid/after status snapshots. |
 
-### Planned MCP servers
+### Audio MCP — `/mcp/audio/sse` _(stub)_
 
-| Domain | Status |
+API surface for system audio (sinks, sources, volume, mute, sound
+playback). Tools currently return `{"stub": true, ...}` — wire to
+PulseAudio (`pactl`) when implementing for real. The tool *signatures*
+are the API contract; keep them stable.
+
+| Tool | Purpose |
 |---|---|
-| Audio | Planned — system mixer / mic inputs / playback. Backend TBD (PulseAudio / ALSA). |
-| Music | Planned — Spotify or local library. Backend + auth TBD. |
+| `list_audio_sinks` / `list_audio_sources` | Output devices / input mics. |
+| `get_volume` / `set_volume` | Sink volume 0–100. |
+| `is_muted` / `mute` / `unmute` | Mute state for a sink. |
+| `play_sound` | Play a local sound file on a sink. |
+
+### Music MCP — `/mcp/music/sse`
+
+Real Spotify Web API integration via `spotipy`. Tools return a friendly
+`{"error": "spotify not configured", ...}` until you complete the
+one-time OAuth setup (see [`docs/DEPLOY.md`](docs/DEPLOY.md) → Spotify).
+
+| Tool | Purpose |
+|---|---|
+| `get_now_playing` | Track + device + progress + paused/playing. |
+| `list_devices` | Spotify Connect devices on the account. |
+| `search` | Search tracks / albums / artists / playlists. |
+| `play` | Start / resume on a device, optionally with a URI. |
+| `pause` / `next_track` / `previous_track` | Standard transport. |
+| `set_volume` | Device volume 0–100. |
+
+Scopes the MCP requests during auth: `user-read-playback-state
+user-modify-playback-state user-read-currently-playing`.
 
 ## Agent layer
 
