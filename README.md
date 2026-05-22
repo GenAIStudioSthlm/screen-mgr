@@ -142,6 +142,12 @@ Real Spotify Web API integration via `spotipy`. Tools return a friendly
 `{"error": "spotify not configured", ...}` until you complete the
 one-time OAuth setup (see [`docs/DEPLOY.md`](docs/DEPLOY.md) → Spotify).
 
+For everyday playback, the `/admin` **Music** tab embeds
+`open.spotify.com` directly — anyone signs in with their own (or the
+enterprise) Spotify account. The MCP / API path is for the speaker
+self-test and any future agent-driven playback automation. Default
+Connect-device target is `MarantzCinema70s`.
+
 | Tool | Purpose |
 |---|---|
 | `get_now_playing` | Track + device + progress + paused/playing. |

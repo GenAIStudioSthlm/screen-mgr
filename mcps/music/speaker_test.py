@@ -32,7 +32,7 @@ from typing import Any, Optional
 from mcps.music.spotify_client import call
 
 
-DEFAULT_DEVICE_QUERY = "bose"
+DEFAULT_DEVICE_QUERY = "marantz"  # matches "MarantzCinema70s" via substring
 DEFAULT_TRACK_QUERY = "Hotel California Eagles"
 DEFAULT_VOLUME_PCT = 20
 DEFAULT_PLAY_SECONDS = 20
