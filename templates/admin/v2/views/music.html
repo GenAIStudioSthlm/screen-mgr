@@ -1,14 +1,13 @@
-{# views/music.html — Spotify Web Player + speaker test.
+{# views/music.html — Spotify Web Player.
 
-   The view embeds open.spotify.com so anyone in the studio can sign in
-   with their own (or the enterprise) Spotify account and play music
-   directly. Spotify may set X-Frame-Options that prevent the embed from
-   rendering — in that case the "Open in new tab" button always works.
+   Path A: embedded `open.spotify.com` only. Anyone signs in with their
+   own (or the enterprise) account inside the iframe. No server-side
+   credentials needed.
 
-   The header still carries a "Run speaker test" button driven by the
-   server-side `mcps.music.speaker_test` flow; that one needs .env
-   credentials and targets the `MarantzCinema70s` Spotify Connect device
-   by default.
+   The `/api/music/*` HTTP routes + the Music MCP tools (search, play,
+   pause, presets, speaker_test) stay wired in the backend, ready to
+   light up if the studio later chooses Path B (one-time OAuth on a
+   Spotify Premium account). They just aren't surfaced in this UI today.
 
    music.js loads from index.html's <head>; no <script> tag here. #}
 
@@ -24,69 +23,10 @@
         <code>MarantzCinema70s</code> as the Connect device and play.
       </p>
     </div>
-    <div style="display:flex;align-items:center;gap:var(--s-2)">
-      <a href="https://open.spotify.com/" target="_blank" rel="noopener"
-         class="btn btn-brand" style="text-decoration:none">
-        ↗ Open Spotify in new tab
-      </a>
-      <button @click="runSpeakerTest()"
-              :disabled="testRunning"
-              class="btn btn-ghost"
-              title="Play Hotel California on MarantzCinema70s at 20% for 20s, then pause. Requires Spotify .env on the Pi.">
-        <span x-show="!testRunning">▶ Run speaker test</span>
-        <span x-show="testRunning">⏳ Running…</span>
-      </button>
-    </div>
-  </div>
-
-  {# ---------- Result line for the speaker test / preset playback ---------- #}
-  <div x-show="lastAction" style="font-size:11px"
-       :style="lastActionOk ? 'color:var(--ok)' : 'color:var(--err)'"
-       x-text="lastAction"></div>
-
-  {# ---------- Presets ---------- #}
-  <div class="card" x-show="presets.length > 0">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
-      <h3 style="margin:0;font-size:13px">Presets</h3>
-      <span style="font-size:10px;color:var(--text-dim)">
-        edit <code>data/music_presets.json</code> to customise
-      </span>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;gap:var(--s-2)">
-      <template x-for="p in presets" :key="p.id">
-        <button @click="playPreset(p)"
-                :disabled="!configured || playingPresetId !== null"
-                class="btn"
-                :class="p.id === playingPresetId ? 'btn-brand' : 'btn-ghost'"
-                style="display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;padding:var(--s-2) var(--s-3);min-width:160px">
-          <span style="font-size:13px;font-weight:600">
-            <span x-show="p.icon" x-text="p.icon + ' '"></span><span x-text="p.name"></span>
-          </span>
-          <span style="font-size:10px;color:var(--text-dim);font-weight:400"
-                x-text="p.description"></span>
-          <span style="font-size:9px;color:var(--text-dim);font-family:var(--font-mono)"
-                x-text="'→ ' + p.device_query + ' @ ' + p.default_volume_pct + '%'"></span>
-        </button>
-      </template>
-    </div>
-  </div>
-
-  {# ---------- Setup nudge if .env is missing (only affects the test
-      button; the embedded player works without it) ---------- #}
-  <div x-show="!configured && probeDetail" class="card"
-       style="border-color:var(--text-dim);background:var(--bg)">
-    <div style="display:flex;align-items:flex-start;gap:var(--s-2);font-size:11px;color:var(--text-mid)">
-      <span style="color:var(--text-dim);font-family:var(--font-mono);flex-shrink:0">i</span>
-      <div>
-        The embedded player below works for anyone — Spotify handles its own
-        auth. The <strong>Run speaker test</strong> button additionally needs
-        server-side Spotify credentials in <code>/home/admin/screen-mgr/.env</code>
-        (<code>SPOTIFY_CLIENT_ID</code> / <code>_SECRET</code> /
-        <code>_REFRESH_TOKEN</code>) — see
-        <a href="https://developer.spotify.com/dashboard" target="_blank" rel="noopener">developer.spotify.com/dashboard</a>
-        and <code>scripts/spotify_auth.py</code>.
-      </div>
-    </div>
+    <a href="https://open.spotify.com/" target="_blank" rel="noopener"
+       class="btn btn-brand" style="text-decoration:none">
+      ↗ Open Spotify in new tab
+    </a>
   </div>
 
   {# ---------- Embedded Spotify Web Player ----------

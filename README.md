@@ -136,28 +136,34 @@ are the API contract; keep them stable.
 | `is_muted` / `mute` / `unmute` | Mute state for a sink. |
 | `play_sound` | Play a local sound file on a sink. |
 
-### Music MCP — `/mcp/music/sse`
+### Music — Spotify Web Player + (optional) MCP
 
-Real Spotify Web API integration via `spotipy`. Tools return a friendly
-`{"error": "spotify not configured", ...}` until you complete the
-one-time OAuth setup (see [`docs/DEPLOY.md`](docs/DEPLOY.md) → Spotify).
+**Today's behavior (Path A, no setup):** the `/admin` **Music** tab
+embeds `open.spotify.com` in an iframe. Anyone signs in with their own
+(or the enterprise) Spotify account and plays directly — Spotify
+handles its own auth inside the iframe. The Spotify Connect target in
+the studio is `MarantzCinema70s`. If the embed renders blank because
+of Spotify's `X-Frame-Options`, the header has an
+**↗ Open Spotify in new tab** button that always works.
 
-For everyday playback, the `/admin` **Music** tab embeds
-`open.spotify.com` directly — anyone signs in with their own (or the
-enterprise) Spotify account. The MCP / API path is for the speaker
-self-test and any future agent-driven playback automation. Default
-Connect-device target is `MarantzCinema70s`.
+**Optional (Path B — not enabled today):** the Music MCP server at
+`/mcp/music/sse` is wired and the HTTP routes under `/api/music/*`
+exist. With server-side OAuth (one-time setup on a Spotify Premium
+account — see [`docs/DEPLOY.md`](docs/DEPLOY.md) → Spotify) these
+unlock:
 
 | Tool | Purpose |
 |---|---|
-| `get_now_playing` | Track + device + progress + paused/playing. |
-| `list_devices` | Spotify Connect devices on the account. |
-| `search` | Search tracks / albums / artists / playlists. |
-| `play` | Start / resume on a device, optionally with a URI. |
-| `pause` / `next_track` / `previous_track` | Standard transport. |
-| `set_volume` | Device volume 0–100. |
+| `get_now_playing` / `list_devices` / `search` | Read Spotify state |
+| `play` / `pause` / `next_track` / `previous_track` / `set_volume` | Transport |
+| `run_speaker_test` | Hotel California → MarantzCinema70s → 20% → 20s → pause |
+| `list_presets` / `play_preset` | One-click "play a mood" — 🌿 Chill Vibes (Lo-Fi Girl) · ⚡ Energy (Northern House Rarities) · 🌀 Chaotic (jazz fusion). Edit `data/music_presets.json` to tweak. |
 
-Scopes the MCP requests during auth: `user-read-playback-state
+Path B is what enables one-click preset buttons in the admin and
+agent-driven playback ("play me chill vibes"). Path A is enough for
+everyday studio use.
+
+Scopes requested if Path B is enabled: `user-read-playback-state
 user-modify-playback-state user-read-currently-playing`.
 
 ## Agent layer
