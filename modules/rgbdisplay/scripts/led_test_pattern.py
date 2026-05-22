@@ -58,15 +58,28 @@ DIAMOND_PIXELS = [
 
 
 def find_font(name: str = "6x10.bdf") -> str:
-    """Locate a bundled BDF font from one of the usual install paths."""
+    """Locate a bundled BDF font. Mirrors `led_clock.py`'s search path
+    so we find fonts in the same place (typically
+    `/root/hzeller-rpi-rgb-led-matrix/fonts/` when run via the systemd
+    unit, since the library was cloned into root's home)."""
     here = os.path.dirname(os.path.abspath(__file__))
     parent = os.path.dirname(here)
+    # When sudo'd, the *original* user's home; pure-root systemd runs
+    # give us /root. Same logic the clock uses.
+    sudo_user = os.environ.get("SUDO_USER", "")
+    real_home = (
+        os.path.expanduser(f"~{sudo_user}") if sudo_user
+        else os.path.expanduser("~")
+    )
     candidates = [
-        os.path.join(here, "fonts", name),
-        os.path.join(parent, "fonts", name),
-        f"/home/admin/rpi-rgb-led-matrix/fonts/{name}",
+        os.path.join(parent, "hzeller-rpi-rgb-led-matrix", "fonts", name),
+        os.path.join(parent, "rpi-rgb-led-matrix", "fonts", name),
+        os.path.join(real_home, "hzeller-rpi-rgb-led-matrix", "fonts", name),
+        os.path.join(real_home, "rpi-rgb-led-matrix", "fonts", name),
+        f"/root/hzeller-rpi-rgb-led-matrix/fonts/{name}",
         f"/home/admin/hzeller-rpi-rgb-led-matrix/fonts/{name}",
         f"/home/pi/rpi-rgb-led-matrix/fonts/{name}",
+        os.path.join(here, "fonts", name),
     ]
     for c in candidates:
         if os.path.exists(c):
@@ -79,6 +92,7 @@ def find_font(name: str = "6x10.bdf") -> str:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--rows", type=int, default=64)
+    ap.add_argument("--cols", type=int, default=64)
     ap.add_argument("--chain", type=int, default=2)
     ap.add_argument("--brightness", type=int, default=80)
     ap.add_argument("--pwm-bits", type=int, default=8)
@@ -95,6 +109,7 @@ def main() -> int:
 
     options = RGBMatrixOptions()
     options.rows = args.rows
+    options.cols = args.cols
     options.chain_length = args.chain
     options.parallel = 1
     options.hardware_mapping = "regular"
@@ -103,6 +118,11 @@ def main() -> int:
     options.pwm_lsb_nanoseconds = args.pwm_lsb_nanoseconds
     options.led_rgb_sequence = args.led_rgb_sequence
     options.gpio_slowdown = args.slowdown_gpio
+    # Critical: matches led_clock.py. The library drops to user `daemon`
+    # by default after init; with HUB75 wiring + Pi 4 that renders the
+    # matrix blank. Keeping root throughout the script's lifetime is
+    # what the clock does, and is required here too.
+    options.drop_privileges = False
 
     matrix = RGBMatrix(options=options)
     canvas = matrix.CreateFrameCanvas()
