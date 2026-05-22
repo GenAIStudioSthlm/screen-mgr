@@ -83,6 +83,98 @@ class SceneManager:
                 return s
         return None
 
+    async def apply(self, scene_id: str) -> dict:
+        """Apply a scene: recall Hue, push per-zone screen content, broadcast reload.
+
+        Returns a result dict with per-step outcomes (suitable for the HTTP
+        route OR an MCP tool to surface). Raises KeyError if the scene id
+        is unknown — callers decide how to map that to an HTTP / tool error.
+
+        Imports are lazy to avoid a circular at module-load time
+        (`models.scenes` is imported very early in the route layer).
+        """
+        from connections import connection_manager
+        from models.zones import zone_manager
+        from modules import registry
+        from screens import screen_manager
+
+        scene = self.get(scene_id)
+        if scene is None:
+            raise KeyError(scene_id)
+
+        result: dict = {
+            "scene_id": scene.id,
+            "hue": None,
+            "screens_updated": [],
+            "screens_failed": [],
+            "reloaded": [],
+        }
+
+        # 1. Recall Hue scene if specified
+        if scene.hue_scene_id:
+            hue_module = registry.get("hue")
+            if hue_module is not None and getattr(hue_module, "client", None) is not None:
+                try:
+                    result["hue"] = hue_module.client.recall_scene(scene.hue_scene_id)
+                except Exception as e:  # noqa: BLE001
+                    result["hue"] = {"error": str(e)}
+            else:
+                result["hue"] = {"error": "hue module unavailable or unpaired"}
+
+        # 2. Push per-zone screen overrides
+        for zone_id, override in scene.zone_overrides.items():
+            zone = zone_manager.get(zone_id)
+            if zone is None or zone.screen_id is None:
+                result["screens_failed"].append(
+                    {"zone": zone_id, "reason": "no screen mapped"}
+                )
+                continue
+            idx = zone.screen_id - 1
+            if not (0 <= idx < len(screen_manager.screens)):
+                result["screens_failed"].append(
+                    {"zone": zone_id, "reason": f"screen #{zone.screen_id} out of range"}
+                )
+                continue
+            screen = screen_manager.screens[idx]
+            ct = override.content_type
+            cv = override.content_value or ""
+            screen.type = ct
+            if ct == "text":
+                screen.text = cv
+            elif ct == "url":
+                screen.url = cv
+            elif ct == "video":
+                screen.video = cv
+            elif ct == "picture":
+                screen.picture = cv
+            elif ct == "pdf":
+                screen.pdf = cv
+            elif ct == "slideshow":
+                screen.slideshow = cv
+            elif ct == "screen_share":
+                screen.screen_share = cv
+            if ct == "news" and override.news_mode:
+                screen.news_mode = override.news_mode
+            result["screens_updated"].append(
+                {"zone": zone_id, "screen_id": screen.id, "type": ct}
+            )
+
+        if result["screens_updated"]:
+            screen_manager.save_screens()
+
+        # 3. Broadcast reload to every connected screen
+        for screen in screen_manager.screens:
+            if screen.connected:
+                try:
+                    await connection_manager.notify_screen(screen=screen)
+                    result["reloaded"].append(screen.id)
+                except Exception as e:  # noqa: BLE001
+                    result["screens_failed"].append(
+                        {"zone": None, "screen_id": screen.id, "reason": str(e)}
+                    )
+
+        return result
+
 
 def _seed_scenes() -> List[Scene]:
     """Two starter scenes so the dropdown isn't empty on first run.
