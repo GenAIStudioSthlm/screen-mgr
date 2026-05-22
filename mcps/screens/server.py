@@ -22,6 +22,7 @@ from modules import registry
 from modules.base import DisplayModule
 from screens import screen_manager
 
+from mcps.screens.fleet_demo import run_fleet_demo as _run_fleet_demo
 from mcps.screens.walkthrough import run_content_walkthrough as _run_walkthrough
 
 
@@ -300,4 +301,37 @@ async def run_content_walkthrough(
     return await _run_walkthrough(
         target_screen_id=screen_id,
         state_pause_seconds=state_pause_seconds,
+    )
+
+
+@server.tool()
+async def run_fleet_demo(
+    target_screen_ids: Optional[list[int]] = None,
+    state_pause_seconds: float = 4.0,
+    settle_scene_id: str = "ai-news",
+) -> dict:
+    """Cycle every available screen through 3 content modes in unison,
+    then settle the whole fleet on a saved scene.
+
+    Sequence (~17s at 4s/step):
+      1. URL (web) — all targets → https://example.com
+      2. URL (YouTube) — all targets → a YouTube embed
+      3. Default — all targets → the studio logo
+      Settle → `apply_scene(settle_scene_id)` (default "ai-news")
+
+    Target selection:
+      - ``target_screen_ids`` if provided
+      - else every screen with a live WebSocket
+      - else (no one connected) every configured screen — keeps the
+        data layer exercised; the response's ``target_source`` field
+        says which branch was taken.
+
+    Use to verify the fleet end-to-end: per-screen writes, the saved
+    scene apply path (Hue + screens + reload), and the WebSocket
+    reload broadcast all in one ~20s run.
+    """
+    return await _run_fleet_demo(
+        target_screen_ids=target_screen_ids,
+        state_pause_seconds=state_pause_seconds,
+        settle_scene_id=settle_scene_id,
     )
