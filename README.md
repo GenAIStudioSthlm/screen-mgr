@@ -103,13 +103,27 @@ CLIs:
 - `python scripts/screens_walkthrough_test.py [screen_id]`
 - `python scripts/screens_fleet_demo.py [screen_id ...]`
 
+### Displays MCP — `/mcp/displays/sse`
+
+Wraps every registered LED panel ServiceModule. Today there's one
+(`rgbdisplay`); future panels join automatically once their id is in
+`mcps/displays/server.py::LED_MODULE_IDS` and a module is registered.
+
+| Tool | Purpose |
+|---|---|
+| `list_displays` | Every registered LED display + status (systemd active/enabled, registry enabled). |
+| `get_display_status` | Focused status for one display by id. |
+| `start_display` | Start the backing systemd unit. |
+| `stop_display` | Stop the backing systemd unit. |
+| `set_display_enabled` | Flip the registry enabled flag (doesn't touch systemd). |
+| `run_display_test` | Lifecycle sanity test: stop → 3s pause → start, with before/mid/after status snapshots. |
+
 ### Planned MCP servers
 
 | Domain | Status |
 |---|---|
-| Display (LED matrix) | Planned. Will wrap `modules/rgbdisplay`. Smallest surface today (start/stop) — likely needs the module extended first for richer agent control. |
-| Audio | Planned. Source TBD. |
-| Music | Planned. Source TBD. |
+| Audio | Planned — system mixer / mic inputs / playback. Backend TBD (PulseAudio / ALSA). |
+| Music | Planned — Spotify or local library. Backend + auth TBD. |
 
 ## Agent layer
 

@@ -310,8 +310,12 @@ Each phase is a small, deployable increment. Status checkboxes get ticked as we 
 - All 8 screens currently show `connected=False` (no live WebSockets to the server), so `set_screen_content` saves state but `notified=False` for every step. Walkthrough sequencing + data writes verified via `/api/screens` post-run inspection.
 - `static/pictures` and `static/pdfs` are empty on this Pi, so those steps skip. Upload at least one of each to exercise those states visibly.
 
-### Phase 7 — LED MCP + specialist (smallest)
-- [ ] Repeat for LED. Likely also extends the `rgbdisplay` module to expose more than start/stop.
+### Phase 7 — Displays MCP + specialist (smallest)
+- [x] **Displays MCP server** — `mcps/displays/server.py`, mounted at `/mcp/displays`. Wraps every LED-panel `ServiceModule` registered with the module registry. 6 tools: `list_displays`, `get_display_status`, `start_display`, `stop_display`, `set_display_enabled`, `run_display_test`.
+- [x] Future-proof for many displays — `LED_MODULE_IDS` constant is the single source of truth (kept in sync with `led_screens.js`); panels appear automatically when their id is added there and the module is registered.
+- [x] `run_display_test` is a lifecycle sanity check (stop → 3s pause → start) with before/mid/after status snapshots; richer per-panel behavior tests will come once `rgbdisplay` exposes more than start/stop.
+- [ ] Extend `rgbdisplay` to expose content variants (clock / axolotl_anim / other) + brightness if the underlying script supports it. Out of scope for this MCP iteration — file as a follow-up.
+- [ ] **Displays specialist subagent** — deferred until the .env API key blocker is unstuck.
 
 ### Phase 8 — Room voice (Pi mic, push-to-talk)
 - [ ] `scripts/voice_daemon.py` — sounddevice + GPIO + faster-whisper

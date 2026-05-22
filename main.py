@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from routes import router
+from mcps.displays.server import server as displays_mcp_server
 from mcps.lighting.server import server as lighting_mcp_server
 from mcps.screens.server import server as screens_mcp_server
 
@@ -21,6 +22,7 @@ app.include_router(router)
 # usable by any MCP client (Claude Code, our own agents in later phases).
 app.mount("/mcp/lighting", lighting_mcp_server.sse_app())
 app.mount("/mcp/screens", screens_mcp_server.sse_app())
+app.mount("/mcp/displays", displays_mcp_server.sse_app())
 
 if __name__ == "__main__":
     uvicorn.run(
