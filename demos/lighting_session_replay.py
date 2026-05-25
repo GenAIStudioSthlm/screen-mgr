@@ -1,18 +1,22 @@
 #!/usr/bin/env python3
-"""Phase 1 (Lighting MCP) session replay.
+"""Phase 1 (Lighting MCP) — video-script replay.
 
-A scripted, paced re-telling of the planning + build + proof arc for
-the Lighting MCP server. Plays out in the terminal as a fake
-conversation — meant for demos / handoffs / recordings, NOT part of
-the screen-mgr platform.
+Plays out as a scripted video re-enactment of the planning → build →
+proof arc for the Lighting MCP, with clear DAN: / CLAUDE: speaker
+labels, scene headers, and stage directions. Designed for demo
+recordings and screen-share walk-throughs, NOT part of the screen-mgr
+platform.
 
-Usage:
+Run it in a terminal:
     python demos/lighting_session_replay.py
 
-Stop early with Ctrl-C. ~70 s of playback at default pace.
+~80 s of paced playback. Ctrl-C aborts cleanly.
 
-No external deps — ANSI colors only. Works in any modern terminal
-(Windows Terminal, iTerm2, gnome-terminal, etc).
+Color choices:
+    Claude  = Anthropic orange (closest ANSI-256 slot: 173 ≈ #d7875f)
+    Dan     = warm cream (230 ≈ #ffffd7)
+    Scene headers / actions = warm tan
+    Stage directions        = dim grey, italic-feel
 """
 
 from __future__ import annotations
@@ -21,36 +25,38 @@ import sys
 import time
 
 
-# Force UTF-8 on Windows terminals (cp1252 chokes on box-drawing chars and em-dashes).
-# Python 3.7+ exposes stdout.reconfigure; older versions just keep going.
+# UTF-8 stdout so Windows cp1252 doesn't choke on em-dashes / box-drawing / °.
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:  # noqa: BLE001 — best effort, don't crash
+    except Exception:  # noqa: BLE001
         pass
 
 
 # ---------------------------------------------------------------------- styling
 
 RESET = "\033[0m"
-DIM = "\033[2m"
 BOLD = "\033[1m"
+DIM = "\033[2m"
+ITALIC = "\033[3m"
 
-USER_COLOR = "\033[38;5;81m"        # cyan-ish
-ASSISTANT_COLOR = "\033[38;5;156m"  # mint
-TOOL_COLOR = "\033[38;5;221m"       # warm yellow
-OUTPUT_COLOR = "\033[38;5;245m"     # light grey
-HEADER_COLOR = "\033[38;5;213m"     # pink/magenta
-OK_COLOR = "\033[38;5;120m"         # green
-WARN_COLOR = "\033[38;5;215m"
+# Anthropic-brand-ish palette in ANSI 256.
+CLAUDE_COLOR = "\033[38;5;173m"   # warm orange ≈ #d7875f
+DAN_COLOR = "\033[38;5;230m"      # warm cream ≈ #ffffd7
+SCENE_COLOR = "\033[38;5;215m"    # warm tan for scene headers
+STAGE_COLOR = "\033[38;5;243m"    # dim grey for stage directions
+OUTPUT_COLOR = "\033[38;5;245m"   # mock terminal output
+TOOL_COLOR = "\033[38;5;215m"     # tool / action lines
+OK_COLOR = "\033[38;5;120m"       # checkmark green
+TITLE_COLOR = "\033[38;5;173m"    # title card uses Claude's orange
+
+WIDTH = 72
 
 
 # ---------------------------------------------------------------------- pacing
 
 
 def _type(text: str, color: str = "", delay: float = 0.018, end: str = "\n") -> None:
-    """Character-by-character print with a tiny extra dwell on punctuation
-    so the line lands naturally."""
     if color:
         sys.stdout.write(color)
     for ch in text:
@@ -69,7 +75,7 @@ def _type(text: str, color: str = "", delay: float = 0.018, end: str = "\n") -> 
 
 
 def _say(text: str, end: str = "\n") -> None:
-    """Instant print — for long output blocks where typewriter is annoying."""
+    """Instant print — long output blocks where typewriter is annoying."""
     sys.stdout.write(text + end)
     sys.stdout.flush()
 
@@ -78,29 +84,57 @@ def _pause(seconds: float) -> None:
     time.sleep(seconds)
 
 
-def user(text: str) -> None:
-    sys.stdout.write(f"{USER_COLOR}{BOLD}you ›{RESET} ")
-    _type(text, color=USER_COLOR, delay=0.018)
+def dan(text: str) -> None:
+    sys.stdout.write(f"{DAN_COLOR}{BOLD}DAN:{RESET}    ")
+    # Indent continuation if the line wraps in the script source.
+    _type(text, color=DAN_COLOR, delay=0.018)
     _pause(0.55)
 
 
-def assistant(text: str, delay: float = 0.014) -> None:
-    sys.stdout.write(f"{ASSISTANT_COLOR}{BOLD}claude ●{RESET} ")
-    _type(text, color=ASSISTANT_COLOR, delay=delay)
-    _pause(0.4)
+def claude(text: str, delay: float = 0.016) -> None:
+    sys.stdout.write(f"{CLAUDE_COLOR}{BOLD}CLAUDE:{RESET} ")
+    _type(text, color=CLAUDE_COLOR, delay=delay)
+    _pause(0.45)
 
 
-def tool(text: str, ok: bool = True) -> None:
-    mark = f"{OK_COLOR}✓{RESET}" if ok else f"{WARN_COLOR}…{RESET}"
+def claude_more(text: str) -> None:
+    """Continuation line for Claude (no speaker label, indented)."""
+    sys.stdout.write("        ")
+    _type(text, color=CLAUDE_COLOR, delay=0.014)
+    _pause(0.15)
+
+
+def stage(text: str) -> None:
+    _say(f"        {STAGE_COLOR}{ITALIC}[{text}]{RESET}")
+    _pause(0.3)
+
+
+def action(text: str, ok: bool = True) -> None:
+    mark = f"{OK_COLOR}✓{RESET}" if ok else f"{STAGE_COLOR}…{RESET}"
     _say(f"        {mark} {DIM}{text}{RESET}")
     _pause(0.22)
 
 
-def heading(text: str) -> None:
+def scene(number: int, title: str) -> None:
     _say("")
-    _say(f"{HEADER_COLOR}{BOLD}── {text} ──{RESET}")
+    _say(f"{SCENE_COLOR}{'─' * WIDTH}{RESET}")
+    _say(f"{SCENE_COLOR}{BOLD}  SCENE {number} — {title.upper()}{RESET}")
+    _say(f"{SCENE_COLOR}{'─' * WIDTH}{RESET}")
     _say("")
-    _pause(0.3)
+    _pause(0.5)
+
+
+def title_card(lines: list[str]) -> None:
+    _say("")
+    top = "┌" + "─" * (WIDTH - 2) + "┐"
+    bot = "└" + "─" * (WIDTH - 2) + "┘"
+    _say(f"{TITLE_COLOR}{top}{RESET}")
+    for line in lines:
+        padded = line.center(WIDTH - 4)
+        _say(f"{TITLE_COLOR}│ {BOLD}{padded}{RESET}{TITLE_COLOR} │{RESET}")
+    _say(f"{TITLE_COLOR}{bot}{RESET}")
+    _say("")
+    _pause(1.2)
 
 
 def code(lines: list[str], lang: str = "python") -> None:
@@ -113,48 +147,70 @@ def code(lines: list[str], lang: str = "python") -> None:
 
 
 def output(lines: list[str]) -> None:
-    """Mock terminal output — printed fast, dimmed."""
     for line in lines:
         _say(f"{OUTPUT_COLOR}        {line}{RESET}")
-        # Slow down on "frame" / ">>>" so the eye catches the progression.
         time.sleep(0.13 if ("frame" in line or ">>>" in line) else 0.06)
     _pause(0.45)
+
+
+def fade() -> None:
+    """Brief beat between scenes."""
+    _pause(0.6)
 
 
 # ---------------------------------------------------------------------- script
 
 
 def main() -> int:
-    heading("Studio agentic plan — Phase 1: Lighting MCP")
-    _pause(0.4)
+    # ─────────────────────────────────────────────────────────────────
+    # OPENING TITLE
+    # ─────────────────────────────────────────────────────────────────
+    title_card([
+        "STUDIO  MCP  —  EPISODE  1",
+        "",
+        "Phase 1: Lighting MCP, plan to proof",
+        "",
+        "Dan Gemvall × Claude · GenAI Studio Stockholm",
+    ])
+    stage("Fade in. A laptop screen. A Raspberry Pi blinks on the desk.")
+    fade()
 
-    user(
+    # ─────────────────────────────────────────────────────────────────
+    scene(1, "The pitch")
+    # ─────────────────────────────────────────────────────────────────
+
+    dan(
         "I want to make the studio agentic. Let's plan 3 MCP servers — "
-        "Lighting, Screens, LED — plus specialists and a Studio orchestrator. "
-        "Start with Lighting because it's the easiest to prove."
+        "Lighting, Screens, LED — plus specialists and a Studio "
+        "orchestrator. Start with Lighting because it's the easiest "
+        "to prove."
     )
 
-    assistant("Good arc. The architecture I'd propose:")
-    _say(f"        {ASSISTANT_COLOR}• In-process FastMCP servers mounted at {DIM}/mcp/<domain>/sse{RESET}")
-    _say(f"        {ASSISTANT_COLOR}• Each wraps an existing Python manager directly — no HTTP back through /api/*{RESET}")
-    _say(f"        {ASSISTANT_COLOR}• One specialist subagent per MCP, each with its own skills/ dir{RESET}")
-    _say(f"        {ASSISTANT_COLOR}• Studio orchestrator owns the operator chat; delegates to specialists{RESET}")
-    _pause(0.55)
-
-    assistant("Writing it all up.")
-    tool("TASKS/PLAN_AGENTIC.md — architecture + phases 1-9")
-    tool("git commit: 'Plan agentic structure — 3 MCP servers + specialists + Studio orchestrator'")
+    claude("Good arc. Here's the architecture I'd propose:")
+    claude_more("• In-process FastMCP servers mounted at /mcp/<domain>/sse")
+    claude_more("• Each wraps an existing Python manager directly — no HTTP back through /api/*")
+    claude_more("• One specialist subagent per MCP, each with its own skills/ dir")
+    claude_more("• Studio orchestrator owns the operator chat; delegates to specialists")
     _pause(0.5)
 
-    heading("Phase 1 — Building the Lighting MCP")
+    claude("Writing it up.")
+    stage("Cut to terminal. Files appear in the project tree.")
+    action("TASKS/PLAN_AGENTIC.md — architecture + phases 1-9")
+    action("git commit: 'Plan agentic structure — 3 MCP servers + specialists + Studio orchestrator'")
+    fade()
 
-    user("Go. Build Phase 1. In-process, wraps the Hue Bridge directly.")
+    # ─────────────────────────────────────────────────────────────────
+    scene(2, "Building the Lighting MCP")
+    # ─────────────────────────────────────────────────────────────────
 
-    assistant(
-        "On it. The Lighting MCP wraps modules.hue.client.HueClient — no HTTP "
-        "roundtrip back through /api/modules/hue/*, one less hop. 9 tools to start."
+    dan("Go. Build Phase 1. In-process, wraps the Hue Bridge directly.")
+
+    claude(
+        "On it. The Lighting MCP wraps modules.hue.client.HueClient — no "
+        "HTTP roundtrip back through /api/modules/hue/*, one less hop. "
+        "Nine tools to start."
     )
-    _pause(0.3)
+    stage("Code appears on screen.")
 
     code([
         "# mcps/lighting/server.py",
@@ -178,23 +234,25 @@ def main() -> int:
         "#     all_on, all_off",
     ])
 
-    tool("mcps/lighting/{__init__.py, server.py} created")
-    tool("main.py: app.mount('/mcp/lighting', server.sse_app())")
-    tool("requirements.txt: + mcp>=1.2.0")
-    _pause(0.4)
+    action("mcps/lighting/{__init__.py, server.py} created")
+    action("main.py: app.mount('/mcp/lighting', server.sse_app())")
+    action("requirements.txt: + mcp>=1.2.0")
+    fade()
 
-    heading("Deploy + smoke-test on studiopi")
+    # ─────────────────────────────────────────────────────────────────
+    scene(3, "Deploy + smoke test")
+    # ─────────────────────────────────────────────────────────────────
 
-    user("Push to the Pi and confirm it actually talks to the Hue bridge.")
+    dan("Push to the Pi and confirm it actually talks to the Hue bridge.")
 
-    assistant("Pushing now.")
-    tool("scp mcps/lighting/server.py → admin@192.168.2.65:/home/admin/screen-mgr/...")
-    tool("uvicorn --reload picks up the new mount automatically")
-    _pause(0.4)
+    claude("Pushing now.")
+    action("scp mcps/lighting/server.py → admin@192.168.2.65:/home/admin/screen-mgr/...")
+    action("uvicorn --reload picks up the new mount automatically")
 
-    assistant("Running an MCP client smoke test from the Pi itself.")
+    claude("Running an MCP client smoke test from the Pi itself.")
+    stage("A second terminal opens, SSHing into studiopi.")
     _say(f"        {TOOL_COLOR}→ ssh admin@studiopi 'python3 -c \"<MCP SSE client>\"'{RESET}")
-    _pause(0.9)
+    _pause(1.0)
 
     output([
         "[smoke] connecting to http://localhost:8000/mcp/lighting/sse",
@@ -207,24 +265,28 @@ def main() -> int:
         "        }",
     ])
 
-    assistant(
-        "Bridge is reachable, 9 tools register, Studio room (group 81) has 13 lights, "
-        "Maker (group 2) has 4. Phase 1 wiring works end-to-end."
+    claude(
+        "Bridge is reachable. Nine tools register. Studio room — group 81 — "
+        "has 13 lights. Maker — group 2 — has four. Phase 1 wiring works "
+        "end-to-end."
     )
-    _pause(0.5)
+    fade()
 
-    heading("Visible self-test: rainbow + intensity sweep")
+    # ─────────────────────────────────────────────────────────────────
+    scene(4, "Visible proof — rainbow + intensity")
+    # ─────────────────────────────────────────────────────────────────
 
-    user(
-        "Add a startup self-test — something visible. Rainbow across all 13 Studio "
-        "lights, then an intensity sweep, settle to a usable state."
+    dan(
+        "Add a startup self-test. Something visible. Rainbow across all "
+        "13 Studio lights, then an intensity sweep, settle to a usable "
+        "state."
     )
 
-    assistant(
-        "Building as both an MCP tool and a CLI. Shared logic in startup_test.py; "
-        "calls HueClient through asyncio.to_thread so it doesn't block the event loop."
+    claude(
+        "Building as both an MCP tool and a CLI. Shared logic in "
+        "startup_test.py; calls HueClient through asyncio.to_thread so it "
+        "doesn't block the event loop."
     )
-    _pause(0.3)
 
     code([
         "# Rainbow phase — each light starts at a different hue, then rotates",
@@ -244,13 +306,13 @@ def main() -> int:
         "# Settle — 60 % at 3000 K warm white, room left usable",
         "client.set_group('81', {'bri': 152, 'ct': 333, 'on': True})",
     ])
-    tool("mcps/lighting/startup_test.py + scripts/lights_startup_test.py")
-    tool("MCP tool: run_startup_test")
-    _pause(0.4)
+    action("mcps/lighting/startup_test.py + scripts/lights_startup_test.py")
+    action("MCP tool: run_startup_test")
+    fade()
 
-    user("Run it.")
-
-    assistant("Firing on studiopi. Watch the studio lights.")
+    dan("Run it.")
+    claude("Firing on studiopi. Watch the studio lights.")
+    stage("Camera pans to the studio ceiling. 13 Hue bulbs.")
     _say(f"        {TOOL_COLOR}→ curl -X POST http://localhost:8000/api/modules/hue/run_startup_test{RESET}")
     _pause(0.8)
 
@@ -277,22 +339,34 @@ def main() -> int:
         "[startup-test] done — room left at 60% / 3000K",
     ])
 
-    assistant(
-        "Rainbow rotated full cycle over ~5 s, intensity sweep finished at 80 %, "
-        "settled to 60 % warm white. Phase 1 proven end-to-end."
+    stage("The studio lights settle into a warm 3000 K glow.")
+    claude(
+        "Rainbow rotated full cycle in roughly five seconds. Intensity sweep "
+        "finished at 80 %. Settled to 60 % warm white. Phase 1 is proven "
+        "end-to-end."
     )
-    _pause(0.6)
+    fade()
 
-    heading("Phase 1 done")
+    # ─────────────────────────────────────────────────────────────────
+    scene(5, "Closing card")
+    # ─────────────────────────────────────────────────────────────────
+
     _say(f"        {BOLD}{OK_COLOR}✓{RESET}{BOLD} /mcp/lighting/sse — 10 tools, real Hue control{RESET}")
     _say(f"        {BOLD}{OK_COLOR}✓{RESET}{BOLD} run_startup_test — visible self-test (~12 s){RESET}")
     _say(f"        {BOLD}{OK_COLOR}✓{RESET}{BOLD} git commit: 'Phase 1 — Lighting MCP server (in-process)'{RESET}")
     _say("")
-    _say(
-        f"        {DIM}Next: Phase 2 — Lighting specialist subagent. Code lands; "
-        f"end-to-end test blocks on the .env API key on the Pi.{RESET}"
+    stage(
+        "Next episode — Phase 2: the Lighting specialist subagent. "
+        "Code lands; end-to-end test blocks on the .env API key on the Pi."
     )
     _say("")
+
+    title_card([
+        "END OF EPISODE 1",
+        "",
+        "PHASE 1 COMPLETE",
+    ])
+
     return 0
 
 
