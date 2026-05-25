@@ -29,6 +29,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any, Optional
 
+from mcps.audio.safety import cap_volume, max_output_volume_pct
 from mcps.music.spotify_client import call
 
 
@@ -76,7 +77,7 @@ async def run_speaker_test(
     play_seconds: int = DEFAULT_PLAY_SECONDS,
 ) -> dict:
     """Play a track on a named Spotify Connect device, then pause."""
-    volume_pct = max(0, min(100, int(volume_pct)))
+    volume_pct, vol_capped = cap_volume(volume_pct)
     play_seconds = max(1, min(120, int(play_seconds)))
 
     result: dict[str, Any] = {
@@ -85,6 +86,9 @@ async def run_speaker_test(
         "volume_pct": volume_pct,
         "play_seconds": play_seconds,
     }
+    if vol_capped:
+        result["volume_capped"] = True
+        result["ceiling_pct"] = max_output_volume_pct()
 
     # 1. Devices
     devices_resp = call(lambda c: c.devices())

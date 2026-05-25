@@ -234,6 +234,8 @@ TASKS/                  Active planning docs
 
 ## Deeper docs
 
+- [`docs/EXTERNAL_INTEGRATION.md`](docs/EXTERNAL_INTEGRATION.md) — how other services / agents / colleagues' Claude Code talk to our MCP + REST + chat surfaces.
+- [`docs/SAFETY.md`](docs/SAFETY.md) — **acoustic-feedback prevention** (volume ceiling, mic-mute-during-playback, push-to-talk rules). Mandatory reading before touching any audio-output code path.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — how the pieces fit on the Pi, and the contract a new service follows.
 - [`docs/MODULES.md`](docs/MODULES.md) — module registry contract, how to write a module.
 - [`docs/DEPLOY.md`](docs/DEPLOY.md) — manual deploy from a developer machine to studiopi.

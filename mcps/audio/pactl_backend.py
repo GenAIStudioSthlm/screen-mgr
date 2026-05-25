@@ -22,6 +22,8 @@ import subprocess
 from pathlib import Path
 from typing import Optional
 
+from mcps.audio.safety import cap_volume, max_output_volume_pct
+
 
 PACTL = "pactl"
 PAPLAY = "paplay"
@@ -187,15 +189,29 @@ def is_muted(sink_id: Optional[str] = None) -> dict:
 
 
 def set_volume(volume_pct: int, sink_id: Optional[str] = None) -> dict:
-    pct = max(0, min(150, int(volume_pct)))  # allow up to 150% — pactl supports above unity
+    # Hard ceiling — never above the safety cap. Above-unity (>100 %) is
+    # explicitly NOT allowed regardless of pactl's support, to avoid
+    # acoustic-feedback risk with the ceiling mic. See mcps/audio/safety.py
+    # + docs/SAFETY.md.
+    pct, capped = cap_volume(volume_pct)
     target = sink_id or "@DEFAULT_SINK@"
     r = _pactl("set-sink-volume", target, f"{pct}%")
-    return {
+    out: dict = {
         "sink_id": target,
         "volume_pct": pct,
         "ok": r.returncode == 0,
         "stderr": r.stderr.strip(),
     }
+    if capped:
+        out["capped"] = True
+        out["requested_pct"] = int(volume_pct)
+        out["ceiling_pct"] = max_output_volume_pct()
+        out["note"] = (
+            "Volume request exceeded the safety ceiling and was clamped. "
+            "Override MAX_OUTPUT_VOLUME_PCT in .env only after reviewing "
+            "docs/SAFETY.md."
+        )
+    return out
 
 
 def set_mute(sink_id: Optional[str], muted: bool) -> dict:

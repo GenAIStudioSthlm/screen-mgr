@@ -18,6 +18,7 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
+from mcps.audio.safety import cap_volume, max_output_volume_pct
 from mcps.music.spotify_client import call
 from mcps.music.speaker_test import (
     DEFAULT_DEVICE_QUERY,
@@ -134,11 +135,19 @@ def previous_track(device_id: Optional[str] = None) -> dict:
 
 @server.tool()
 def set_volume(volume_pct: int, device_id: Optional[str] = None) -> dict:
-    """Set playback volume on the active or specified device. 0–100."""
-    vol = max(0, min(100, int(volume_pct)))
+    """Set playback volume on the active or specified device. 0–100.
+
+    Hard-capped at MAX_OUTPUT_VOLUME_PCT (default 70) to prevent
+    acoustic feedback with the ceiling mic — see docs/SAFETY.md."""
+    vol, capped = cap_volume(volume_pct)
     def _do(c):
         c.volume(vol, device_id=device_id)
-        return {"volume_pct": vol, "device_id": device_id}
+        result = {"volume_pct": vol, "device_id": device_id}
+        if capped:
+            result["capped"] = True
+            result["requested_pct"] = int(volume_pct)
+            result["ceiling_pct"] = max_output_volume_pct()
+        return result
     return call(_do)
 
 

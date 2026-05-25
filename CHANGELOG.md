@@ -6,7 +6,28 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ## [Unreleased]
 
-### Added
+### Added — Agentic / MCP layer (2026-05-21 → 2026-05-25)
+- **Five in-process MCP servers** mounted under `/mcp/<domain>/sse`, each wrapping the corresponding Python managers directly (no HTTP roundtrip back through `/api/*`, no duplicated logic):
+  - **Lighting** (`/mcp/lighting/sse`, 10 tools) — Hue Bridge via `modules/hue/client.py`. Includes `run_startup_test` (rainbow walk + 10/80/40/80 % intensity sweep + settle to 60 % / 3000 K, ~12 s).
+  - **Screens** (`/mcp/screens/sse`, 10 tools) — `screen_manager` + `scene_manager` + module registry. Includes `run_content_walkthrough` (cycle one screen through picture → url → YouTube → pdf → news → default) and `run_fleet_demo` (drive every available screen through 3 modes → settle on AI News).
+  - **Displays** (`/mcp/displays/sse`, 7 tools) — every registered LED-panel `ServiceModule`. Includes `run_grid_test_pattern` (16-px grid + TIME/MON/DAY/YEAR + magenta diamond on the 128×64 LED matrix, ~15 s) via a `mode.txt` marker file read by the launcher.
+  - **Audio** (`/mcp/audio/sse`, 14 tools) — PulseAudio (via `pactl` on PipeWire-pulse) for sinks/sources/volume/mute/play_sound; Sennheiser SSCv2 over HTTPS for networked mic discovery + identify; SAP listener on `239.255.255.255:9875` for Dante / AES67 stream discovery.
+  - **Music** (`/mcp/music/sse`, 11 tools) — Spotify Web API via `spotipy`. Tools degrade gracefully to `{"error": "spotify not configured"}` until OAuth is set up. Three seeded presets (🌿 Chill Vibes / ⚡ Energy / 🌀 Chaotic) in `data/music_presets.json`.
+- **Lighting specialist subagent + Studio orchestrator** (`agents/*.py`) — Anthropic-powered specialists with markdown-frontmatter skills libraries. Lighting + Studio orchestrator are code-complete; running requires a real `ANTHROPIC_API_KEY` on the Pi.
+- **`POST /api/chat` SSE endpoint + admin chat panel** with browser-side push-to-talk via Web Speech API (hold-the-button or hold-Space). Backend currently a stub that emits a clear "not wired up" error until the agent layer is unblocked; SSE event names (`token` / `tool_use` / `tool_result` / `error` / `done`) are stable so swapping the backend doesn't touch the frontend.
+- **Admin sidebar gains Audio + Music tabs** (between Lighting and Modules) and **"▶ Run test" buttons** under Lighting / Screens / each LED panel.
+- **Music view is the embedded Spotify Web Player** (Path A — chosen 2026-05-22): anyone signs in with their own (or enterprise) Spotify account inside the iframe; no server-side OAuth required for everyday play. Header link opens Spotify in a new tab as a fallback if `X-Frame-Options` blocks the embed.
+- **`SceneManager.apply()` refactor** — moved the apply-scene flow (Hue recall + per-zone content + reload broadcast) from `routes/scenes_routes.py` onto the manager so both the HTTP route AND the Screens MCP's `apply_scene` tool share one source of truth.
+- **Sennheiser SSCv2 mic control surface** (2026-05-25) — discovered via the official spec at `docs.cloud.sennheiser.com/.../sscv2-specification-2.3.html`. The TCC M S W exposes HTTPS REST under `/api/`, HTTP Basic auth with realm `"ssc"`. We wire:
+  - `GET /api/device/identity` (no-auth) — product / serial / vendor
+  - `GET /api/device/identification` (no-auth) — `{"visual": bool}` LED-flash state
+  - `PUT /api/device/identification` (auth) — toggle LED flash
+  - `GET /api/device/state` + `/api/device/site` (auth) — full device tree
+  - New env var: `SENNHEISER_TCC_PASSWORD` (with optional `SENNHEISER_TCC_USERNAME`, default `api`). Without it, the MCP still does mic discovery + reachability probe + identity reads; with it, `run_mic_test` flips to an actual LED-flash test on the physical mic.
+- **PulseAudio backend for Audio MCP** (2026-05-25) — all 8 sink/source/volume/mute/play_sound stubs are now real `pactl` calls on PipeWire-pulse. `_audio_env()` injects `XDG_RUNTIME_DIR=/run/user/<uid>` so subprocess-from-systemd-service can reach the user's PipeWire socket without an Environment block edit. `play_sound` is path-restricted to `static/sounds/` (refuses absolute paths + `..` traversal).
+- **`demos/lighting_session_replay.py`** — paced typewriter-style terminal "video script" of the Phase 1 build (plan → MCP → smoke test → rainbow proof). ANSI colors only (Anthropic orange for Claude, warm cream for Dan), no external deps, ~80 s runtime.
+
+### Added — earlier
 - **Per-type content editor + inline uploads in the v2 Screens view** — the per-zone editor previously had a generic "value" text input that asked operators to type filenames. It now shows the same type-aware UI the legacy admin had: textarea for text, URL input (YouTube URLs continue to auto-embed via the url module's `/youtube/` wrapper), a select-of-existing-media for video/picture/pdf/slideshow, news-mode picker for news, room-id input for screen_share. Each media type has an inline upload widget; picture uploads accept an existing-or-new subfolder. After a successful upload the just-uploaded file becomes the selected value automatically.
 - **`GET /api/videos`, `/api/pdfs`, `/api/slideshows`** — list available media for the new dropdowns. Mirrors the existing `/api/pictures` shape.
 - **Merged `staging/admin-redesign` into `main`** — the redesign branch had been the live deploy target for two days. Merge is a clean fast-forward.

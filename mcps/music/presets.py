@@ -23,6 +23,7 @@ from typing import List, Optional
 
 from pydantic import BaseModel, Field, ValidationError
 
+from mcps.audio.safety import cap_volume, max_output_volume_pct
 from mcps.music.spotify_client import call
 
 
@@ -178,11 +179,12 @@ async def play_preset(
         return {"error": f"preset {preset_id!r} not found"}
 
     device_query = (device_query_override or preset.device_query).strip()
-    volume_pct = (
-        max(0, min(100, int(volume_pct_override)))
+    requested_vol = (
+        int(volume_pct_override)
         if volume_pct_override is not None
         else preset.default_volume_pct
     )
+    volume_pct, vol_capped = cap_volume(requested_vol)
 
     result: dict = {
         "preset_id": preset.id,
@@ -190,6 +192,10 @@ async def play_preset(
         "device_query": device_query,
         "volume_pct": volume_pct,
     }
+    if vol_capped:
+        result["volume_capped"] = True
+        result["requested_pct"] = requested_vol
+        result["ceiling_pct"] = max_output_volume_pct()
 
     # 1. Devices
     devices_resp = call(lambda c: c.devices())
