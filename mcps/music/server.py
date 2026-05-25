@@ -290,6 +290,8 @@ async def play_local_file(
     volume_pct: Optional[int] = None,
     mood: Optional[str] = None,
     duration_seconds: Optional[float] = None,
+    ramp_seconds: float = 2.0,
+    ramp_from: Optional[int] = None,
 ) -> dict:
     """Play a local audio file on the Marantz (which drives the studio's
     Bose speakers) via HEOS. Marantz fetches the file directly from
@@ -305,16 +307,25 @@ async def play_local_file(
             but audible.
       duration_seconds: if set, auto-stop after N seconds. Otherwise
                        plays to end of file. Clamped to [0.5, 300].
+      ramp_seconds: fade-in duration (default 2 s, max 15 s). Playback
+                   starts quiet and ramps to the target volume — avoids
+                   slapping listeners with a sudden loud onset. Set to
+                   0 to disable the ramp and start at full target.
+      ramp_from: starting level for the ramp. Default picks a quiet
+                 audible level (~20) so the listener hears playback
+                 has started without it being loud.
 
-    Returns the URL the Marantz fetched, the effective volume, and a
-    calibration hint for that level. Includes ``volume_capped: true``
-    + ``requested_pct`` + ``ceiling_pct`` if the volume was clamped.
+    Returns the URL fetched, the effective volume, calibration hint,
+    warm-up timing, the ramp levels actually sent, and (if used) the
+    auto-stop window.
     """
     return await _local_file.play_local_file(
         file_path=file_path,
         volume_pct=volume_pct,
         mood=mood,
         duration_seconds=duration_seconds,
+        ramp_seconds=ramp_seconds,
+        ramp_from=ramp_from,
     )
 
 
@@ -322,14 +333,20 @@ async def play_local_file(
 async def set_marantz_volume(
     volume_pct: Optional[int] = None,
     mood: Optional[str] = None,
+    ramp_seconds: float = 2.0,
 ) -> dict:
     """Set the Marantz volume independently of playback.
 
     Same calibration + capping as `play_local_file`. Use ``mood`` for
     a semantic choice ("background", "comfortable", "loud") or
     ``volume_pct`` for an explicit number.
-    """
-    return await _local_file.set_marantz_volume(volume_pct=volume_pct, mood=mood)
+
+    Volume UP changes are ramped (default 2 s) to avoid sudden loud
+    steps; volume DOWN changes are instant (always safe to drop).
+    Set ramp_seconds=0 to make UP changes instant too."""
+    return await _local_file.set_marantz_volume(
+        volume_pct=volume_pct, mood=mood, ramp_seconds=ramp_seconds,
+    )
 
 
 @server.tool()

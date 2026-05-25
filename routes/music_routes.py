@@ -176,20 +176,25 @@ async def marantz_state():
 @router.post("/api/music/marantz/play_local_file", response_class=JSONResponse)
 async def marantz_play_local(payload: dict = Body(default={})):
     from mcps.music.local_file import play_local_file
+    p = payload or {}
     return await play_local_file(
-        file_path=(payload or {}).get("file_path", ""),
-        volume_pct=(payload or {}).get("volume_pct"),
-        mood=(payload or {}).get("mood"),
-        duration_seconds=(payload or {}).get("duration_seconds"),
+        file_path=p.get("file_path", ""),
+        volume_pct=p.get("volume_pct"),
+        mood=p.get("mood"),
+        duration_seconds=p.get("duration_seconds"),
+        ramp_seconds=float(p.get("ramp_seconds", 2.0)),
+        ramp_from=p.get("ramp_from"),
     )
 
 
 @router.post("/api/music/marantz/volume", response_class=JSONResponse)
 async def marantz_volume(payload: dict = Body(default={})):
     from mcps.music.local_file import set_marantz_volume
+    p = payload or {}
     return await set_marantz_volume(
-        volume_pct=(payload or {}).get("volume_pct"),
-        mood=(payload or {}).get("mood"),
+        volume_pct=p.get("volume_pct"),
+        mood=p.get("mood"),
+        ramp_seconds=float(p.get("ramp_seconds", 2.0)),
     )
 
 

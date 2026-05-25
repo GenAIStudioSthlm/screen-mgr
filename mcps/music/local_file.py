@@ -35,6 +35,15 @@ from typing import Optional
 WARMUP_TIMEOUT_S = 3.0
 WARMUP_POLL_S = 0.2
 
+# Volume ramp / fade-in defaults. Jumping from silent → target level
+# in one set_volume call is jarring for listeners and unsafe near
+# speakers. We start playback at a quiet level, then walk the volume
+# up to the requested target over a short window so the onset is a
+# gentle fade-in instead of a slap.
+DEFAULT_RAMP_SECONDS = 2.0
+RAMP_STEP_S = 0.2          # one HEOS set_volume call every 200 ms
+DEFAULT_RAMP_FROM = 20     # whisper-ish — audible enough to know "it's playing"
+
 from mcps.audio.safety import (
     SAFE_TEST_VOLUME_PCT,
     VOLUME_CALIBRATION,
@@ -81,11 +90,35 @@ def _build_url(file_path: Path) -> str:
     return f"{_host_url()}/static/sounds/{rel.as_posix()}"
 
 
+async def _ramp_volume(client, start: int, target: int, seconds: float) -> list[int]:
+    """Walk the HEOS volume from `start` → `target` over `seconds`,
+    one set_volume call per RAMP_STEP_S. Returns the levels actually
+    sent (useful for telemetry / debugging).
+
+    Skips the ramp entirely (one set_volume(target)) when start == target,
+    when seconds < one step, or when start > target (we don't fade
+    DOWN automatically — that's a separate operation)."""
+    if seconds <= 0 or start >= target:
+        await client.set_volume(target)
+        return [target]
+    steps = max(2, int(round(seconds / RAMP_STEP_S)))
+    sent: list[int] = []
+    for i in range(1, steps + 1):
+        level = int(round(start + (target - start) * i / steps))
+        await client.set_volume(level)
+        sent.append(level)
+        if i < steps:
+            await asyncio.sleep(seconds / steps)
+    return sent
+
+
 async def play_local_file(
     file_path: str,
     volume_pct: Optional[int] = None,
     mood: Optional[str] = None,
     duration_seconds: Optional[float] = None,
+    ramp_seconds: float = DEFAULT_RAMP_SECONDS,
+    ramp_from: Optional[int] = None,
 ) -> dict:
     """Play a local audio file on the Marantz at a safe volume.
 
@@ -141,9 +174,21 @@ async def play_local_file(
         result["requested_pct"] = requested
         result["ceiling_pct"] = max_output_volume_pct()
 
+    # Compute ramp start: explicit param wins; otherwise pick something
+    # audible-but-quiet for any target above whisper (so the listener
+    # hears "playback started" but isn't slapped by full volume).
+    if ramp_from is None:
+        start_level = min(level, DEFAULT_RAMP_FROM) if level > DEFAULT_RAMP_FROM else level
+    else:
+        # Capped + clamped just like the target. Never starts higher
+        # than the target.
+        capped_from, _ = cap_volume(int(ramp_from))
+        start_level = min(capped_from, level)
+
     try:
-        # set_volume FIRST so when play_stream starts the level is already safe
-        await client.set_volume(level)
+        # set_volume FIRST so when play_stream starts the level is already
+        # at the (quiet) ramp-start, not whatever the AVR last had.
+        await client.set_volume(start_level)
         await client.play_stream(url)
     except HEOSError as e:
         result["error"] = "heos call failed"
@@ -155,6 +200,7 @@ async def play_local_file(
         return result
 
     result["playback_started"] = True
+    result["ramp_from"] = start_level
 
     # 4. Warm-up poll — wait for the AVR to actually report state=play
     # before starting the duration countdown. Marantz/HEOS can take
@@ -175,8 +221,15 @@ async def play_local_file(
     result["warmup_seconds"] = round(time.monotonic() - warmup_start, 2)
     result["warmup_became_playing"] = became_playing
 
-    # 5. Optional auto-stop window — the user-requested duration is now
-    # ACTUAL audible time, not buffering time.
+    # 5. Volume ramp — walk from ramp_from → target over ramp_seconds.
+    # Only ramps UP, never down (down jumps are safe and instant).
+    ramp_clamped = max(0.0, min(15.0, float(ramp_seconds)))
+    levels = await _ramp_volume(client, start_level, level, ramp_clamped)
+    result["ramp_seconds"] = ramp_clamped
+    result["ramp_levels"] = levels
+
+    # 6. Optional auto-stop window — the user-requested duration is now
+    # ACTUAL audible time AFTER the ramp completes.
     if duration_seconds is not None:
         wait = max(0.5, min(300.0, float(duration_seconds)))
         result["duration_seconds"] = wait
@@ -228,9 +281,12 @@ async def resume_playback() -> dict:
 
 
 async def set_marantz_volume(volume_pct: Optional[int] = None,
-                              mood: Optional[str] = None) -> dict:
+                              mood: Optional[str] = None,
+                              ramp_seconds: float = DEFAULT_RAMP_SECONDS) -> dict:
     """Standalone volume control. Same capping + mood mapping as
-    play_local_file."""
+    play_local_file. UP changes are ramped (default 2 s) so the
+    listener doesn't get a sudden loud step; DOWN changes are
+    instant (always safe)."""
     if volume_pct is None and mood:
         requested = volume_for_mood(mood)
     elif volume_pct is None:
@@ -243,14 +299,28 @@ async def set_marantz_volume(volume_pct: Optional[int] = None,
     except HEOSNotConfigured as e:
         return {"error": "heos not configured", "detail": str(e)}
     try:
-        await client.set_volume(level)
-    except Exception as e:  # noqa: BLE001
-        return {"error": "heos set_volume failed", "detail": repr(e)}
+        current = await client.get_volume()
+    except Exception:  # noqa: BLE001
+        current = -1
+
     out: dict = {
         "ok": True,
+        "from_pct": current if current >= 0 else None,
         "volume_pct": level,
         "calibration_hint": VOLUME_CALIBRATION.get(level),
     }
+    ramp = max(0.0, min(15.0, float(ramp_seconds)))
+    try:
+        # Only ramp on volume UP; jumps DOWN are instant + safe.
+        if current >= 0 and level > current and ramp > 0:
+            levels = await _ramp_volume(client, current, level, ramp)
+            out["ramp_seconds"] = ramp
+            out["ramp_levels"] = levels
+        else:
+            await client.set_volume(level)
+            out["ramp_seconds"] = 0
+    except Exception as e:  # noqa: BLE001
+        return {"error": "heos set_volume failed", "detail": repr(e)}
     if was_capped:
         out["volume_capped"] = True
         out["requested_pct"] = requested
