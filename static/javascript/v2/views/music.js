@@ -25,7 +25,7 @@ function v2MusicView() {
     async runMarantzTest() {
       if (this.marantzTesting) return;
       this.marantzTesting = true;
-      this.marantzAction = 'Marantz test running… (lunchroombeating.mp3 @ level 40, 4 s)';
+      this.marantzAction = 'Marantz test running… (lunchroombeating.mp3, fade 20→50 over 2 s, then 4 s play)';
       this.marantzActionOk = true;
       try {
         const r = await fetch('/api/music/marantz/play_local_file', {
@@ -33,8 +33,10 @@ function v2MusicView() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             file_path: 'lunchroombeating.mp3',
-            volume_pct: 40,
+            volume_pct: 50,
             duration_seconds: 4,
+            ramp_seconds: 2,
+            ramp_from: 20,
           }),
         });
         const d = await r.json();
@@ -43,7 +45,10 @@ function v2MusicView() {
           this.marantzActionOk = false;
         } else if (d.playback_started) {
           const hint = d.calibration_hint ? ` (${d.calibration_hint.split(' — ')[0]})` : '';
-          this.marantzAction = `test ✓ — played ${d.file} @ level ${d.volume_pct}${hint}, auto-stopped after ${d.duration_seconds}s`;
+          const ramp = d.ramp_from != null
+            ? ` — fade ${d.ramp_from}→${d.volume_pct} over ${d.ramp_seconds}s`
+            : '';
+          this.marantzAction = `test ✓ — played ${d.file} @ ${d.volume_pct}${hint}${ramp}, auto-stopped after ${d.duration_seconds}s`;
           this.marantzActionOk = true;
         } else {
           this.marantzAction = 'test ✗ playback did not start';

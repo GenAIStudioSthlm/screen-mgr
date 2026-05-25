@@ -26,8 +26,8 @@
     <div style="display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap">
       <button @click="runMarantzTest()" :disabled="marantzTesting"
               class="btn btn-ghost"
-              title="Plays lunchroombeating.mp3 on the Marantz at level 40 for 4 seconds (well under the 70 safety cap)">
-        <span x-show="!marantzTesting">▶ Marantz test (40 / 4s)</span>
+              title="Plays lunchroombeating.mp3 on the Marantz with a 2 s fade-in from level 20 → 50, then 4 s of audible play. Well under the 70 safety cap.">
+        <span x-show="!marantzTesting">▶ Marantz test (20→50 / 4s)</span>
         <span x-show="marantzTesting">⏳ Playing…</span>
       </button>
       <button @click="stopMarantz()"
