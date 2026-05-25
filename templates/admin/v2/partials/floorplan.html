@@ -40,6 +40,18 @@
        @mouseup="onPlanMouseUp($event)"
        @mouseleave="onPlanMouseUp($event)">
 
+    {# ---------- Optional background image.
+       Auto-discovered on load by shell.js (looks for
+       /static/floorplan/background.{svg,png,jpg}). Drop your room
+       layout image at one of those paths and reload — no code edit
+       needed. Rendered behind zones + markers at 80% opacity so the
+       polygons + dots stay readable over it. ---------- #}
+    <image x-show="floorplanBg"
+           :href="floorplanBg"
+           x="0" y="0" width="838" height="725"
+           preserveAspectRatio="xMidYMid meet"
+           opacity="0.8"/>
+
     {# ---------- Zone polygons (existing) ---------- #}
     <template x-for="z in zones" :key="z.id">
       <g>

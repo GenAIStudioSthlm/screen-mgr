@@ -22,13 +22,41 @@ function studioShell() {
     positionMsgOk: true,
     _dragging: null,        // {kind, id, svgEl} during a drag
 
+    // Background image for the floor plan. Probed on load — if a file
+    // exists at /static/floorplan/background.{png,jpg,svg}, it gets
+    // rendered behind zones + markers. Drop the file on the Pi and
+    // reload; no code change needed.
+    floorplanBg: '',
+
     async load() {
       this.startClock();
       await Promise.all([
         this.refreshZones(),
         this.refreshScenes(),
         this.refreshPositions(),
+        this._probeFloorplanBg(),
       ]);
+    },
+
+    async _probeFloorplanBg() {
+      // Try a small list of conventional filenames. First one that
+      // responds 200 wins. Drop the file on the Pi at the path
+      // and it's picked up on next page load.
+      const candidates = [
+        '/static/floorplan/background.svg',
+        '/static/floorplan/background.png',
+        '/static/floorplan/background.jpg',
+        '/static/floorplan/background.jpeg',
+      ];
+      for (const url of candidates) {
+        try {
+          const r = await fetch(url, { method: 'HEAD' });
+          if (r.ok) {
+            this.floorplanBg = url;
+            return;
+          }
+        } catch (e) { /* try next */ }
+      }
     },
 
     async refreshZones() {
