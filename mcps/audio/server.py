@@ -23,6 +23,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 from mcps.audio.microphones import (
     discover_microphones as _discover_microphones,
     get_microphone_state as _get_microphone_state,
+    identify_microphone as _identify_microphone,
     run_mic_test as _run_mic_test,
     set_microphone_mute as _set_microphone_mute,
 )
@@ -161,16 +162,33 @@ def unmute_microphone(mic_id: str) -> dict:
 
 
 @server.tool()
-def run_mic_test(mic_id: str, probes: int = 3) -> dict:
-    """Reachability self-test for a microphone — runs N HTTPS
-    handshakes against the device and reports per-probe status +
-    latency. Useful "is this mic on the network and answering" check.
+def run_mic_test(mic_id: str, probes: int = 3, blink_seconds: float = 3.0) -> dict:
+    """Self-test for a microphone.
 
-    Note: this is *not* the LED-flash test originally planned. The
-    TCC's SSC REST endpoints return 404 on the current firmware;
-    real LED flash / mute control needs SSC2 (JSON-RPC over
-    WebSockets) implemented — tracked in PLAN_AGENTIC Phase 11."""
-    return _run_mic_test(mic_id, probes=probes)
+    Auto-selects mode based on whether SENNHEISER_TCC_PASSWORD is set:
+
+    - With password: **LED-flash test** — PUT visual=true, sleep
+      ``blink_seconds``, PUT visual=false. The TCC's LED ring
+      flashes for the duration so an operator in the room can
+      confirm which physical mic is which.
+    - Without password: **reachability probe** — ``probes`` unauth
+      GETs against /api/device/identity with latency. Confirms the
+      mic is on the network and responding to SSCv2 discovery."""
+    return _run_mic_test(mic_id, probes=probes, blink_seconds=blink_seconds)
+
+
+@server.tool()
+def identify_microphone(mic_id: str, visual: bool = True) -> dict:
+    """Trigger or stop the LED-flash identification on a microphone.
+
+    PUT /api/device/identification on the TCC. Requires
+    SENNHEISER_TCC_PASSWORD in the Pi's .env (HTTP Basic auth, user
+    'api'). Returns a clear "auth required" error otherwise.
+
+    Pair the two calls (visual=true then visual=false after a
+    pause) to flash the LED, or use `run_mic_test` for the
+    one-shot version."""
+    return _identify_microphone(mic_id, visual=visual)
 
 
 @server.tool()

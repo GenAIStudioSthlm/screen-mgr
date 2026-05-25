@@ -1,33 +1,48 @@
 """Microphone discovery + control for the Audio MCP.
 
-The first real (non-stub) part of the Audio domain. Sennheiser TeamConnect
-ceiling mics (TCC family, including the TCC M S W we have in the studio)
-advertise themselves on the LAN via mDNS using the `_ssc-https._tcp`
-service type. We discover them with `avahi-browse` (no Python dependency
-beyond what's already installed) and control them via the Sennheiser
-**SSC** (Sound Control) HTTPS REST API on port 443.
+Sennheiser TeamConnect ceiling mics (TCC family, including the studio's
+TCC M S W) advertise themselves on the LAN via mDNS using the
+`_ssc-https._tcp` service type. Discovery is via `avahi-browse` (no
+Python dep beyond what's installed); control is via Sennheiser's
+**SSCv2** (Sound Control v2) HTTPS REST API on port 443 — base path
+`/api`, HTTP Basic auth, realm "ssc".
 
-Why avahi-browse and not the `zeroconf` Python package: avahi is already
-installed on Debian (we already used it to find the studio's TCC M),
-and shelling out avoids a new dep + threading model.
+Endpoint reality on the studio TCC M S W (firmware as of 2026-05):
 
-Scope today:
-  - Discover any `_ssc-https._tcp` (Sennheiser SSC) endpoint on the LAN.
-    Other mic protocols (Dante AES67, USB) come later as separate
-    `_discover_*` helpers.
-  - Probe each mic for live state via `GET /api/ssc/state` — works
-    against the TCC family. Self-signed cert → verify=False.
-  - Set mute state via the same path.
+  GET  /api/device/identity        no-auth → product / serial / vendor
+  GET  /api/device/identification  no-auth → {"visual": bool}  (LED flash)
+  PUT  /api/device/identification  AUTH    → write {"visual": true}
+  GET  /api/device/state           AUTH    → full device state tree
+  GET  /api/device/site            AUTH    → location / name
+  GET  /api/ssc/schema             AUTH    → API schema dump
+  GET  /api/audio/*                404 — audio paths live inside
+                                   /api/device/state (auth-gated)
 
-The SSC endpoints below are best-effort against firmware seen in the
-field; if a unit returns a different path the probe surfaces the HTTP
-status verbatim so it's easy to diagnose. Mute spec docs:
-  https://www.sennheiser.com/en-de/support-and-software/teamconnect-ceiling-medium
+Authentication: HTTP Basic. Username `api`. Password is the
+**device configuration password** set during commissioning via
+Sennheiser Control Cockpit (Devices > {device} > Access > 3rd Party
+Access > Edit > Secure). Override via env vars on the Pi:
+
+  SENNHEISER_TCC_USERNAME=api          (default)
+  SENNHEISER_TCC_PASSWORD=<from-control-cockpit>
+
+Without a password set, this module still works for:
+  - mDNS discovery
+  - GET /api/device/identity (no-auth)
+  - GET /api/device/identification (no-auth)
+  - HTTPS reachability probe
+
+…and degrades on the rest with a clear "auth required" error.
+
+Spec refs:
+  https://docs.cloud.sennheiser.com/en-us/api-docs/api-docs/sscv2-specification-2.3.html
+  https://docs.cloud.sennheiser.com/en-us/api-docs/api-docs/open-api-tc-ceiling-medium.html
 """
 
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import time
 from typing import Any, Optional
@@ -169,6 +184,22 @@ def _ssc_url(mic: dict, path: str) -> str:
     return f"https://{host}{suffix}{path}"
 
 
+def _ssc_auth() -> Optional[tuple[str, str]]:
+    """HTTP Basic auth tuple from env vars, or None if no password set.
+
+    `SENNHEISER_TCC_USERNAME` defaults to `api`; `SENNHEISER_TCC_PASSWORD`
+    must be supplied (set during commissioning via Sennheiser Control
+    Cockpit). Returning None signals "no auth configured" to callers so
+    they can degrade with a clear error instead of sending bogus creds
+    and getting back a generic 401.
+    """
+    pwd = os.environ.get("SENNHEISER_TCC_PASSWORD", "").strip()
+    if not pwd:
+        return None
+    user = os.environ.get("SENNHEISER_TCC_USERNAME", "api").strip() or "api"
+    return (user, pwd)
+
+
 def _find_mic(mic_id: str) -> Optional[dict]:
     for m in discover_microphones():
         if "error" in m:
@@ -178,30 +209,106 @@ def _find_mic(mic_id: str) -> Optional[dict]:
     return None
 
 
-def get_microphone_state(mic_id: str) -> dict:
-    """Fetch the full SSC state from a mic by id / hostname / ip.
+def _ssc_get(mic: dict, path: str, auth: Optional[tuple[str, str]] = None) -> dict:
+    """One GET against an SSCv2 endpoint with friendly error wrapping."""
+    url = _ssc_url(mic, path)
+    try:
+        r = requests.get(url, verify=False, timeout=SSC_TIMEOUT_S, auth=auth)
+    except requests.RequestException as e:
+        return {"error": "SSC GET failed", "url": url, "detail": repr(e)}
+    if r.status_code == 401:
+        return {"error": "auth required", "url": url, "http_status": 401}
+    if r.status_code == 403:
+        return {"error": "auth required (forbidden)", "url": url, "http_status": 403}
+    if r.status_code >= 400:
+        return {"error": f"HTTP {r.status_code}", "url": url, "body": r.text[:500]}
+    try:
+        return {"url": url, "data": r.json()}
+    except ValueError:
+        return {"error": "non-JSON response", "url": url, "body": r.text[:500]}
 
-    Returns whatever the device returns at `/api/ssc/state` (a deep
-    JSON object on TCC firmware) so the operator can inspect anything
-    — channel levels, mute, identify, etc."""
+
+def get_microphone_state(mic_id: str) -> dict:
+    """Fetch the SSCv2 state for a mic — what we can read with current
+    auth config.
+
+    Always works (no auth needed):
+      - /api/device/identity         product, serial, vendor
+      - /api/device/identification   {"visual": bool} — LED-flash state
+
+    Requires SENNHEISER_TCC_PASSWORD env var:
+      - /api/device/state            full device state tree
+      - /api/device/site             location / name
+
+    Each endpoint's response (or the per-endpoint error) is included
+    so the operator can see what auth gates which surface.
+    """
     mic = _find_mic(mic_id)
     if mic is None:
         return {"error": f"microphone {mic_id!r} not found via mDNS"}
-    url = _ssc_url(mic, "/api/ssc/state")
-    try:
-        r = requests.get(url, verify=False, timeout=SSC_TIMEOUT_S)
-    except requests.RequestException as e:
-        return {"error": "SSC GET failed", "url": url, "detail": repr(e)}
-    if r.status_code >= 400:
+
+    auth = _ssc_auth()
+    out: dict[str, Any] = {
+        "mic": mic,
+        "auth_configured": auth is not None,
+        "identity": _ssc_get(mic, "/api/device/identity"),
+        "identification": _ssc_get(mic, "/api/device/identification"),
+    }
+    if auth is not None:
+        out["site"] = _ssc_get(mic, "/api/device/site", auth=auth)
+        out["state"] = _ssc_get(mic, "/api/device/state", auth=auth)
+    else:
+        out["auth_hint"] = (
+            "Set SENNHEISER_TCC_PASSWORD in .env to unlock /api/device/state, "
+            "/api/device/site, and mute control. Password comes from "
+            "Sennheiser Control Cockpit: Devices > {device} > Access > "
+            "3rd Party Access > Edit > Secure."
+        )
+    return out
+
+
+def identify_microphone(mic_id: str, visual: bool = True) -> dict:
+    """Toggle the LED-flash identification on a mic.
+
+    PUT /api/device/identification with body {"visual": true|false}.
+    Requires HTTP Basic auth (env vars). Returns 409 from the device
+    if PUT is attempted without credentials — we surface that error
+    pre-emptively when no password is configured.
+    """
+    mic = _find_mic(mic_id)
+    if mic is None:
+        return {"error": f"microphone {mic_id!r} not found via mDNS"}
+    auth = _ssc_auth()
+    if auth is None:
         return {
-            "error": f"SSC GET {r.status_code}",
-            "url": url,
-            "body": r.text[:500],
+            "error": "auth required",
+            "detail": (
+                "PUT /api/device/identification needs Basic auth. Set "
+                "SENNHEISER_TCC_PASSWORD in /home/admin/screen-mgr/.env "
+                "(username defaults to 'api'). Password is set in "
+                "Sennheiser Control Cockpit under 3rd Party Access > Secure."
+            ),
         }
+    url = _ssc_url(mic, "/api/device/identification")
     try:
-        return {"mic": mic, "state": r.json()}
-    except ValueError:
-        return {"error": "SSC returned non-JSON", "url": url, "body": r.text[:500]}
+        r = requests.put(
+            url,
+            data=json.dumps({"visual": bool(visual)}),
+            headers={"Content-Type": "application/json"},
+            verify=False,
+            timeout=SSC_TIMEOUT_S,
+            auth=auth,
+        )
+    except requests.RequestException as e:
+        return {"error": "SSC PUT failed", "url": url, "detail": repr(e)}
+    return {
+        "mic_id": mic["id"],
+        "ip": mic["ip"],
+        "visual": bool(visual),
+        "http_status": r.status_code,
+        "ok": 200 <= r.status_code < 300,
+        "body": (r.text[:500] if r.text else ""),
+    }
 
 
 def _read_mute(mic: dict) -> Optional[bool]:
@@ -228,27 +335,52 @@ def _read_mute(mic: dict) -> Optional[bool]:
     return None
 
 
-def run_mic_test(mic_id: str, probes: int = 3) -> dict:
-    """Network reachability self-test for a microphone.
+def run_mic_test(mic_id: str, probes: int = 3, blink_seconds: float = 3.0) -> dict:
+    """Self-test for a microphone.
 
-    Originally designed to flash the LED ring by toggling mute via the
-    SSC REST API — but field tests showed the TCC M S W firmware
-    returns 404 for every common SSC REST path (`/api/ssc/state`,
-    `/api/v1/state`, etc). Sennheiser's modern SSC2 protocol is
-    JSON-RPC over WebSockets, not REST, and implementing that
-    correctly requires more API work (see PLAN_AGENTIC.md Phase 11).
+    Two modes, chosen automatically:
 
-    Until that lands, this is a useful "is the mic reachable" probe:
-    runs `probes` HTTPS handshakes against the mic, reports per-probe
-    status code + latency. Confirms LAN routing + the device's TLS
-    listener even though SSC control is still pending.
+    1. **LED-flash test** when SENNHEISER_TCC_PASSWORD is configured.
+       PUT visual=true on /api/device/identification, sleep
+       ``blink_seconds``, PUT visual=false. The TCC's LED ring
+       flashes visibly the whole time.
+
+    2. **Reachability probe** otherwise. Runs ``probes`` unauth
+       HTTPS GETs against /api/device/identity and reports per-probe
+       status + latency. Confirms LAN routing + the device's TLS
+       listener even though the LED flash needs creds.
     """
     mic = _find_mic(mic_id)
     if mic is None:
         return {"error": f"microphone {mic_id!r} not found via mDNS"}
 
-    probes = max(1, min(10, int(probes)))
-    url = _ssc_url(mic, "/")
+    if _ssc_auth() is not None:
+        return _run_identify_test(mic, max(0.5, min(15.0, float(blink_seconds))))
+    return _run_reachability_probe(mic, max(1, min(10, int(probes))))
+
+
+def _run_identify_test(mic: dict, blink_seconds: float) -> dict:
+    on = identify_microphone(mic["id"], visual=True)
+    if on.get("error"):
+        return {"mode": "identify", "ok": False, **on}
+    time.sleep(blink_seconds)
+    off = identify_microphone(mic["id"], visual=False)
+    return {
+        "mode": "identify",
+        "mic_id": mic["id"],
+        "ip": mic["ip"],
+        "blink_seconds": blink_seconds,
+        "ok": on.get("ok") and off.get("ok", False),
+        "on": on,
+        "off": off,
+    }
+
+
+def _run_reachability_probe(mic: dict, probes: int) -> dict:
+    # Hit /api/device/identity — known-200 unauth endpoint, so a
+    # successful probe gives both reachability AND a confirmed JSON
+    # response (vs. the previous bare "/" probe that always 404'd).
+    url = _ssc_url(mic, "/api/device/identity")
     samples: list[dict] = []
     for i in range(probes):
         t0 = time.monotonic()
@@ -260,19 +392,17 @@ def run_mic_test(mic_id: str, probes: int = 3) -> dict:
         except requests.RequestException as e:
             err = repr(e)
         elapsed_ms = (time.monotonic() - t0) * 1000
-        samples.append(
-            {
-                "probe": i + 1,
-                "http_status": status,
-                "latency_ms": round(elapsed_ms, 1),
-                "error": err,
-            }
-        )
+        samples.append({
+            "probe": i + 1,
+            "http_status": status,
+            "latency_ms": round(elapsed_ms, 1),
+            "error": err,
+        })
         if i < probes - 1:
             time.sleep(0.2)
-
-    ok = all(s["http_status"] is not None for s in samples)
+    ok = all(s["http_status"] == 200 for s in samples)
     return {
+        "mode": "reachability",
         "mic_id": mic["id"],
         "ip": mic["ip"],
         "url": url,
@@ -280,10 +410,9 @@ def run_mic_test(mic_id: str, probes: int = 3) -> dict:
         "ok": ok,
         "samples": samples,
         "note": (
-            "Reachability probe only — the mic responds to TLS but its "
-            "SSC REST endpoints aren't exposed on this firmware. "
-            "Real LED-flash / mute control needs SSC2 (JSON-RPC over "
-            "WebSockets) wired in; see PLAN_AGENTIC Phase 11."
+            "Reachability probe — SSCv2 identity endpoint. Set "
+            "SENNHEISER_TCC_PASSWORD in .env to unlock the real "
+            "LED-flash test."
         ),
     }
 

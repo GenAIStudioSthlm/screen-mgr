@@ -90,10 +90,21 @@ async def mute_microphone(mic_id: str, payload: dict = Body(default={})):
 
 @router.post("/api/audio/microphones/{mic_id}/test", response_class=JSONResponse)
 async def test_microphone(mic_id: str, payload: dict = Body(default={})):
-    """Mic reachability test — N HTTPS handshakes with timings."""
+    """Mic self-test — LED flash if SSCv2 password configured,
+    reachability probe otherwise."""
     from mcps.audio.microphones import run_mic_test
     probes = int((payload or {}).get("probes", 3))
-    return run_mic_test(mic_id, probes=probes)
+    blink_seconds = float((payload or {}).get("blink_seconds", 3.0))
+    return run_mic_test(mic_id, probes=probes, blink_seconds=blink_seconds)
+
+
+@router.post("/api/audio/microphones/{mic_id}/identify", response_class=JSONResponse)
+async def identify_microphone(mic_id: str, payload: dict = Body(default={})):
+    """Toggle the LED-flash identification on a mic.
+    Body: {"visual": true|false}. Requires SENNHEISER_TCC_PASSWORD in .env."""
+    from mcps.audio.microphones import identify_microphone as _id
+    visual = bool((payload or {}).get("visual", True))
+    return _id(mic_id, visual=visual)
 
 
 # ---------------------------------------------------------------------
