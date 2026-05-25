@@ -21,8 +21,19 @@ from __future__ import annotations
 
 import asyncio
 import os
+import time
 from pathlib import Path
 from typing import Optional
+
+
+# How long to wait, after `play_stream`, for the AVR to actually report
+# state=play before starting the user-requested duration countdown.
+# Marantz/HEOS source-switching (e.g. from Spotify Connect → URL Stream)
+# can take 1-2 s on the first call after another source was active;
+# without this poll, short test windows lose most of their audible time
+# to the source switch.
+WARMUP_TIMEOUT_S = 3.0
+WARMUP_POLL_S = 0.2
 
 from mcps.audio.safety import (
     SAFE_TEST_VOLUME_PCT,
@@ -145,7 +156,27 @@ async def play_local_file(
 
     result["playback_started"] = True
 
-    # 4. Optional auto-stop window
+    # 4. Warm-up poll — wait for the AVR to actually report state=play
+    # before starting the duration countdown. Marantz/HEOS can take
+    # 1-2 s switching sources (e.g. from Spotify Connect to URL Stream)
+    # before audio is actually audible; without this poll a short test
+    # window can be entirely consumed by source-switch silence.
+    warmup_start = time.monotonic()
+    became_playing = False
+    while time.monotonic() - warmup_start < WARMUP_TIMEOUT_S:
+        try:
+            state = await client.get_play_state()
+        except Exception:  # noqa: BLE001
+            state = "unknown"
+        if state == "play":
+            became_playing = True
+            break
+        await asyncio.sleep(WARMUP_POLL_S)
+    result["warmup_seconds"] = round(time.monotonic() - warmup_start, 2)
+    result["warmup_became_playing"] = became_playing
+
+    # 5. Optional auto-stop window — the user-requested duration is now
+    # ACTUAL audible time, not buffering time.
     if duration_seconds is not None:
         wait = max(0.5, min(300.0, float(duration_seconds)))
         result["duration_seconds"] = wait
