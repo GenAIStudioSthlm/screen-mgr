@@ -1,10 +1,20 @@
 {# Reusable SVG floor plan partial.
+   viewBox = real studio dimensions in centimetres (838 × 725, per the
+   physical layout doc data/genai-popup-acn 1.pdf). 1 SVG unit = 1 cm.
+   That means a marker at (x=419, y=362) is literally at the centre of
+   the studio in cm; a 250 cm × 250 cm central piece spans 250 units.
+
+   NOTE: existing zone polygons in data/zones.json were drawn against
+   the previous arbitrary 960×420 viewBox — they'll appear in the
+   top-left corner of the new space until they're redrawn. Position
+   markers are the priority for now; zones can be re-coordinated in
+   a follow-up.
+
    Expects an Alpine scope exposing (from studioShell):
      - zones    : list from /api/zones
      - selected : currently selected zone or null
      - select(zone) : selector
      - positions / placeables / editPositions / placing / drag handlers
-       (added in 2026-05-25 for click-to-place device positioning)
 #}
 <div class="floorplan-wrap">
 
@@ -44,27 +54,23 @@
       </g>
     </template>
 
-    {# ---------- Device markers ---------- #}
-    {# `:style="fill:..."` rather than `:fill="..."` so the var(--…)
-       custom-property reference resolves reliably across browsers.
-       Some Chromium versions don't resolve CSS vars inside SVG fill
-       attributes — they only resolve inside style declarations. #}
-    <template x-for="m in placedMarkers()" :key="m.kind + ':' + m.id">
-      <g :style="editPositions ? 'cursor:grab' : 'cursor:default'"
-         @mousedown="onMarkerMouseDown($event, m.kind, m.id)">
-        <circle :cx="m.x" :cy="m.y" r="14"
-                :style="'fill:' + markerColor(m.kind) + ';stroke:rgba(0,0,0,0.55);stroke-width:1.5;opacity:0.95'"/>
-        <text :x="m.x" :y="m.y + 5"
-              text-anchor="middle"
-              style="font-size:15px;pointer-events:none;user-select:none"
-              x-text="markerIcon(m.kind)"></text>
-        <text :x="m.x" :y="m.y + 28"
-              text-anchor="middle"
-              style="font-size:9px;fill:#fff;stroke:rgba(0,0,0,0.7);stroke-width:0.4;paint-order:stroke;pointer-events:none;user-select:none"
-              x-text="markerName(m.kind, m.id)"></text>
-      </g>
-    </template>
+    {# ---------- Marker layer.
+       Empty <g> that shell.js populates IMPERATIVELY via
+       document.createElementNS — bypasses the Alpine `<template
+       x-for>` + SVG-namespace issue that prevented our previous
+       markers from rendering. shell.js calls renderMarkers() after
+       every refreshPositions() / drag update. ---------- #}
+    <g id="device-markers" x-effect="renderMarkers()"></g>
   </svg>
+
+
+  {# ---------- DEBUG: raw markers data so we can see what's actually
+       in the array versus what's rendering ---------- #}
+  <details style="margin-top:4px;font-size:10px;color:var(--text-dim)">
+    <summary>debug: placedMarkers()</summary>
+    <pre style="background:var(--bg);padding:var(--s-1);overflow-x:auto;font-size:10px"
+         x-text="JSON.stringify(placedMarkers(), null, 2)"></pre>
+  </details>
 
   {# tiny placement counter so the operator can verify the data is
      reaching the view even before they recognize the markers visually #}

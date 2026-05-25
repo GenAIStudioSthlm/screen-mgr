@@ -290,24 +290,87 @@ function studioShell() {
     },
 
     markerColor(kind) {
+      // Hex literals only — bare SVG `fill="..."` attributes don't
+      // reliably resolve `var(--…)` in all browsers (Chromium/Safari
+      // quirks). Pick palette by hand so it survives any environment.
       return {
-        station:    'var(--brand)',
-        light:      '#facc15',
-        display:    '#fb923c',
-        speaker:    '#f87171',
-        microphone: '#c084fc',
-      }[kind] || 'var(--text)';
+        station:    '#a100ff',  // brand purple
+        light:      '#facc15',  // yellow
+        display:    '#fb923c',  // orange
+        speaker:    '#f87171',  // red
+        microphone: '#c084fc',  // lavender
+      }[kind] || '#888';
     },
 
-    /* Iterate all placed markers as flat list for x-for. */
+    /* Iterate all placed markers as flat list. Used by the debug
+       counter + the imperative renderMarkers below. */
     placedMarkers() {
       const out = [];
       for (const [kind, items] of Object.entries(this.positions || {})) {
         for (const [id, pos] of Object.entries(items || {})) {
-          out.push({ kind, id, x: pos.x, y: pos.y });
+          if (pos && typeof pos.x === 'number' && typeof pos.y === 'number') {
+            out.push({ kind, id, x: pos.x, y: pos.y });
+          }
         }
       }
       return out;
+    },
+
+    /* Imperative SVG marker creation. Alpine's `<template x-for>`
+       doesn't reliably render into SVG namespace on some browsers,
+       so we build the elements ourselves via createElementNS.
+       Called by x-effect on the marker <g>; runs whenever positions
+       or editPositions changes. */
+    renderMarkers() {
+      // Read the reactive deps so x-effect re-runs on changes.
+      const markers = this.placedMarkers();
+      const editing = this.editPositions;
+      const layer = document.getElementById('device-markers');
+      if (!layer) return;
+      while (layer.firstChild) layer.removeChild(layer.firstChild);
+      const NS = 'http://www.w3.org/2000/svg';
+      for (const m of markers) {
+        const g = document.createElementNS(NS, 'g');
+        g.setAttribute('data-kind', m.kind);
+        g.setAttribute('data-id', m.id);
+        if (editing) g.style.cursor = 'grab';
+        g.addEventListener('mousedown', (e) => {
+          this.onMarkerMouseDown(e, m.kind, m.id);
+        });
+
+        const c = document.createElementNS(NS, 'circle');
+        c.setAttribute('cx', m.x);
+        c.setAttribute('cy', m.y);
+        c.setAttribute('r', '18');
+        c.setAttribute('fill', this.markerColor(m.kind));
+        c.setAttribute('stroke', 'black');
+        c.setAttribute('stroke-width', '2');
+        g.appendChild(c);
+
+        const icon = document.createElementNS(NS, 'text');
+        icon.setAttribute('x', m.x);
+        icon.setAttribute('y', m.y + 5);
+        icon.setAttribute('text-anchor', 'middle');
+        icon.setAttribute('style',
+          'font-size:18px;pointer-events:none;user-select:none');
+        icon.textContent = this.markerIcon(m.kind);
+        g.appendChild(icon);
+
+        const label = document.createElementNS(NS, 'text');
+        label.setAttribute('x', m.x);
+        label.setAttribute('y', m.y + 36);
+        label.setAttribute('text-anchor', 'middle');
+        // White text with a thin black stroke so labels read on any
+        // background — works over zone fills, brand colours, etc.
+        label.setAttribute('style',
+          'font-size:11px;font-weight:bold;fill:#fff;'
+          + 'stroke:rgba(0,0,0,0.85);stroke-width:0.6;paint-order:stroke;'
+          + 'pointer-events:none;user-select:none');
+        label.textContent = this.markerName(m.kind, m.id);
+        g.appendChild(label);
+
+        layer.appendChild(g);
+      }
     },
 
     /* Name lookup for a placed marker, since we don't store names in
