@@ -123,7 +123,7 @@ def _seed_presets() -> List[MusicPreset]:
             description="Lo-Fi Girl beats to relax/study to",
             search_query="Lofi Girl beats to relax study to",
             search_type="playlist",
-            default_volume_pct=20,
+            default_volume_pct=30,
             icon="🌿",
         ),
         MusicPreset(
@@ -132,7 +132,7 @@ def _seed_presets() -> List[MusicPreset]:
             description="Northern House Rarities 1989-90-91-99",
             search_query="Northern House Rarities 1989",
             search_type="playlist",
-            default_volume_pct=35,
+            default_volume_pct=50,
             icon="⚡",
         ),
         MusicPreset(
