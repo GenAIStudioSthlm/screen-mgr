@@ -1,36 +1,111 @@
 /* views/audio.js — Audio view.
  *
- * Mics are REAL (mDNS discovery + Sennheiser SSC control via
- * /api/audio/microphones/*). Sinks / sources / play_sound are still
- * stubs — the JSON panels just surface what the stub endpoints return
- * so the wiring is observable.
+ * All real:
+ *   • PulseAudio sinks/sources/volume/mute via /api/audio/{sinks,sources,volume,mute}
+ *   • Networked mics via mDNS discovery + Sennheiser SSC reachability probe
+ *   • Network audio streams (Dante / AES67) via SAP listener
  */
 function v2AudioView() {
   return {
-    // Mics (real)
+    // System sinks (PulseAudio)
+    sinks: null,
+    sources: null,
+    defaultSink: '',
+    sinksLoading: false,
+    sinkAction: '',
+    sinkActionOk: true,
+
+    // Mics (Sennheiser SSC via mDNS)
     mics: null,
     micsLoading: false,
     micsLastAction: '',
     micsLastOk: true,
 
-    // Network audio streams (Dante / AES67 via SAP, real)
+    // Network audio streams (Dante / AES67 via SAP)
     streams: null,
     streamsLoading: false,
 
-    // Sinks / sources (stub)
-    sinks: null,
-    sources: null,
-
     async load() {
-      await Promise.all([this.loadMics(), this.loadStubs(), this.loadStreams()]);
+      await Promise.all([
+        this.loadSinks(),
+        this.loadMics(),
+        this.loadStreams(),
+      ]);
     },
+
+    async loadSinks() {
+      if (this.sinksLoading) return;
+      this.sinksLoading = true;
+      try {
+        const [sinksResp, sourcesResp] = await Promise.all([
+          fetch('/api/audio/sinks').then(r => r.json()),
+          fetch('/api/audio/sources').then(r => r.json()),
+        ]);
+        this.sinks = sinksResp;
+        this.sources = sourcesResp;
+        this.defaultSink = sinksResp?.default_sink || '';
+      } catch (e) {
+        this.sinks = { error: 'fetch failed: ' + e };
+      } finally {
+        this.sinksLoading = false;
+      }
+    },
+
+    async setSinkVolume(sink, pct) {
+      this.sinkAction = sink.name + ' → ' + pct + '%…';
+      this.sinkActionOk = true;
+      try {
+        const r = await fetch('/api/audio/volume', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sink_id: sink.name, volume_pct: parseInt(pct) }),
+        });
+        const d = await r.json();
+        if (d.error) {
+          this.sinkAction = sink.name + ' ✗ ' + d.error;
+          this.sinkActionOk = false;
+        } else {
+          this.sinkAction = sink.name + ' ✓ — ' + d.volume_pct + '%';
+          this.sinkActionOk = !!d.ok;
+        }
+      } catch (e) {
+        this.sinkAction = sink.name + ' ✗ ' + e;
+        this.sinkActionOk = false;
+      }
+      await this.loadSinks();
+    },
+
+    async toggleMute(sink) {
+      const want = !sink.muted;
+      this.sinkAction = (want ? 'muting ' : 'unmuting ') + sink.name + '…';
+      this.sinkActionOk = true;
+      try {
+        const r = await fetch('/api/audio/mute', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sink_id: sink.name, muted: want }),
+        });
+        const d = await r.json();
+        if (d.error) {
+          this.sinkAction = sink.name + ' ✗ ' + d.error;
+          this.sinkActionOk = false;
+        } else {
+          this.sinkAction = sink.name + ' ✓ — muted=' + d.muted;
+          this.sinkActionOk = !!d.ok;
+        }
+      } catch (e) {
+        this.sinkAction = sink.name + ' ✗ ' + e;
+        this.sinkActionOk = false;
+      }
+      await this.loadSinks();
+    },
+
+    /* ---------- streams ---------- */
 
     async loadStreams() {
       if (this.streamsLoading) return;
       this.streamsLoading = true;
       try {
-        // The endpoint blocks ~5s while listening to SAP — set the
-        // fetch up so the spinner shows the whole time.
         const r = await fetch('/api/audio/streams?timeout=5');
         const d = await r.json();
         this.streams = d.streams || [];
@@ -41,18 +116,7 @@ function v2AudioView() {
       }
     },
 
-    async loadStubs() {
-      try {
-        const [sinksResp, sourcesResp] = await Promise.all([
-          fetch('/api/audio/sinks').then(r => r.json()),
-          fetch('/api/audio/sources').then(r => r.json()),
-        ]);
-        this.sinks = sinksResp;
-        this.sources = sourcesResp;
-      } catch (e) {
-        console.error('audio stub load failed', e);
-      }
-    },
+    /* ---------- mics ---------- */
 
     async loadMics() {
       if (this.micsLoading) return;
@@ -120,8 +184,7 @@ function v2AudioView() {
         );
         const d = await r.json();
         if (d.error) {
-          this.micsLastAction = (muted ? 'mute' : 'unmute') + ' ✗ ' + d.error +
-                                (d.detail ? (' — ' + d.detail) : '');
+          this.micsLastAction = (muted ? 'mute' : 'unmute') + ' ✗ ' + d.error;
           this.micsLastOk = false;
         } else {
           this.micsLastAction = (muted ? 'mute' : 'unmute') + ' ✓ — HTTP ' + d.http_status;

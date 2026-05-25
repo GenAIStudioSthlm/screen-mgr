@@ -26,6 +26,7 @@ from mcps.audio.microphones import (
     run_mic_test as _run_mic_test,
     set_microphone_mute as _set_microphone_mute,
 )
+from mcps.audio import pactl_backend as _pa
 from mcps.audio.streams import discover_streams as _discover_streams
 
 
@@ -33,84 +34,85 @@ _TRANSPORT = TransportSecuritySettings(enable_dns_rebinding_protection=False)
 server = FastMCP("audio", transport_security=_TRANSPORT)
 
 
-_STUB_NOTE = (
-    "Audio MCP is a stub. Wire to PulseAudio / pactl (or ALSA) to "
-    "implement. See mcps/audio/server.py — tool signatures are stable."
-)
-
-
-def _stub(name: str, **extras) -> dict:
-    return {"stub": True, "tool": name, "note": _STUB_NOTE, **extras}
-
-
 # --------------------------------------------------------------------------
-# Tools — read
+# Tools — read (REAL — PulseAudio via pactl)
 # --------------------------------------------------------------------------
 
 
 @server.tool()
 def list_audio_sinks() -> dict:
-    """List system audio output devices (HDMI, USB DAC, headphones, ...).
+    """List system audio output devices (HDMI, USB DAC, the dummy
+    sink when no hardware is wired).
 
-    STUB — returns an empty list with a note. Real implementation:
-    parse `pactl list short sinks`."""
-    return _stub("list_audio_sinks", sinks=[])
+    Each entry: ``index``, ``name`` (use with the other tools),
+    ``description`` (human label), ``state`` (RUNNING / IDLE /
+    SUSPENDED), ``volume_pct``, ``muted``, ``driver`` (PipeWire /
+    ALSA), and ``sample_spec``. Also returns ``default_sink``.
+    """
+    return _pa.sink_summary()
 
 
 @server.tool()
 def list_audio_sources() -> dict:
-    """List system audio input devices (microphones, line-in, ...).
+    """List system audio input devices (microphones, line-in).
 
-    STUB — returns an empty list with a note. Real implementation:
-    parse `pactl list short sources` and drop monitor-of-* sources."""
-    return _stub("list_audio_sources", sources=[])
+    Filters out ``.monitor`` sources by default — those are loopback
+    taps from output sinks; not what you typically want to record
+    from."""
+    return _pa.source_summary()
 
 
 @server.tool()
 def get_volume(sink_id: Optional[str] = None) -> dict:
-    """Get current playback volume (0–100). ``sink_id=None`` means the
-    default sink.
-
-    STUB. Real impl: parse `pactl get-sink-volume <sink_id>`."""
-    return _stub("get_volume", sink_id=sink_id, volume_pct=None)
+    """Current playback volume (0–100) for ``sink_id`` (default sink
+    if None). Pass a name from `list_audio_sinks` or
+    ``@DEFAULT_SINK@``."""
+    return _pa.get_volume(sink_id)
 
 
 @server.tool()
 def is_muted(sink_id: Optional[str] = None) -> dict:
-    """Mute state of a sink. STUB. Real impl: `pactl get-sink-mute <sink_id>`."""
-    return _stub("is_muted", sink_id=sink_id, muted=None)
+    """Mute state of a sink. Default sink if ``sink_id=None``."""
+    return _pa.is_muted(sink_id)
 
 
 # --------------------------------------------------------------------------
-# Tools — write
+# Tools — write (REAL — PulseAudio via pactl)
 # --------------------------------------------------------------------------
 
 
 @server.tool()
 def set_volume(volume_pct: int, sink_id: Optional[str] = None) -> dict:
-    """Set sink volume (0–100). STUB. Real impl: `pactl set-sink-volume`."""
-    return _stub("set_volume", sink_id=sink_id, volume_pct=volume_pct)
+    """Set sink volume (0–150, clamped). Above 100 = above unity gain,
+    PulseAudio allows it. Default sink if ``sink_id=None``."""
+    return _pa.set_volume(volume_pct, sink_id)
 
 
 @server.tool()
 def mute(sink_id: Optional[str] = None) -> dict:
-    """Mute a sink. STUB. Real impl: `pactl set-sink-mute <sink_id> 1`."""
-    return _stub("mute", sink_id=sink_id)
+    """Mute a sink."""
+    return _pa.set_mute(sink_id, True)
 
 
 @server.tool()
 def unmute(sink_id: Optional[str] = None) -> dict:
-    """Unmute a sink. STUB."""
-    return _stub("unmute", sink_id=sink_id)
+    """Unmute a sink."""
+    return _pa.set_mute(sink_id, False)
 
 
 @server.tool()
 def play_sound(file_path: str, sink_id: Optional[str] = None) -> dict:
-    """Play a local sound file (.wav, .mp3, ...) on a sink.
+    """Play a sound file from ``static/sounds/`` on the named sink (or
+    default sink).
 
-    STUB. Real impl: spawn `paplay <file>` (or `aplay` for ALSA).
-    Asynchronous in practice — return as soon as playback starts."""
-    return _stub("play_sound", file_path=file_path, sink_id=sink_id)
+    ``file_path`` is relative to ``static/sounds/`` — absolute paths
+    and ``..`` are refused, so the MCP can't be coerced into playing
+    arbitrary files off the Pi. Drop .wav / .mp3 / .ogg files in
+    that directory to make them playable.
+
+    Fires `paplay` in the background, returns immediately with the
+    child PID. The file's full duration plays out without blocking."""
+    return _pa.play_sound(file_path, sink_id)
 
 
 # --------------------------------------------------------------------------
