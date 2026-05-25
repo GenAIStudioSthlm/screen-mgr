@@ -213,21 +213,35 @@ async def play_preset(
     preset_id: str,
     device_query: Optional[str] = None,
     volume_pct: Optional[int] = None,
+    ramp_seconds: Optional[float] = None,
+    ramp_from: Optional[int] = None,
 ) -> dict:
     """Play a named music preset on its target Spotify Connect device.
 
+    A preset bundles two orthogonal things: **what** to play (the
+    vibe — chill / energy / chaotic / whatever the operator added),
+    and **how it sounds when it starts** (the target volume + fade-in
+    ramp). Genre and volume are separate concerns.
+
     - ``preset_id``: one of the ids from `list_presets`.
-    - ``device_query``: optional — override the preset's default device
-      (case-insensitive substring match against `list_devices`).
-    - ``volume_pct``: optional — override the preset's default volume.
+    - ``device_query``: override the preset's default Connect device.
+    - ``volume_pct``: override the preset's target volume (HEOS
+      calibration scale — 35 background, 50 comfortable, 65 loud,
+      70 cap).
+    - ``ramp_seconds``: override the preset's fade-in window
+      (default 2 s; max 15 s; 0 disables the ramp).
+    - ``ramp_from``: override the preset's ramp start level
+      (default ~20 — whisper-quiet).
 
     Does NOT auto-pause — the preset keeps playing until the operator
-    stops it (via Spotify or the Music view). Returns a per-step
-    summary with what was matched + what played."""
+    stops it. The result dict includes the ramp levels actually sent
+    so you can see the gradient."""
     return await _play_preset(
         preset_id=preset_id,
         device_query_override=device_query,
         volume_pct_override=volume_pct,
+        ramp_seconds_override=ramp_seconds,
+        ramp_from_override=ramp_from,
     )
 
 

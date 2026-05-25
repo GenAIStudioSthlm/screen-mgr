@@ -131,10 +131,13 @@ async def list_music_presets():
 @router.post("/api/music/presets/{preset_id}/play", response_class=JSONResponse)
 async def play_music_preset(preset_id: str, payload: dict = Body(default={})):
     from mcps.music.presets import play_preset
+    p = payload or {}
     return await play_preset(
         preset_id=preset_id,
-        device_query_override=(payload or {}).get("device_query"),
-        volume_pct_override=(payload or {}).get("volume_pct"),
+        device_query_override=p.get("device_query"),
+        volume_pct_override=p.get("volume_pct"),
+        ramp_seconds_override=p.get("ramp_seconds"),
+        ramp_from_override=p.get("ramp_from"),
     )
 
 
