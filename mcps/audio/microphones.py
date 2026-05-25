@@ -126,13 +126,42 @@ def _avahi_browse(service_type: str, timeout: float) -> list[dict]:
     return entries
 
 
+def _static_mic_from_env() -> Optional[dict]:
+    """If SENNHEISER_TCC_HOST is set in .env, return a mic dict without
+    touching mDNS — pure point-to-point. Lets operators skip discovery
+    on networks where browsing isn't appropriate."""
+    host = os.environ.get("SENNHEISER_TCC_HOST", "").strip()
+    if not host:
+        return None
+    return {
+        "id": "tcc-static",
+        "friendly_name": "TCC (static)",
+        "hostname": host,
+        "ip": host,
+        "port": 443,
+        "vendor": "Sennheiser",
+        "model": "TeamConnect (TCC family)",
+        "protocol": "ssc-https",
+        "control_url": f"https://{host}",
+        "source": "env (SENNHEISER_TCC_HOST)",
+    }
+
+
 def discover_microphones() -> list[dict]:
-    """Return every mDNS-announced mic we can see on the local network.
+    """Return every TCC-family mic we can target.
+
+    If `SENNHEISER_TCC_HOST` is set in .env, we return ONLY that mic
+    and skip mDNS discovery entirely (point-to-point, no browsing).
+    Otherwise we fall back to a narrow `_ssc-https._tcp` mDNS browse.
 
     Each entry carries the bits the SSC client needs (`ip`, optional
     `port`) plus presentation fields (`friendly_name`, `hostname`,
     `vendor`, `model`) so the admin UI can render it cleanly.
     """
+    static = _static_mic_from_env()
+    if static is not None:
+        return [static]
+
     raw = _avahi_browse(SSC_SERVICE_TYPE, DISCOVERY_TIMEOUT_S)
     mics: list[dict] = []
     errors: list[str] = []
