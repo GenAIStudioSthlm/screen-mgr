@@ -136,3 +136,76 @@ async def play_music_preset(preset_id: str, payload: dict = Body(default={})):
         device_query_override=(payload or {}).get("device_query"),
         volume_pct_override=(payload or {}).get("volume_pct"),
     )
+
+
+# ----------------------------------------------------------------------
+# Marantz — local-file playback via HEOS
+# ----------------------------------------------------------------------
+
+
+@router.get("/api/music/marantz/calibration", response_class=JSONResponse)
+async def marantz_calibration():
+    """Volume calibration table — surface to operators / UI so they
+    know what numbers mean on this AVR."""
+    from mcps.audio.safety import (
+        SEMANTIC_VOLUMES, VOLUME_CALIBRATION, max_output_volume_pct,
+    )
+    return {
+        "scale": "HEOS 0-100 (≈ dB attenuation on AVR master, NOT loudness %)",
+        "calibration": [
+            {"level": lvl, "feel": desc}
+            for lvl, desc in sorted(VOLUME_CALIBRATION.items())
+        ],
+        "moods": SEMANTIC_VOLUMES,
+        "hard_ceiling_pct": max_output_volume_pct(),
+    }
+
+
+@router.get("/api/music/marantz/sounds", response_class=JSONResponse)
+async def marantz_sounds():
+    from mcps.music.local_file import list_sounds
+    return await list_sounds()
+
+
+@router.get("/api/music/marantz/state", response_class=JSONResponse)
+async def marantz_state():
+    from mcps.music.local_file import get_marantz_state
+    return await get_marantz_state()
+
+
+@router.post("/api/music/marantz/play_local_file", response_class=JSONResponse)
+async def marantz_play_local(payload: dict = Body(default={})):
+    from mcps.music.local_file import play_local_file
+    return await play_local_file(
+        file_path=(payload or {}).get("file_path", ""),
+        volume_pct=(payload or {}).get("volume_pct"),
+        mood=(payload or {}).get("mood"),
+        duration_seconds=(payload or {}).get("duration_seconds"),
+    )
+
+
+@router.post("/api/music/marantz/volume", response_class=JSONResponse)
+async def marantz_volume(payload: dict = Body(default={})):
+    from mcps.music.local_file import set_marantz_volume
+    return await set_marantz_volume(
+        volume_pct=(payload or {}).get("volume_pct"),
+        mood=(payload or {}).get("mood"),
+    )
+
+
+@router.post("/api/music/marantz/pause", response_class=JSONResponse)
+async def marantz_pause(payload: dict = Body(default={})):
+    from mcps.music.local_file import pause_playback
+    return await pause_playback()
+
+
+@router.post("/api/music/marantz/resume", response_class=JSONResponse)
+async def marantz_resume(payload: dict = Body(default={})):
+    from mcps.music.local_file import resume_playback
+    return await resume_playback()
+
+
+@router.post("/api/music/marantz/stop", response_class=JSONResponse)
+async def marantz_stop(payload: dict = Body(default={})):
+    from mcps.music.local_file import stop_playback
+    return await stop_playback()

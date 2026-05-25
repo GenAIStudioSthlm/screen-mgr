@@ -40,6 +40,39 @@ audio is transcribed and responded-to via the speakers, gain stacks each
 round trip. Without intervention it's seconds to clipping, **tens of
 seconds to driver damage** at the Marantz's output levels.
 
+## Volume calibration (the Marantz + Bose chain)
+
+Volume numbers in the codebase are on the **HEOS 0-100 scale**, which
+maps onto the AVR's master volume in dB. **This is not perceived
+loudness percent.** "50" is not "half as loud as max"; it is the dB
+level that sounded right for normal listening on this specific
+receiver during calibration on 2026-05-25.
+
+| HEOS level | Approx master dB | Feels like |
+|---|---|---|
+| 10 | ~-60 dB | inaudible — silent for practical purposes |
+| 25 | ~-45 dB | whisper / very low — confirms playback works |
+| 35 | ~-30 dB | background — easy to talk over |
+| 50 | ~-25 dB | comfortable / regular listening |
+| 65 | ~-15 dB | loud — focus-the-room level, near max |
+| 70 | ~-15 dB | **HARD CAP** — refused above this |
+
+The agent's semantic vocabulary maps named moods to safe defaults:
+
+| Mood | Level | Use |
+|---|---|---|
+| `inaudible` | 10 | Confirms a code path works without making sound |
+| `whisper` | 25 | First-test default (`SAFE_TEST_VOLUME_PCT`) |
+| `background` | 35 | "Play me some background music" |
+| `comfortable` | 50 | "Normal listening" |
+| `loud` | 65 | "Crank it up" — still under the cap |
+| `max` | 70 | The cap. Anything higher is refused. |
+
+Agents should prefer `mood="..."` over `volume_pct=N` when the user's
+intent is vague ("play me a background track"). The Music MCP's
+`get_volume_calibration` tool returns this whole table as data so
+agents can read it programmatically.
+
 ## Rule 1 — hard volume ceiling on every write path
 
 Every code path that ends in "speakers play sound" must clamp the

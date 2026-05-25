@@ -23,11 +23,29 @@
         <code>MarantzCinema70s</code> as the Connect device and play.
       </p>
     </div>
-    <a href="https://open.spotify.com/" target="_blank" rel="noopener"
-       class="btn btn-brand" style="text-decoration:none">
-      ↗ Open Spotify in new tab
-    </a>
+    <div style="display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap">
+      <button @click="runMarantzTest()" :disabled="marantzTesting"
+              class="btn btn-ghost"
+              title="Plays lunchroombeating.mp3 on the Marantz at level 40 for 4 seconds (well under the 70 safety cap)">
+        <span x-show="!marantzTesting">▶ Marantz test (40 / 4s)</span>
+        <span x-show="marantzTesting">⏳ Playing…</span>
+      </button>
+      <button @click="stopMarantz()"
+              class="btn"
+              style="background:var(--err);color:#fff"
+              title="Kill switch — stops anything currently playing on the Marantz">
+        ■ Stop
+      </button>
+      <a href="https://open.spotify.com/" target="_blank" rel="noopener"
+         class="btn btn-brand" style="text-decoration:none">
+        ↗ Open Spotify in new tab
+      </a>
+    </div>
   </div>
+
+  <div x-show="marantzAction" style="font-size:11px"
+       :style="marantzActionOk ? 'color:var(--ok)' : 'color:var(--err)'"
+       x-text="marantzAction"></div>
 
   {# ---------- Embedded Spotify Web Player ----------
        Spotify may block iframing via X-Frame-Options; if the panel

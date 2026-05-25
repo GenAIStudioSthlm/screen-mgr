@@ -1,3 +1,10 @@
+# Load .env BEFORE any module that reads env vars (heos_client, spotify_client,
+# safety, microphones, etc). agents/__init__.py also calls this but it only
+# runs when an agent code path is imported — moving the call here guarantees
+# every code path sees the same env.
+from dotenv import load_dotenv
+load_dotenv()
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles

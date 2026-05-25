@@ -18,8 +18,14 @@ from typing import Optional
 from mcp.server.fastmcp import FastMCP
 from mcp.server.transport_security import TransportSecuritySettings
 
-from mcps.audio.safety import cap_volume, max_output_volume_pct
+from mcps.audio.safety import (
+    SEMANTIC_VOLUMES,
+    VOLUME_CALIBRATION,
+    cap_volume,
+    max_output_volume_pct,
+)
 from mcps.music.spotify_client import call
+from mcps.music import local_file as _local_file
 from mcps.music.speaker_test import (
     DEFAULT_DEVICE_QUERY,
     DEFAULT_PLAY_SECONDS,
@@ -223,3 +229,130 @@ async def play_preset(
         device_query_override=device_query,
         volume_pct_override=volume_pct,
     )
+
+
+# --------------------------------------------------------------------------
+# Tools — Marantz via HEOS (local-file + transport)
+#
+# Volume calibration on the studio's Marantz + Bose chain (2026-05-25):
+#   10  inaudible            (~-60 dB master)
+#   25  whisper / very low
+#   35  background music
+#   50  comfortable listening
+#   65  loud — near max
+#   70  HARD CAP refused above this
+#
+# The HEOS volume scale is essentially an attenuation in dB, NOT
+# perceived loudness percent. The semantic mood names below map to
+# safe defaults so an agent can pick "background" instead of guessing.
+# --------------------------------------------------------------------------
+
+
+@server.tool()
+def get_volume_calibration() -> dict:
+    """Return the volume calibration table for the Marantz + Bose chain.
+
+    Pair each HEOS volume integer with the human-readable level it
+    sounds like, plus the named "moods" agents can pass to
+    `play_local_file(mood=...)` and `set_marantz_volume(mood=...)`.
+
+    Use this to pick a sensible volume for the operator's intent —
+    e.g. for a 'play me some background music' request, the mood is
+    "background" (volume 35), well below the 'comfortable' default of
+    50 and far below the 70 hard cap.
+    """
+    return {
+        "scale": "HEOS 0-100 (≈ dB attenuation on the AVR's master volume — NOT perceived loudness %)",
+        "calibration": [
+            {"level": lvl, "feel": desc} for lvl, desc in sorted(VOLUME_CALIBRATION.items())
+        ],
+        "moods": SEMANTIC_VOLUMES,
+        "hard_ceiling_pct": max_output_volume_pct(),
+        "safety_doc": "docs/SAFETY.md",
+    }
+
+
+@server.tool()
+async def list_sounds() -> dict:
+    """List local audio files available for `play_local_file`.
+
+    Files live under ``static/sounds/`` on the Pi. Drop .mp3 / .wav /
+    .flac / .ogg / .m4a / .aac files there to make them playable.
+    Names returned here are the ``file_path`` argument to
+    `play_local_file`.
+    """
+    return await _local_file.list_sounds()
+
+
+@server.tool()
+async def play_local_file(
+    file_path: str,
+    volume_pct: Optional[int] = None,
+    mood: Optional[str] = None,
+    duration_seconds: Optional[float] = None,
+) -> dict:
+    """Play a local audio file on the Marantz (which drives the studio's
+    Bose speakers) via HEOS. Marantz fetches the file directly from
+    the Pi's /static/sounds/ mount over HTTP.
+
+    Arguments:
+      file_path: name from `list_sounds` (path relative to static/sounds/).
+      volume_pct: explicit HEOS level 0-100. Capped at 70 by safety.
+      mood: alternative to volume_pct — one of
+            "inaudible" (10), "whisper" (25), "background" (35),
+            "comfortable" (50), "loud" (65), "max" (70). If both are
+            given, volume_pct wins. Default mood is "whisper" — quiet
+            but audible.
+      duration_seconds: if set, auto-stop after N seconds. Otherwise
+                       plays to end of file. Clamped to [0.5, 300].
+
+    Returns the URL the Marantz fetched, the effective volume, and a
+    calibration hint for that level. Includes ``volume_capped: true``
+    + ``requested_pct`` + ``ceiling_pct`` if the volume was clamped.
+    """
+    return await _local_file.play_local_file(
+        file_path=file_path,
+        volume_pct=volume_pct,
+        mood=mood,
+        duration_seconds=duration_seconds,
+    )
+
+
+@server.tool()
+async def set_marantz_volume(
+    volume_pct: Optional[int] = None,
+    mood: Optional[str] = None,
+) -> dict:
+    """Set the Marantz volume independently of playback.
+
+    Same calibration + capping as `play_local_file`. Use ``mood`` for
+    a semantic choice ("background", "comfortable", "loud") or
+    ``volume_pct`` for an explicit number.
+    """
+    return await _local_file.set_marantz_volume(volume_pct=volume_pct, mood=mood)
+
+
+@server.tool()
+async def get_marantz_state() -> dict:
+    """Snapshot the Marantz: play state, current volume, now-playing
+    metadata. Useful as a health probe (confirms HEOS reachable +
+    auth working) and to see what's currently playing."""
+    return await _local_file.get_marantz_state()
+
+
+@server.tool()
+async def marantz_pause() -> dict:
+    """Pause whatever is playing on the Marantz."""
+    return await _local_file.pause_playback()
+
+
+@server.tool()
+async def marantz_resume() -> dict:
+    """Resume playback on the Marantz."""
+    return await _local_file.resume_playback()
+
+
+@server.tool()
+async def marantz_stop() -> dict:
+    """Stop playback on the Marantz."""
+    return await _local_file.stop_playback()
