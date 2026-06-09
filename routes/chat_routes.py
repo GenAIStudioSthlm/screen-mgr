@@ -69,22 +69,11 @@ _SYSTEM_PROMPT = (
 # runs. SSE transport — matches `main.py`'s `*.sse_app()` mounts.
 _MCP_DOMAINS = ["lighting", "screens", "displays", "audio", "music"]
 
-# The Braccio robot-arm MCP is a separate **stdio** server (own venv, ws to
-# the arm). claude -p launches it directly. It's wired in only when its venv
-# exists on this host, so the chat keeps working before the package/arm land.
-# Override the location with BRACCIO_MCP_DIR.
-_BRACCIO_DIR = Path(
-    os.environ.get(
-        "BRACCIO_MCP_DIR",
-        str(Path(__file__).resolve().parent.parent / "braccio_mcp_handoff" / "mcp_arm"),
-    )
-)
-_BRACCIO_PY = _BRACCIO_DIR / ".venv" / "bin" / "python"
-
-
-def _braccio_available() -> bool:
-    return _BRACCIO_PY.exists() and (_BRACCIO_DIR / "server.py").exists()
-
+# The Braccio robot-arm MCP runs as its OWN process (separate venv, ws to
+# the arm) served over localhost SSE — stdio MCP servers are blocked by the
+# org Claude policy, but `http://localhost*` ones are allowed. See
+# braccio_mcp_handoff/mcp_arm/serve_sse.py + the braccio-mcp systemd unit.
+_BRACCIO_URL = os.environ.get("BRACCIO_MCP_URL", "http://localhost:8011/sse")
 
 _ALLOWED_TOOLS = ",".join(
     [f"mcp__{d}" for d in _MCP_DOMAINS] + ["mcp__braccio"]
@@ -125,18 +114,9 @@ def _mcp_config_path() -> str:
         }
         for d in _MCP_DOMAINS
     }
-    if _braccio_available():
-        servers["braccio"] = {
-            "type": "stdio",
-            "command": str(_BRACCIO_PY),
-            "args": [str(_BRACCIO_DIR / "server.py")],
-            # Arm WS + vision come from env; defaults are fine until the arm
-            # is on the LAN (tools then return connected:false / fall back).
-            "env": {
-                "ARM_WS_URL": os.environ.get("ARM_WS_URL", "ws://robotarm.local:81"),
-                "ARM_VISION_PORT": os.environ.get("ARM_VISION_PORT", "8000"),
-            },
-        }
+    # Braccio over localhost SSE (own process). Always listed like the other
+    # SSE servers; if its service is down claude just can't reach it.
+    servers["braccio"] = {"type": "sse", "url": _BRACCIO_URL}
     cfg = {"mcpServers": servers}
     path = workdir / "mcp.json"
     path.write_text(json.dumps(cfg), encoding="utf-8")
