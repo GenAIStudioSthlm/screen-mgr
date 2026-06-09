@@ -2,6 +2,10 @@ venv
 .vscode/sftp.json
 screens.json
 __pycache__
+
+# braccio MCP handoff — venv + per-site calibration are created on the Pi
+braccio_mcp_handoff/mcp_arm/.venv/
+braccio_mcp_handoff/mcp_arm/calibration.json
 static/pictures
 static/videos
 static/pdfs

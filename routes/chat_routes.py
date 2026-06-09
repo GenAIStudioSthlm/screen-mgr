@@ -53,7 +53,10 @@ _SYSTEM_PROMPT = (
     "- screens: the display fleet and what content they show.\n"
     "- displays: the LED panels and their test patterns.\n"
     "- audio: microphones and sinks.\n"
-    "- music: Spotify / Marantz playback and the speaker test.\n\n"
+    "- music: Spotify / Marantz playback and the speaker test.\n"
+    "- braccio: a Braccio robot arm (move joints, move to xyz, gripper, "
+    "home, point at / react to things). May report not connected if the "
+    "arm isn't on the network yet — relay that plainly.\n\n"
     "Use the tools to actually carry out requests — don't just describe "
     "what you would do. If a request is ambiguous (which room? how "
     "bright?), ask ONE short clarifying question instead of guessing. "
@@ -65,7 +68,27 @@ _SYSTEM_PROMPT = (
 # The five in-process MCP servers, reachable on localhost while the app
 # runs. SSE transport — matches `main.py`'s `*.sse_app()` mounts.
 _MCP_DOMAINS = ["lighting", "screens", "displays", "audio", "music"]
-_ALLOWED_TOOLS = ",".join(f"mcp__{d}" for d in _MCP_DOMAINS)
+
+# The Braccio robot-arm MCP is a separate **stdio** server (own venv, ws to
+# the arm). claude -p launches it directly. It's wired in only when its venv
+# exists on this host, so the chat keeps working before the package/arm land.
+# Override the location with BRACCIO_MCP_DIR.
+_BRACCIO_DIR = Path(
+    os.environ.get(
+        "BRACCIO_MCP_DIR",
+        str(Path(__file__).resolve().parent.parent / "braccio_mcp_handoff" / "mcp_arm"),
+    )
+)
+_BRACCIO_PY = _BRACCIO_DIR / ".venv" / "bin" / "python"
+
+
+def _braccio_available() -> bool:
+    return _BRACCIO_PY.exists() and (_BRACCIO_DIR / "server.py").exists()
+
+
+_ALLOWED_TOOLS = ",".join(
+    [f"mcp__{d}" for d in _MCP_DOMAINS] + ["mcp__braccio"]
+)
 # Belt-and-suspenders: explicitly forbid the built-in tools so the chat
 # agent can never read/write the Pi's filesystem or run shell commands.
 _DISALLOWED_TOOLS = (
@@ -95,15 +118,26 @@ def _mcp_config_path() -> str:
     has a neutral cwd (not the repo) for its session scratch files."""
     workdir = Path(tempfile.gettempdir()) / "studio-chat"
     workdir.mkdir(parents=True, exist_ok=True)
-    cfg = {
-        "mcpServers": {
-            d: {
-                "type": "sse",
-                "url": f"http://localhost:8000/mcp/{d}/sse",
-            }
-            for d in _MCP_DOMAINS
+    servers = {
+        d: {
+            "type": "sse",
+            "url": f"http://localhost:8000/mcp/{d}/sse",
         }
+        for d in _MCP_DOMAINS
     }
+    if _braccio_available():
+        servers["braccio"] = {
+            "type": "stdio",
+            "command": str(_BRACCIO_PY),
+            "args": [str(_BRACCIO_DIR / "server.py")],
+            # Arm WS + vision come from env; defaults are fine until the arm
+            # is on the LAN (tools then return connected:false / fall back).
+            "env": {
+                "ARM_WS_URL": os.environ.get("ARM_WS_URL", "ws://robotarm.local:81"),
+                "ARM_VISION_PORT": os.environ.get("ARM_VISION_PORT", "8000"),
+            },
+        }
+    cfg = {"mcpServers": servers}
     path = workdir / "mcp.json"
     path.write_text(json.dumps(cfg), encoding="utf-8")
     return str(path)

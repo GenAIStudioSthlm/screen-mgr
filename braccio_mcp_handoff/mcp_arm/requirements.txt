@@ -1,0 +1,8 @@
+mcp>=1.2.0
+websockets>=12.0
+# Vision (vision.py, vision_server.py): YOLO detection + camera/draw.
+# ultralytics pulls in torch, torchvision, opencv-python, numpy, pillow.
+ultralytics>=8.3
+opencv-python>=4.9
+numpy>=1.26
+flask>=3.0
