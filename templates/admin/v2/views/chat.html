@@ -16,7 +16,7 @@
        style="flex:1;min-height:120px;overflow-y:auto;display:flex;flex-direction:column;gap:var(--s-2);padding:var(--s-2);background:var(--card);border:1px solid var(--border);font-size:11px">
     <template x-if="messages.length === 0 && !sending">
       <div style="color:var(--text-dim);font-style:italic">
-        Type or hold <kbd>Space</kbd> to talk. The agent backend isn't wired up yet — every message will reply with a stub error until the .env API key is set on the Pi.
+        Type, or hold <kbd>Space</kbd> / the 🎤 button to talk. Ask the studio to do things — e.g. “warm up the lights for a meeting”.
       </div>
     </template>
     <template x-for="(m, idx) in messages" :key="idx">
@@ -62,7 +62,7 @@
               :disabled="!voiceSupported || sending"
               :class="voiceListening ? 'btn' : 'btn btn-ghost'"
               :style="voiceListening ? 'background:var(--err);color:#fff;font-size:11px;padding:6px 10px' : 'font-size:11px;padding:6px 10px'"
-              :title="voiceSupported ? 'Hold to talk (or hold Space when chat input is unfocused)' : 'Browser does not support SpeechRecognition'">
+              :title="voiceSupported ? ('Hold to talk (or hold Space when chat input is unfocused) — ' + (whisperAvailable ? 'Whisper' : 'cloud fallback')) : 'Mic needs a secure context (https/localhost) + a Chromium browser'">
         <span x-show="!voiceListening">🎤 Talk</span>
         <span x-show="voiceListening">● Recording</span>
       </button>
@@ -70,7 +70,7 @@
   </div>
 
   <div x-show="!voiceSupported" style="font-size:10px;color:var(--text-dim);font-style:italic">
-    Voice input requires Chrome/Edge (Web Speech API).
+    Voice needs a secure context (https or localhost) and a Chromium browser.
   </div>
 
 </div>

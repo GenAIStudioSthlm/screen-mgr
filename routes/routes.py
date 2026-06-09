@@ -21,6 +21,7 @@ from routes.chat_routes import router as chat_router
 from routes.audio_routes import router as audio_router
 from routes.music_routes import router as music_router
 from routes.positions_routes import router as positions_router
+from routes.transcribe_routes import router as transcribe_router
 
 
 router = APIRouter()
@@ -41,3 +42,4 @@ router.include_router(chat_router)
 router.include_router(audio_router)
 router.include_router(music_router)
 router.include_router(positions_router)
+router.include_router(transcribe_router)

@@ -8,10 +8,12 @@
  * backend can land later without changing this file.
  *
  * Voice: push-to-talk via the on-screen 🎤 button (mouse/touch hold)
- * OR the spacebar when the chat textarea is NOT focused. Uses the
- * Web Speech API directly — final transcript fills the input and
- * sends automatically. Browsers without SpeechRecognition (Safari /
- * Firefox) gracefully hide the voice affordance.
+ * OR the spacebar when the chat textarea is NOT focused. Records a clip
+ * with MediaRecorder while held, then POSTs it to /api/transcribe (which
+ * proxies to the Whisper GPU service) — accurate, local, and consistent
+ * across Chromium browsers, unlike the old cloud Web Speech API. The
+ * returned transcript fills the input and sends automatically. Requires
+ * a secure context (https or localhost) for mic access.
  */
 function v2ChatView() {
   return {
@@ -19,13 +21,21 @@ function v2ChatView() {
     input: '',
     sending: false,
     sessionId: '',
-    backendReady: false,     // flipped true when the stub goes away
+    backendReady: true,      // /api/chat is wired to claude -p + MCP
 
-    // Voice
+    // Voice — primary: MediaRecorder → /api/transcribe → Whisper (accurate,
+    // local). Fallback when the Whisper GPU box is down: cloud Web Speech API.
     voiceSupported: false,
-    voiceListening: false,
-    voiceTranscript: '',
-    _recognition: null,
+    voiceListening: false,   // recording / listening in progress
+    voiceTranscript: '',     // status line: 'transcribing…' then the text
+    whisperAvailable: false, // probed on load; gates which path startVoice uses
+    _hasMediaRecorder: false,
+    _hasSpeechRec: false,
+    _voiceMode: null,        // 'whisper' | 'speech' for the active utterance
+    _mediaRecorder: null,
+    _chunks: [],
+    _micStream: null,
+    _recognition: null,      // SpeechRecognition instance for the fallback
     _spaceDown: false,
 
     init() {
@@ -33,6 +43,7 @@ function v2ChatView() {
       // sessions for v1; no cross-tab sharing.
       this.sessionId = crypto.randomUUID ? crypto.randomUUID() : ('tab-' + Date.now());
       this._initVoice();
+      this._probeWhisper();
       this._initSpaceShortcut();
     },
 
@@ -145,9 +156,129 @@ function v2ChatView() {
     /* ---------- voice ---------- */
 
     _initVoice() {
+      // Whisper path needs getUserMedia + MediaRecorder. Fallback needs the
+      // Web Speech API. Either (in a secure context) makes voice usable.
+      this._hasMediaRecorder = !!(
+        navigator.mediaDevices &&
+        navigator.mediaDevices.getUserMedia &&
+        window.MediaRecorder
+      );
       const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (!SR) { this.voiceSupported = false; return; }
-      this.voiceSupported = true;
+      this._hasSpeechRec = !!SR;
+      if (SR) this._buildRecognition(SR);
+      this.voiceSupported = this._hasMediaRecorder || this._hasSpeechRec;
+    },
+
+    async _probeWhisper() {
+      // Decide the default capture path. Whisper when reachable; otherwise
+      // the cloud Web Speech fallback. Re-checked on a runtime failure too.
+      try {
+        const r = await fetch('/api/transcribe/health');
+        const d = await r.json();
+        this.whisperAvailable = !!(d && d.available) && this._hasMediaRecorder;
+      } catch (e) {
+        this.whisperAvailable = false;
+      }
+    },
+
+    /* ---- shared PTT entry points (button + spacebar) ---- */
+
+    async startVoice() {
+      if (!this.voiceSupported || this.voiceListening || this.sending) return;
+      this.voiceTranscript = '';
+      if (this.whisperAvailable) {
+        this._voiceMode = 'whisper';
+        await this._startWhisper();
+      } else if (this._hasSpeechRec) {
+        this._voiceMode = 'speech';
+        this._startSpeech();
+      } else {
+        this.messages.push({
+          role: 'error',
+          content: 'voice unavailable: Whisper is down and this browser has no Web Speech fallback.',
+        });
+      }
+    },
+
+    stopVoice() {
+      if (!this.voiceListening) return;
+      if (this._voiceMode === 'whisper' && this._mediaRecorder) {
+        this.voiceListening = false;
+        try { this._mediaRecorder.stop(); } catch (e) { /* ignore */ }
+      } else if (this._voiceMode === 'speech' && this._recognition) {
+        // SpeechRecognition fires onend → _finishSpeech; keep listening flag
+        // until then so the indicator stays accurate.
+        try { this._recognition.stop(); } catch (e) { /* ignore */ }
+      }
+    },
+
+    /* ---- primary path: MediaRecorder → Whisper ---- */
+
+    async _startWhisper() {
+      try {
+        this._micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      } catch (e) {
+        this.messages.push({
+          role: 'error',
+          content: 'mic blocked: ' + (e && e.name ? e.name : e) +
+            ' — needs https/localhost and mic permission.',
+        });
+        return;
+      }
+      this._chunks = [];
+      let mime = '';
+      for (const m of ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus']) {
+        if (window.MediaRecorder.isTypeSupported(m)) { mime = m; break; }
+      }
+      this._mediaRecorder = new MediaRecorder(this._micStream, mime ? { mimeType: mime } : undefined);
+      this._mediaRecorder.ondataavailable = (e) => {
+        if (e.data && e.data.size > 0) this._chunks.push(e.data);
+      };
+      this._mediaRecorder.onstop = () => this._finishWhisper();
+      this._mediaRecorder.start();
+      this.voiceListening = true;
+    },
+
+    async _finishWhisper() {
+      if (this._micStream) {
+        this._micStream.getTracks().forEach(t => t.stop());
+        this._micStream = null;
+      }
+      const blob = new Blob(this._chunks, { type: this._mediaRecorder.mimeType || 'audio/webm' });
+      this._chunks = [];
+      if (!blob.size) return;
+
+      this.voiceTranscript = 'transcribing…';
+      try {
+        const form = new FormData();
+        form.append('file', blob, 'speech.webm');
+        const resp = await fetch('/api/transcribe', { method: 'POST', body: form });
+        const data = await resp.json().catch(() => ({}));
+        if (!resp.ok || data.error) {
+          this.voiceTranscript = '';
+          // Whisper just went away — fall back to cloud for next time and tell the user.
+          this.whisperAvailable = false;
+          this.messages.push({
+            role: 'error',
+            content: 'transcribe: ' + (data.error || ('HTTP ' + resp.status)) +
+              (this._hasSpeechRec ? ' — switching to cloud voice; hold to talk again.' : ''),
+          });
+          return;
+        }
+        const text = (data.text || '').trim();
+        this.voiceTranscript = '';
+        if (text) this.send(text);
+        else this.messages.push({ role: 'error', content: 'transcribe: heard nothing — try again.' });
+      } catch (e) {
+        this.voiceTranscript = '';
+        this.whisperAvailable = false;
+        this.messages.push({ role: 'error', content: 'transcribe failed: ' + e });
+      }
+    },
+
+    /* ---- fallback path: cloud Web Speech API ---- */
+
+    _buildRecognition(SR) {
       this._recognition = new SR();
       this._recognition.continuous = false;
       this._recognition.interimResults = true;
@@ -159,32 +290,23 @@ function v2ChatView() {
       };
       this._recognition.onerror = (e) => {
         this.voiceListening = false;
-        this.messages.push({
-          role: 'error',
-          content: 'voice: ' + (e.error || 'unknown error'),
-        });
+        this.messages.push({ role: 'error', content: 'voice: ' + (e.error || 'unknown error') });
       };
       this._recognition.onend = () => {
         this.voiceListening = false;
         const final = (this.voiceTranscript || '').trim();
+        this.voiceTranscript = '';
         if (final) this.send(final);
       };
     },
 
-    startVoice() {
-      if (!this.voiceSupported || this.voiceListening || this.sending) return;
-      this.voiceTranscript = '';
+    _startSpeech() {
       try {
         this._recognition.start();
         this.voiceListening = true;
       } catch (e) {
         // start() throws if already started; ignore.
       }
-    },
-
-    stopVoice() {
-      if (!this.voiceListening) return;
-      try { this._recognition.stop(); } catch (e) { /* ignore */ }
     },
 
     _initSpaceShortcut() {
