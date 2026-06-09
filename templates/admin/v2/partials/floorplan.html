@@ -1,30 +1,130 @@
 {# Reusable SVG floor plan partial.
-   Expects an Alpine scope exposing:
+   viewBox = real studio dimensions in centimetres (838 × 725, per the
+   physical layout doc data/genai-popup-acn 1.pdf). 1 SVG unit = 1 cm.
+   That means a marker at (x=419, y=362) is literally at the centre of
+   the studio in cm; a 250 cm × 250 cm central piece spans 250 units.
+
+   NOTE: existing zone polygons in data/zones.json were drawn against
+   the previous arbitrary 960×420 viewBox — they'll appear in the
+   top-left corner of the new space until they're redrawn. Position
+   markers are the priority for now; zones can be re-coordinated in
+   a follow-up.
+
+   Expects an Alpine scope exposing (from studioShell):
      - zones    : list from /api/zones
      - selected : currently selected zone or null
      - select(zone) : selector
-   Lives independently of which view is active in the sidebar so all views
-   can keep the floor plan visible.
+     - positions / placeables / editPositions / placing / drag handlers
 #}
 <div class="floorplan-wrap">
+
+  {# ---------- Edit-mode chip ---------- #}
+  <div style="display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-2);flex-wrap:wrap">
+    <button @click="toggleEditPositions()"
+            class="btn"
+            :class="editPositions ? 'btn-brand' : 'btn-ghost'"
+            style="font-size:11px">
+      <span x-show="!editPositions">✏️ Position devices</span>
+      <span x-show="editPositions">✓ Done positioning</span>
+    </button>
+    <span x-show="positionMsg" style="font-size:11px"
+          :style="positionMsgOk ? 'color:var(--ok)' : 'color:var(--err)'"
+          x-text="positionMsg"></span>
+  </div>
+
   <svg class="floorplan" viewBox="0 0 960 420" preserveAspectRatio="xMidYMid meet"
-       role="img" aria-label="Studio floor plan">
+       role="img" aria-label="Studio floor plan"
+       :style="placing ? 'cursor:crosshair' : ''"
+       @click="onPlanClick($event)"
+       @mousemove="onPlanMouseMove($event)"
+       @mouseup="onPlanMouseUp($event)"
+       @mouseleave="onPlanMouseUp($event)">
+
+    {# ---------- Optional background image.
+       Auto-discovered on load by shell.js (looks for
+       /static/floorplan/background.{svg,png,jpg}). Drop your room
+       layout image at one of those paths and reload — no code edit
+       needed. Rendered behind zones + markers at 80% opacity so the
+       polygons + dots stay readable over it. ---------- #}
+    <image x-show="floorplanBg"
+           :href="floorplanBg"
+           x="0" y="0" width="838" height="725"
+           preserveAspectRatio="xMidYMid meet"
+           opacity="0.8"/>
+
+    {# ---------- Zone polygons (existing) ---------- #}
     <template x-for="z in zones" :key="z.id">
       <g>
         <polygon
           :class="'zone-shape ' + (selected?.id === z.id ? 'selected ' : '') + (z.screen?.connected ? 'connected ' : '')"
           :points="z.polygon.map(p => p.join(',')).join(' ')"
-          @click="select(z)"
+          @click.stop="select(z)"
         />
         <text class="zone-label"    :x="z.label_xy[0]" :y="z.label_xy[1] - 6" x-text="z.name"></text>
         <text class="zone-sublabel" :x="z.label_xy[0]" :y="z.label_xy[1] + 9"
               x-text="(z.screen?.type || '—') + (z.screen?.connected ? ' · live' : '')"></text>
       </g>
     </template>
+
+    {# ---------- Marker layer.
+       Empty <g> that shell.js populates IMPERATIVELY via
+       document.createElementNS — bypasses the Alpine `<template
+       x-for>` + SVG-namespace issue that prevented our previous
+       markers from rendering. shell.js calls renderMarkers() after
+       every refreshPositions() / drag update. ---------- #}
+    <g id="device-markers" x-effect="renderMarkers()"></g>
   </svg>
+
+
+  {# ---------- DEBUG: raw markers data so we can see what's actually
+       in the array versus what's rendering ---------- #}
+  <details style="margin-top:4px;font-size:10px;color:var(--text-dim)">
+    <summary>debug: placedMarkers()</summary>
+    <pre style="background:var(--bg);padding:var(--s-1);overflow-x:auto;font-size:10px"
+         x-text="JSON.stringify(placedMarkers(), null, 2)"></pre>
+  </details>
+
+  {# tiny placement counter so the operator can verify the data is
+     reaching the view even before they recognize the markers visually #}
+  <div style="font-size:10px;color:var(--text-dim);margin-top:4px;text-align:right">
+    <span x-text="placedMarkers().length"></span> device<span x-show="placedMarkers().length !== 1">s</span> placed
+  </div>
+
+  {# ---------- Device tray (visible in edit mode) ---------- #}
+  <div x-show="editPositions"
+       style="margin-top:var(--s-3);padding:var(--s-2);border:1px solid var(--border);background:var(--card)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:var(--s-2)">
+      <strong style="font-size:11px">Devices — click one, then click on the floor plan</strong>
+      <button @click="refreshPlaceables()" class="btn btn-ghost" style="font-size:10px;padding:2px 8px">↻</button>
+    </div>
+
+    <template x-for="kind in ['station','speaker','display','microphone','light']" :key="kind">
+      <div x-show="placeables.filter(p => p.kind === kind).length > 0"
+           style="margin-bottom:var(--s-2)">
+        <div style="font-size:10px;color:var(--text-dim);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">
+          <span x-text="markerIcon(kind)"></span>
+          <span x-text="kind"></span>
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:4px">
+          <template x-for="d in placeables.filter(p => p.kind === kind)" :key="d.kind + ':' + d.id">
+            <button @click="startPlacing(d)"
+                    class="btn"
+                    :class="(placing && placing.kind === d.kind && placing.id === d.id)
+                              ? 'btn-brand'
+                              : (d.placed ? 'btn-ghost' : 'btn-ghost')"
+                    :style="'font-size:10px;padding:3px 8px;'
+                            + (d.placed ? 'opacity:0.65' : '')">
+              <span x-text="d.placed ? '✓ ' : '• '"></span>
+              <span x-text="d.name"></span>
+            </button>
+          </template>
+        </div>
+      </div>
+    </template>
+  </div>
 </div>
 
-<div class="floorplan-legend">
+<div class="floorplan-legend" x-show="!editPositions">
   <span class="floorplan-swatch connected"></span> connected screen
   <span class="floorplan-swatch idle"></span> no screen / disconnected
   <span class="floorplan-swatch selected"></span> selected

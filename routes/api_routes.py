@@ -146,6 +146,17 @@ async def set_screen_content(
 
 
 # ---------------------------------------------------------------------
+# Diagnostics — run the fleet demo (URL → YouTube → default → AI News).
+# Same function the MCP tool `run_fleet_demo` exposes; this is the HTTP
+# shortcut the admin UI button calls.
+# ---------------------------------------------------------------------
+@router.post("/api/screens/run_fleet_demo", response_class=JSONResponse)
+async def run_fleet_demo():
+    from mcps.screens.fleet_demo import run_fleet_demo as _run
+    return await _run()
+
+
+# ---------------------------------------------------------------------
 # Broadcast reload to every connected screen
 # ---------------------------------------------------------------------
 @router.post("/api/screens/reload-all", response_class=JSONResponse)

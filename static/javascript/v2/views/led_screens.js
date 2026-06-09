@@ -22,6 +22,7 @@ function v2LedScreensView() {
             ...m,
             lastAction: prev[m.id]?.lastAction || '',
             lastActionOk: prev[m.id]?.lastActionOk ?? true,
+            testRunning: prev[m.id]?.testRunning || false,
           }));
       } catch (e) { console.error('led_screens load failed', e); }
       clearTimeout(this._timer);
@@ -48,6 +49,35 @@ function v2LedScreensView() {
         panel.lastActionOk = false;
       }
       await this.load();
+    },
+
+    /* Run the grid test pattern for ~15s then revert. Long-running:
+     * disables the button while in flight; surfaces a one-line result. */
+    async runTestPattern(panel) {
+      if (panel.testRunning) return;
+      panel.testRunning = true;
+      panel.lastAction = 'test pattern running… (~15s)';
+      panel.lastActionOk = true;
+      try {
+        const r = await fetch(
+          '/api/modules/' + panel.id + '/run_test_pattern',
+          { method: 'POST' },
+        );
+        const d = await r.json();
+        if (r.ok) {
+          panel.lastAction = 'test ✓ — ran ' + d.duration_seconds + 's, reverted to clock';
+          panel.lastActionOk = !!d.ok;
+        } else {
+          panel.lastAction = 'test ✗ ' + (d.detail || JSON.stringify(d));
+          panel.lastActionOk = false;
+        }
+      } catch (e) {
+        panel.lastAction = 'test ✗ ' + e;
+        panel.lastActionOk = false;
+      } finally {
+        panel.testRunning = false;
+        await this.load();
+      }
     },
   };
 }

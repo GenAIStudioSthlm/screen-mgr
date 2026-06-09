@@ -1,9 +1,20 @@
+# Load .env BEFORE any module that reads env vars (heos_client, spotify_client,
+# safety, microphones, etc). agents/__init__.py also calls this but it only
+# runs when an agent code path is imported — moving the call here guarantees
+# every code path sees the same env.
+from dotenv import load_dotenv
+load_dotenv()
+
 import uvicorn
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from routes import router
+from mcps.audio.server import server as audio_mcp_server
+from mcps.displays.server import server as displays_mcp_server
 from mcps.lighting.server import server as lighting_mcp_server
+from mcps.music.server import server as music_mcp_server
+from mcps.screens.server import server as screens_mcp_server
 
 
 app = FastAPI()
@@ -19,6 +30,10 @@ app.include_router(router)
 # Each one wraps the corresponding domain's Python module APIs and is
 # usable by any MCP client (Claude Code, our own agents in later phases).
 app.mount("/mcp/lighting", lighting_mcp_server.sse_app())
+app.mount("/mcp/screens", screens_mcp_server.sse_app())
+app.mount("/mcp/displays", displays_mcp_server.sse_app())
+app.mount("/mcp/audio", audio_mcp_server.sse_app())
+app.mount("/mcp/music", music_mcp_server.sse_app())
 
 if __name__ == "__main__":
     uvicorn.run(

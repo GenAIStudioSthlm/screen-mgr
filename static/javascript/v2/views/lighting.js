@@ -18,6 +18,7 @@ function v2LightingView() {
     showLights: false,
     lastAction: '',
     lastActionOk: true,
+    testRunning: false,
     _timer: null,
 
     async load() {
@@ -117,6 +118,38 @@ function v2LightingView() {
     },
     async allOn()  { await this._post('/api/modules/hue/all/on');  await this.load(); },
     async allOff() { await this._post('/api/modules/hue/all/off'); await this.load(); },
+
+    /* Run the lighting startup self-test (rainbow + intensity sweep +
+     * settle). Long-running (~12s) — disable the button while in flight,
+     * surface a one-line result when done. */
+    async runStartupTest() {
+      if (this.testRunning) return;
+      this.testRunning = true;
+      this.lastAction = 'startup test running…';
+      this.lastActionOk = true;
+      try {
+        const r = await fetch('/api/modules/hue/run_startup_test', { method: 'POST' });
+        const d = await r.json();
+        if (r.ok) {
+          const lights = d.rainbow?.lights ?? '?';
+          const frames = d.rainbow?.frames ?? '?';
+          const settle = d.settled_at
+            ? `${d.settled_at.brightness_pct}% / ${d.settled_at.kelvin}K`
+            : '?';
+          this.lastAction = `startup test ✓ — ${lights} lights, ${frames} rainbow frames, settled ${settle}`;
+          this.lastActionOk = true;
+        } else {
+          this.lastAction = 'startup test ✗ ' + (d.detail || JSON.stringify(d));
+          this.lastActionOk = false;
+        }
+      } catch (e) {
+        this.lastAction = 'startup test ✗ ' + e;
+        this.lastActionOk = false;
+      } finally {
+        this.testRunning = false;
+        await this.load();
+      }
+    },
 
     hueToHexLight(l) {
       const s = (l && l.state) || {};

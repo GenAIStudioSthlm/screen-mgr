@@ -114,3 +114,20 @@ async def stop_module(module_id: str):
             status_code=400, detail=f"{module_id} is not a service module"
         )
     return m.stop()
+
+
+@router.post("/api/modules/{module_id}/run_test_pattern", response_class=JSONResponse)
+async def run_test_pattern(module_id: str, duration_seconds: int = 15):
+    """Display-specific diagnostic: show a grid test pattern for ~N
+    seconds, then revert. Only modules that implement `run_test_pattern`
+    (today: rgbdisplay) respond; everything else 400s."""
+    m = registry.get(module_id)
+    if not m:
+        raise HTTPException(status_code=404, detail="Module not found")
+    fn = getattr(m, "run_test_pattern", None)
+    if fn is None:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{module_id} does not support run_test_pattern",
+        )
+    return await fn(duration_seconds=duration_seconds)

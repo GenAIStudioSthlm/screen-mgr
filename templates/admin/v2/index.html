@@ -14,7 +14,10 @@
   <script defer src="/static/javascript/v2/views/screens.js?v={{ app_version }}"></script>
   <script defer src="/static/javascript/v2/views/lighting.js?v={{ app_version }}"></script>
   <script defer src="/static/javascript/v2/views/led_screens.js?v={{ app_version }}"></script>
+  <script defer src="/static/javascript/v2/views/audio.js?v={{ app_version }}"></script>
+  <script defer src="/static/javascript/v2/views/music.js?v={{ app_version }}"></script>
   <script defer src="/static/javascript/v2/views/modules.js?v={{ app_version }}"></script>
+  <script defer src="/static/javascript/v2/views/chat.js?v={{ app_version }}"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.5/dist/cdn.min.js"></script>
 </head>
 <body class="studio-shell" x-data="studioShell()" x-init="load()">
@@ -36,6 +39,8 @@
       <div class="view-toggle">
         <button class="btn" :class="view === 'screens'  ? 'btn-brand' : 'btn-ghost'" @click="view='screens'">Screens</button>
         <button class="btn" :class="view === 'lighting' ? 'btn-brand' : 'btn-ghost'" @click="view='lighting'">Lighting</button>
+        <button class="btn" :class="view === 'audio'    ? 'btn-brand' : 'btn-ghost'" @click="view='audio'">Audio</button>
+        <button class="btn" :class="view === 'music'    ? 'btn-brand' : 'btn-ghost'" @click="view='music'">Music</button>
         <button class="btn" :class="view === 'modules'  ? 'btn-brand' : 'btn-ghost'" @click="view='modules'">Modules</button>
       </div>
 
@@ -80,18 +85,22 @@
       {# Per-view content. Each view is its own self-contained template + JS file. #}
       <div x-show="view === 'screens'">{% include "admin/v2/views/screens.html" %}</div>
       <div x-show="view === 'lighting'">{% include "admin/v2/views/lighting.html" %}</div>
+      <div x-show="view === 'audio'">{% include "admin/v2/views/audio.html" %}</div>
+      <div x-show="view === 'music'">{% include "admin/v2/views/music.html" %}</div>
       <div x-show="view === 'modules'">{% include "admin/v2/views/modules.html" %}</div>
 
     </main>
 
-    {# ---------- RIGHT PANEL (reserved for agent) ---------- #}
-    <aside class="v2-controls">
-      <h2>Agent</h2>
-      <p>Reserved for the chat/voice agent (Phase 6).</p>
+    {# ---------- RIGHT PANEL (agent chat + quick facts) ---------- #}
+    <aside class="v2-controls" style="display:flex;flex-direction:column;gap:var(--s-4);min-height:0">
 
-      <h2 style="margin-top:var(--s-5)">Quick facts</h2>
-      <div class="field-row" style="font-size:10px"><span>zones</span><span class="val" x-text="zones.length"></span></div>
-      <div class="field-row" style="font-size:10px"><span>connected</span><span class="val" x-text="zones.filter(z => z.screen?.connected).length"></span></div>
+      {% include "admin/v2/views/chat.html" %}
+
+      <div>
+        <h2>Quick facts</h2>
+        <div class="field-row" style="font-size:10px"><span>zones</span><span class="val" x-text="zones.length"></span></div>
+        <div class="field-row" style="font-size:10px"><span>connected</span><span class="val" x-text="zones.filter(z => z.screen?.connected).length"></span></div>
+      </div>
     </aside>
 
   </div>

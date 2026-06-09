@@ -70,3 +70,14 @@ async def all_on():
 @router.post("/api/modules/hue/all/off", response_class=JSONResponse)
 async def all_off():
     return _client().all_off()
+
+
+# ---------------------------------------------------------------------
+# Diagnostics — run the lighting startup self-test (rainbow + intensity).
+# Same function the MCP tool `run_startup_test` exposes; this is the
+# HTTP shortcut the admin UI button calls.
+# ---------------------------------------------------------------------
+@router.post("/api/modules/hue/run_startup_test", response_class=JSONResponse)
+async def run_startup_test():
+    from mcps.lighting.startup_test import run_startup_test as _run
+    return await _run(_client())

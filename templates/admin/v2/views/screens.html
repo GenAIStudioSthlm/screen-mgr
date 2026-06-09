@@ -16,6 +16,10 @@
       </p>
     </div>
     <div style="display:flex;align-items:center;gap:var(--s-2)">
+      <button @click="runFleetDemo()" :disabled="testRunning" class="btn btn-ghost" title="Cycle every available screen through URL → YouTube → default → settle on AI News (~20s)">
+        <span x-show="!testRunning">▶ Run test</span>
+        <span x-show="testRunning">⏳ Running…</span>
+      </button>
       <button @click="reloadAll()" class="btn btn-brand">↻ Reload all</button>
 
       {# Scenes dropdown — to the right of Reload all so the panel opens
