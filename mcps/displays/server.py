@@ -177,6 +177,20 @@ async def run_display_test(display_id: str) -> dict:
 
 
 @server.tool()
+async def show_text(display_id: str, text: str, color_hex: str = "") -> dict:
+    """Show a short word or phrase (e.g. a client name like "IKEA") on the
+    LED panel, optionally in a brand color.
+
+    text: the string to display (kept short — it's a low-res panel).
+    color_hex: optional "#RRGGBB" (e.g. IKEA blue "#0051BA"); omit for white.
+
+    Persists on the panel until changed again or the unit reverts. Use
+    `list_displays` to get a valid ``display_id``."""
+    m = _get(display_id)
+    return await m.show_text(text, color_hex=color_hex or None)
+
+
+@server.tool()
 async def run_grid_test_pattern(display_id: str, duration_seconds: int = 15) -> dict:
     """Run the grid + 4-corner-clock + center-diamond test pattern on
     the display for ~``duration_seconds`` (default 15, capped at 120),

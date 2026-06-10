@@ -27,6 +27,20 @@ UNIT = "rgbdisplay.service"
 # launch.
 _DISPLAY_DIR = Path("/home/admin/rpi-rgb-led-matrix")
 _MODE_FILE = _DISPLAY_DIR / "mode.txt"
+# Content files read by led_text.py when mode == "text".
+_TEXT_FILE = _DISPLAY_DIR / "text.txt"
+_TEXT_COLOR_FILE = _DISPLAY_DIR / "text_color.txt"
+
+
+def _hex_to_rgb(color_hex: str) -> tuple[int, int, int] | None:
+    """'#RRGGBB' (or 'RRGGBB') → (r, g, b), or None if unparseable."""
+    s = (color_hex or "").strip().lstrip("#")
+    if len(s) != 6:
+        return None
+    try:
+        return int(s[0:2], 16), int(s[2:4], 16), int(s[4:6], 16)
+    except ValueError:
+        return None
 
 
 def _run(*args: str) -> subprocess.CompletedProcess[str]:
@@ -98,6 +112,29 @@ class RGBDisplayModule(ServiceModule):
         """systemctl restart — kills the old screen session and re-runs
         start_display.sh, which reads the fresh mode marker."""
         return _run("sudo", "systemctl", "restart", UNIT)
+
+    async def show_text(self, text: str, color_hex: str | None = None) -> dict[str, Any]:
+        """Show a short word/phrase (e.g. a client name like "IKEA") on the
+        matrix in an optional #RRGGBB color. Writes the content files, sets
+        mode=text, and restarts the unit so `start_display.sh` launches
+        `led_text.py`. Persists until changed or reverted (unlike the
+        auto-reverting test pattern)."""
+        safe = (text or "").strip()[:32] or "STUDIO"
+        _DISPLAY_DIR.mkdir(parents=True, exist_ok=True)
+        _TEXT_FILE.write_text(safe + "\n", encoding="utf-8")
+        rgb = _hex_to_rgb(color_hex) if color_hex else None
+        if rgb:
+            _TEXT_COLOR_FILE.write_text(f"{rgb[0]},{rgb[1]},{rgb[2]}\n", encoding="utf-8")
+        self._set_mode("text")
+        r = await asyncio.to_thread(self._restart)
+        return {
+            "ok": r.returncode == 0,
+            "text": safe,
+            "color_hex": color_hex if rgb else None,
+            "mode": "text",
+            "stderr": r.stderr.strip(),
+            "final_status": self.status(),
+        }
 
     async def run_test_pattern(self, duration_seconds: int = 15) -> dict[str, Any]:
         """Show the grid test pattern for ~`duration_seconds`, then
