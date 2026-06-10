@@ -171,7 +171,11 @@ async def set_screen_content(
     - ``content_value``: the type-specific value:
         - ``text`` → the string to display
         - ``url`` → full URL (including https://; works for YouTube embed URLs too)
-        - ``video`` / ``picture`` / ``pdf`` → filename from `list_media`
+        - ``video`` / ``pdf`` → filename from `list_media`
+        - ``picture`` → **folder-prefixed** path ``<folder>/<file>`` from
+          `list_media` (e.g. ``IKEA/Cloud_2.png`` for a subfolder, or
+          ``Root/logo.png`` for a top-level file). A BARE filename renders
+          blank ("not found") — the folder is required.
         - ``slideshow`` → folder name from `list_media`
         - ``screen_share`` → room id string
         - ``news`` → display mode: ``portrait``, ``landscape``, or ``presentation``
