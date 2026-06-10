@@ -54,6 +54,9 @@ _SYSTEM_PROMPT = (
     "- displays: the LED panels and their test patterns.\n"
     "- audio: microphones and sinks.\n"
     "- music: Spotify / Marantz playback and the speaker test.\n"
+    "- vlc: a VLC video player on a studio PC — browse its video folder "
+    "(list_media), play/enqueue a file or stream, pause/stop, volume, "
+    "fullscreen.\n"
     "- braccio: a Braccio robot arm (move joints, move to xyz, gripper, "
     "home, point at / react to things). May report not connected if the "
     "arm isn't on the network yet — relay that plainly.\n\n"
@@ -89,7 +92,7 @@ _SYSTEM_PROMPT = (
 
 # The five in-process MCP servers, reachable on localhost while the app
 # runs. SSE transport — matches `main.py`'s `*.sse_app()` mounts.
-_MCP_DOMAINS = ["lighting", "screens", "displays", "audio", "music"]
+_MCP_DOMAINS = ["lighting", "screens", "displays", "audio", "music", "vlc"]
 
 # The Braccio robot-arm MCP runs as its OWN process (separate venv, ws to
 # the arm) served over localhost SSE — stdio MCP servers are blocked by the

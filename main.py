@@ -15,6 +15,7 @@ from mcps.displays.server import server as displays_mcp_server
 from mcps.lighting.server import server as lighting_mcp_server
 from mcps.music.server import server as music_mcp_server
 from mcps.screens.server import server as screens_mcp_server
+from mcps.vlc.server import server as vlc_mcp_server
 
 
 app = FastAPI()
@@ -34,6 +35,7 @@ app.mount("/mcp/screens", screens_mcp_server.sse_app())
 app.mount("/mcp/displays", displays_mcp_server.sse_app())
 app.mount("/mcp/audio", audio_mcp_server.sse_app())
 app.mount("/mcp/music", music_mcp_server.sse_app())
+app.mount("/mcp/vlc", vlc_mcp_server.sse_app())
 
 if __name__ == "__main__":
     uvicorn.run(
