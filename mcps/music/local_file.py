@@ -243,6 +243,94 @@ async def play_local_file(
     return result
 
 
+# Internet-radio stations the Marantz can stream directly via HEOS
+# play_stream — no account/login needed (unlike Spotify). Sveriges Radio
+# public Icecast streams (http; some HEOS firmware is fussy about https).
+RADIO_STATIONS = {
+    "p1": ("Sveriges Radio P1 (news/talk)", "http://http-live.sr.se/p1-mp3-192"),
+    "p2": ("Sveriges Radio P2 (classical/jazz)", "http://http-live.sr.se/p2-mp3-192"),
+    "p3": ("Sveriges Radio P3 (pop/youth)", "http://http-live.sr.se/p3-mp3-192"),
+    "p4": ("Sveriges Radio P4 Stockholm", "http://http-live.sr.se/p4stockholm-mp3-192"),
+}
+
+
+async def play_radio(
+    station: str = "p3",
+    volume_pct: Optional[int] = None,
+    mood: Optional[str] = None,
+    ramp_seconds: float = DEFAULT_RAMP_SECONDS,
+    ramp_from: Optional[int] = None,
+) -> dict:
+    """Stream internet radio on the Marantz via HEOS. `station` is a key in
+    RADIO_STATIONS or a raw http(s) stream URL. Same volume cap + fade-in as
+    play_local_file; plays continuously until stopped."""
+    key = (station or "").strip().lower()
+    if key in RADIO_STATIONS:
+        label, url = RADIO_STATIONS[key]
+    elif key.startswith("http://") or key.startswith("https://"):
+        label, url = "custom stream", station.strip()
+    else:
+        return {"error": "unknown station",
+                "detail": f"use one of {list(RADIO_STATIONS)} or an http(s) URL"}
+
+    if volume_pct is None and mood:
+        requested = volume_for_mood(mood)
+    elif volume_pct is None:
+        requested = volume_for_mood("background")  # quiet but present
+    else:
+        requested = int(volume_pct)
+    level, was_capped = cap_volume(requested)
+
+    try:
+        client = get_client()
+    except HEOSNotConfigured as e:
+        return {"error": "heos not configured", "detail": str(e)}
+
+    if ramp_from is None:
+        start_level = min(level, DEFAULT_RAMP_FROM) if level > DEFAULT_RAMP_FROM else level
+    else:
+        capped_from, _ = cap_volume(int(ramp_from))
+        start_level = min(capped_from, level)
+
+    result: dict = {"station": key, "label": label, "url": url, "volume_pct": level}
+    if was_capped:
+        result.update(volume_capped=True, requested_pct=requested,
+                      ceiling_pct=max_output_volume_pct())
+    try:
+        await client.set_volume(start_level)
+        await client.play_stream(url)
+    except HEOSError as e:
+        result["error"] = "heos call failed"
+        result["detail"] = str(e)
+        return result
+    except Exception as e:  # noqa: BLE001
+        result["error"] = "heos connection failed"
+        result["detail"] = repr(e)
+        return result
+
+    result["playback_started"] = True
+    result["ramp_from"] = start_level
+
+    warmup_start = time.monotonic()
+    became_playing = False
+    while time.monotonic() - warmup_start < WARMUP_TIMEOUT_S:
+        try:
+            state = await client.get_play_state()
+        except Exception:  # noqa: BLE001
+            state = "unknown"
+        if state == "play":
+            became_playing = True
+            break
+        await asyncio.sleep(WARMUP_POLL_S)
+    result["warmup_seconds"] = round(time.monotonic() - warmup_start, 2)
+    result["warmup_became_playing"] = became_playing
+
+    ramp_clamped = max(0.0, min(15.0, float(ramp_seconds)))
+    result["ramp_levels"] = await _ramp_volume(client, start_level, level, ramp_clamped)
+    result["ramp_seconds"] = ramp_clamped
+    return result
+
+
 async def stop_playback() -> dict:
     """Stop whatever is currently playing on the Marantz."""
     try:

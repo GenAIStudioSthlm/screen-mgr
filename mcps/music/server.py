@@ -344,6 +344,31 @@ async def play_local_file(
 
 
 @server.tool()
+async def play_radio(
+    station: str = "p3",
+    volume_pct: Optional[int] = None,
+    mood: Optional[str] = None,
+    ramp_seconds: float = 2.0,
+    ramp_from: Optional[int] = None,
+) -> dict:
+    """Stream internet radio on the Marantz via HEOS — NO account or login
+    needed (use this when Spotify isn't configured). Reliable background
+    audio.
+
+    station: one of
+      - "p3" (Sveriges Radio P3, pop/youth — good default for background)
+      - "p1" (news/talk), "p2" (classical/jazz), "p4" (P4 Stockholm)
+      - or a raw http(s) stream URL.
+    volume_pct / mood: same calibration + 70 cap as play_local_file; default
+      mood is "background" (~35). Fades in. Plays until stopped
+      (marantz_stop / pause)."""
+    return await _local_file.play_radio(
+        station=station, volume_pct=volume_pct, mood=mood,
+        ramp_seconds=ramp_seconds, ramp_from=ramp_from,
+    )
+
+
+@server.tool()
 async def set_marantz_volume(
     volume_pct: Optional[int] = None,
     mood: Optional[str] = None,
