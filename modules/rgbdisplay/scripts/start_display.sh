@@ -6,6 +6,7 @@
 #  Looks for $SCRIPT_DIR/mode.txt to decide what to run:
 #    (missing or "clock")  → led_clock.py        (default)
 #    "test_pattern"        → led_test_pattern.py
+#    "text"                → led_text.py         (reads text.txt/text_color.txt)
 #
 #  The screen-mgr admin's "Run test" button writes mode.txt and then
 #  `sudo systemctl restart rgbdisplay.service`, which re-invokes this
@@ -26,6 +27,7 @@ fi
 
 case "$mode" in
     test_pattern) target="led_test_pattern.py" ;;
+    text)         target="led_text.py" ;;
     *)            target="led_clock.py" ;;
 esac
 
