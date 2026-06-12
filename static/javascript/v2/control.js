@@ -1018,6 +1018,15 @@ function applyCompany(companyId) {
   const co = COMPANIES[companyId];
   if (!co) return;
 
+  // Drive the REAL studio: set the Hue lights to the brand palette and switch
+  // mapped screens to the gradient content type, then refresh the floor plan
+  // from live state so it reflects the new lighting.
+  if (companyId === 'accenture' || companyId === 'ikea') {
+    fetch('/api/studio/brand/' + companyId + '/apply', { method: 'POST' })
+      .then(() => { setTimeout(syncLiveState, 700); })
+      .catch(() => {});
+  }
+
   // Restore default gradients (labels, CSS, SVG stops, screen colors) when leaving Accenture
   if (activeCompany === 'accenture' && companyId !== 'accenture') {
     DEFAULT_GRADIENTS.forEach((dg, i) => {

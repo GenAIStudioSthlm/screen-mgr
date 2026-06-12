@@ -158,3 +158,51 @@ async def api_studio_state(plan: str = "popup"):
     from models.studio_map import studio_state
 
     return JSONResponse(studio_state(plan))
+
+
+@router.get("/api/studio/brands")
+async def api_studio_brands():
+    from fastapi.responses import JSONResponse
+    from models.brands import BRANDS
+
+    return JSONResponse({"brands": list(BRANDS.values())})
+
+
+@router.post("/api/studio/brand/{brand_id}/apply")
+async def api_studio_apply_brand(brand_id: str):
+    """Apply a brand: set the studio lights to the palette and switch the
+    zones' connected screens to the gradient content type (so they mimic the
+    new lighting)."""
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
+    from connections import connection_manager
+    from screens import screen_manager
+    from models.brands import BRANDS, apply_lighting
+    from models.studio_map import load_map
+
+    brand = BRANDS.get(brand_id)
+    if not brand:
+        raise HTTPException(status_code=404, detail=f"unknown brand '{brand_id}'")
+
+    lighting = apply_lighting(brand)
+
+    # Switch each zone-mapped, connected screen to the gradient content type.
+    zmap = load_map().get("popup", {})
+    zone_screen_ids = {
+        sid for k, z in zmap.items()
+        if isinstance(z, dict) for sid in (z.get("screens") or [])
+    }
+    changed: list[int] = []
+    for s in screen_manager.screens:
+        if s.id in zone_screen_ids and s.connected:
+            s.type = "gradient"
+            changed.append(s.id)
+            await connection_manager.notify_screen(screen=s)
+    if changed:
+        screen_manager.save_screens()
+
+    return JSONResponse({
+        "brand": brand_id,
+        "lighting": lighting,
+        "screens_set_gradient": changed,
+    })
