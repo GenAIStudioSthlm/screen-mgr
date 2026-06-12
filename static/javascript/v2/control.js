@@ -2293,36 +2293,92 @@ function addChatMessage(text, role, style) {
   feed.scrollTop = feed.scrollHeight;
 }
 
-function sendChatMessage() {
+// ── REAL AGENT (wired to /api/chat -> claude -p + MCP tools) ───────────────────
+// Replaces the prototype's scripted chat. The studio agent can drive lights,
+// screens, brands (apply_brand), audio/music, VLC and the robot arm.
+let _chatSession = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : ('tab-' + Date.now());
+let _chatHistory = [];
+let _chatSending = false;
+
+function _newAgentBubble() {
+  const feed = document.getElementById('chat-messages');
+  const msg = document.createElement('div'); msg.className = 'chat-message agent';
+  const sender = document.createElement('div'); sender.className = 'msg-sender'; sender.textContent = 'Agent';
+  const bubble = document.createElement('div'); bubble.className = 'msg-bubble';
+  msg.appendChild(sender); msg.appendChild(bubble);
+  feed.appendChild(msg); feed.scrollTop = feed.scrollHeight;
+  return bubble;
+}
+
+async function sendChatMessage() {
   const input = document.getElementById('chat-input');
   if (!input) return;
   const text = input.value.trim();
-  if (!text) return;
+  if (!text || _chatSending) return;
   addChatMessage(text, 'user');
+  _chatHistory.push({ role: 'user', content: text });
   input.value = '';
-  document.getElementById('chat-send').disabled = true;
+  _chatSending = true;
+  const sendBtn = document.getElementById('chat-send');
+  if (sendBtn) sendBtn.disabled = true;
+  showTyping();
 
-  const t = text.toLowerCase().replace(/[.,!?]/g, '').trim();
-
-  // Route through conversation flow first
-  const handled = processChatFlow(t);
-  if (!handled) {
-    // Fallback: freeform voice commands
-    setTimeout(function() {
-      const result = parseVoiceCommand(t);
-      if (result) {
-        executeVoiceCommand(result);
-      } else {
-        // Context-aware fallback hint
-        if (chatFlowState === 'idle') {
-          agentSay("I can run direct commands like 'apply workshop scene' or 'turn lights off'. Or just tell me about your session and I'll set things up.", 400);
-        } else if (chatFlowState === 'await_brand') {
-          agentSay("I need a brand name — try 'IKEA', 'Accenture', or say 'new client' to build one from scratch.", 350, 'error');
-        } else {
-          agentSay("I didn't quite get that. Try a scene name, a zone colour, or pick one of the options above.", 350, 'error');
+  let bubble = null, assistantText = '';
+  const feed = () => document.getElementById('chat-messages');
+  try {
+    const resp = await fetch('/api/chat', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        session_id: _chatSession,
+        messages: _chatHistory.filter(m => m.role === 'user' || m.role === 'assistant'),
+      }),
+    });
+    if (!resp.ok || !resp.body) {
+      hideTyping(); addChatMessage('HTTP ' + resp.status, 'agent', 'error');
+    } else {
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '', ev = null, data = '';
+      const flush = () => {
+        if (!ev) { data = ''; return; }
+        let p; try { p = data ? JSON.parse(data) : {}; } catch (e) { p = { _raw: data }; }
+        if (ev === 'token') {
+          hideTyping();
+          if (!bubble) bubble = _newAgentBubble();
+          bubble.textContent += (p.text || ''); assistantText += (p.text || '');
+        } else if (ev === 'tool_use') {
+          addChatMessage('→ ' + (p.tool || '?'), 'agent', 'tool');
+        } else if (ev === 'tool_result') {
+          /* keep the feed clean — tool results are usually echoed in the reply */
+        } else if (ev === 'error') {
+          hideTyping(); addChatMessage(p.message || 'error', 'agent', 'error');
+        }
+        const f = feed(); if (f) f.scrollTop = f.scrollHeight;
+        ev = null; data = '';
+      };
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, i); buf = buf.slice(i + 1);
+          if (line === '') flush();
+          else if (line.startsWith('event:')) ev = line.slice(6).trim();
+          else if (line.startsWith('data:')) data += (data ? '\n' : '') + line.slice(5).trim();
         }
       }
-    }, 320);
+      flush();
+    }
+  } catch (e) {
+    hideTyping(); addChatMessage('connection failed: ' + e, 'agent', 'error');
+  } finally {
+    hideTyping();
+    if (assistantText) { _chatHistory.push({ role: 'assistant', content: assistantText }); speak(assistantText); }
+    _chatSending = false;
+    if (sendBtn) sendBtn.disabled = false;
+    // The agent may have changed lights/screens — refresh the floor plan.
+    setTimeout(syncLiveState, 900);
   }
 }
 
