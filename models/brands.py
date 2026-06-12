@@ -129,10 +129,14 @@ async def apply_brand_full(brand_id: str) -> dict:
                 s.type = "gradient"
                 s.text = "mimic|animated|100"  # track the new brand lighting
                 gradient_screens.append(sid)
-            if s.connected:
-                await connection_manager.notify_screen(screen=s)
     if gradient_screens or picture_screens:
+        # Persist FIRST, then tell screens to reload — otherwise a reload can
+        # race ahead of the save and re-show stale content (seen on screen F).
         screen_manager.save_screens()
+        for sid in (picture_screens + gradient_screens):
+            s = by_id.get(sid)
+            if s is not None and s.connected:
+                await connection_manager.notify_screen(screen=s)
 
     # Play the brand video on the VLC screen (sourced from the Pi backup
     # media library). Best-effort — VLC may be down/unreachable.
