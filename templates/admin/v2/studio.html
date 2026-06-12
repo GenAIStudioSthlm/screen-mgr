@@ -1,0 +1,563 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reinvention Studio — Control</title>
+  <link rel="stylesheet" href="/static/css/control.css?v={{ app_version }}">
+  <script>
+    /* Apply saved theme immediately — prevents flash of wrong theme */
+    (function(){ if(localStorage.getItem('studio-theme')==='light') document.documentElement.classList.add('light'); })();
+  </script>
+</head>
+<body>
+
+<div id="app">
+
+  <!-- BRAND PROFILE BANNER (shown when a profile is pending from brand.html) -->
+  <div id="brand-banner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:500;background:linear-gradient(90deg,#003F7A,#0058A3);border-bottom:1px solid rgba(255,255,255,0.15);padding:10px 20px;display:none;align-items:center;gap:14px;font-family:'Graphik','Graphik Regular',sans-serif;font-size:12px;">
+    <div style="width:8px;height:8px;border-radius:50%;background:#FFDA1A;animation:blink 1.4s infinite;flex-shrink:0"></div>
+    <span style="color:rgba(255,255,255,0.6);letter-spacing:0.03em;text-transform:uppercase">New Brand Profile</span>
+    <span id="banner-name" style="color:#fff;font-weight:bold;letter-spacing:0.02em;text-transform:uppercase;flex:1"></span>
+    <button onclick="applyBrandProfile()" style="background:#A100FF;border:none;border-radius:0;padding:6px 14px;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:0.03em;cursor:pointer;color:#fff;transition:background 150ms cubic-bezier(0.85,0,0,1)" onmouseover="this.style.background='#7500C0'" onmouseout="this.style.background='#A100FF'">Apply to Studio</button>
+    <button onclick="dismissBrandBanner()" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.2);border-radius:0;padding:6px 12px;font-family:inherit;font-size:11px;letter-spacing:0.03em;cursor:pointer;color:rgba(255,255,255,0.6);transition:all 150ms cubic-bezier(0.85,0,0,1)" onmouseover="this.style.background='rgba(255,255,255,0.16)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">Dismiss</button>
+  </div>
+
+  <!-- HEADER -->
+  <header id="header">
+    <div class="acn-logo" aria-label="Accenture Studio">
+      <img src="/static/img/acc-logo.png" alt="Accenture">
+    </div>
+    <div class="hdr-center-dropdowns">
+      <div class="hdr-dropdown" id="hdr-profiles">
+        <button class="hdr-dd-btn" onclick="toggleHdrDropdown('hdr-profiles')">
+          <span class="hdr-dd-type">Brand Profile</span>
+          <span class="hdr-dd-sep">—</span>
+          <span class="hdr-dd-label">—</span>
+          <span class="hdr-dd-arrow">▾</span>
+        </button>
+        <div class="hdr-dd-panel" id="hdr-profiles-panel" data-companies>
+          <button class="company-btn" data-company="accenture" onclick="applyCompany('accenture')">
+            <div class="company-swatch" style="background:linear-gradient(135deg,#07000F,#5500B8 55%,#A100FF 80%,#C060FF);"></div>
+            Accenture
+            <span class="edit-company-btn" onclick="editCompany('accenture', event)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+          </button>
+          <button class="company-btn" data-company="ikea" onclick="applyCompany('ikea')">
+            <div class="company-swatch" style="background:linear-gradient(90deg,#003F7A 50%,#FFDA1A 50%);"></div>
+            IKEA
+            <span class="edit-company-btn" onclick="editCompany('ikea', event)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+          </button>
+          <button class="company-btn" data-company="hm" onclick="applyCompany('hm')">
+            <div class="company-swatch" style="background:#E50010;"></div>
+            H&amp;M
+            <span class="edit-company-btn" onclick="editCompany('hm', event)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></span>
+          </button>
+          <button class="add-profile-btn" onclick="window.location.href='brand.html?mode=new'">+ Add Profile</button>
+        </div>
+      </div>
+      <div class="hdr-dropdown" id="hdr-scenes">
+        <button class="hdr-dd-btn" onclick="toggleHdrDropdown('hdr-scenes')">
+          <span class="hdr-dd-type">Scene</span>
+          <span class="hdr-dd-sep">—</span>
+          <span class="hdr-dd-label">—</span>
+          <span class="hdr-dd-arrow">▾</span>
+        </button>
+        <div class="hdr-dd-panel" id="scenes-body">
+          <div class="hdr-dd-empty">Select a brand profile first</div>
+        </div>
+      </div>
+    </div>
+    <div class="clock-block">
+      <div id="clock">00:00:00</div>
+      <div class="live-indicator">
+        <div class="live-dot"></div>
+        LIVE
+      </div>
+      <button class="panel-toggle-btn" id="chat-panel-toggle" onclick="toggleChatPanel()" title="Toggle agent panel" aria-label="Toggle agent panel"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><rect x="3" y="3" width="18" height="18"/><line x1="16" y1="3" x2="16" y2="21"/></svg></button>
+      <button class="theme-toggle" id="theme-toggle" onclick="toggleTheme()" title="Switch to light mode" aria-label="Toggle light/dark mode"></button>
+    </div>
+  </header>
+
+  <!-- LEFT SIDEBAR -->
+  <aside id="sidebar">
+
+    <!-- ── VIEW TOGGLE ── -->
+    <div id="sidebar-view-toggle">
+      <button class="sv-btn active" data-view="screens" onclick="setView('screens')">Screens</button>
+      <button class="sv-btn" data-view="lighting" onclick="setView('lighting')">Lighting</button>
+    </div>
+
+    <!-- ── SCROLLABLE BODY ── -->
+    <div id="sidebar-body">
+
+      <!-- ── ZONE CONTROLS ── -->
+      <div class="sidebar-section zone-hdr">
+        <div id="zone-title">B — MAIN HALL W</div>
+        <div id="zone-sub">72 m² &nbsp;·&nbsp; Zone B</div>
+      </div>
+
+      <!-- Preview -->
+      <div class="ctrl-section">
+        <div class="ctrl-label">Preview</div>
+        <div id="zone-preview"></div>
+      </div>
+
+      <!-- Upload (above gradient) -->
+      <div class="ctrl-section" id="upload-section">
+        <div class="ctrl-label">Attachments</div>
+        <label class="upload-btn" for="zone-file-upload">
+          <span>Upload file</span>
+          <input type="file" id="zone-file-upload" style="display:none"
+            accept=".jpg,.jpeg,.png,.mp4,.mov,.pdf"
+            onchange="onFileUpload(this)">
+        </label>
+        <div id="upload-list"></div>
+      </div>
+
+      <!-- Gradient selector -->
+      <div class="ctrl-section" id="grad-grid-section">
+        <div class="ctrl-label">Gradient</div>
+        <div class="grad-grid" id="grad-grid"></div>
+      </div>
+
+      <!-- Intensity -->
+      <div class="ctrl-section" id="screens-intensity-section">
+        <div class="ctrl-label">Intensity</div>
+        <div class="intensity-row">
+          <input type="range" id="intensity-slider" min="0" max="100" value="100"
+            oninput="onIntensityChange(this.value)">
+          <div id="intensity-val">100</div>
+        </div>
+      </div>
+
+      <!-- Animation -->
+      <div class="ctrl-section" id="anim-section">
+        <div class="ctrl-label">Animation</div>
+        <div class="anim-options" id="anim-options">
+          <div class="anim-opt" data-anim="static"   onclick="onAnimChange('static')">
+            <div class="anim-indicator"></div> Static
+          </div>
+          <div class="anim-opt" data-anim="animated" onclick="onAnimChange('animated')">
+            <div class="anim-indicator"></div> Animated
+          </div>
+          <div class="anim-opt" data-anim="trippy"   onclick="onAnimChange('trippy')">
+            <div class="anim-indicator"></div> Trippy
+          </div>
+        </div>
+      </div>
+
+      <!-- Screens on/off -->
+      <div class="ctrl-section" id="screens-section">
+        <div class="ctrl-label">Screens</div>
+        <div class="screen-list" id="screen-list"></div>
+      </div>
+
+
+      <!-- Lighting controls (shown in lighting view) -->
+      <div class="ctrl-section" id="lighting-section" style="display:none">
+        <div class="ctrl-label">Light Colour</div>
+        <div class="light-preset-grid" id="light-preset-grid"></div>
+      </div>
+
+      <!-- Color wheel picker -->
+      <div class="ctrl-section" id="light-colorwheel-section" style="display:none">
+        <canvas id="light-colorwheel"></canvas>
+        <div class="hex-row">
+          <span class="hex-hash">#</span>
+          <input type="text" id="light-hex-input" class="hex-input" maxlength="6" placeholder="ffffff" spellcheck="false"
+            onkeydown="if(event.key==='Enter')onHexInputCommit(this.value)"
+            onblur="onHexInputCommit(this.value)">
+        </div>
+      </div>
+
+      <div class="ctrl-section" id="lighting-intensity-section" style="display:none">
+        <div class="ctrl-label">Light Intensity</div>
+        <div class="intensity-row">
+          <input type="range" id="light-intensity-slider" min="0" max="100" value="80"
+            oninput="onLightIntensityChange(this.value)">
+          <div id="light-intensity-val">80</div>
+        </div>
+      </div>
+
+    </div><!-- /#sidebar-body -->
+
+    <!-- ── PINNED FOOTER ── -->
+    <div id="sidebar-footer">
+      <button class="btn-save-changes" id="btn-save-changes" onclick="saveChanges()" disabled>Save Changes</button>
+      <button class="btn-apply-all btn-apply-all--full" onclick="applyToAllZones()">Apply to All Zones</button>
+    </div>
+
+  </aside>
+
+  <!-- MAIN FLOOR PLAN -->
+  <main id="main">
+    <div id="floorplan-wrap">
+      <div id="fp-reinvention">
+      <svg id="floorplan" viewBox="0 0 960 420" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:100%">
+        <defs>
+          <!-- Zone gradients -->
+          <linearGradient id="gBlue" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#0058A3" stop-opacity="0.7"/>
+            <stop offset="100%" stop-color="#003F7A" stop-opacity="0.7"/>
+          </linearGradient>
+          <linearGradient id="gYellow" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="#FFDA1A" stop-opacity="0.65"/>
+            <stop offset="100%" stop-color="#F0C400" stop-opacity="0.65"/>
+          </linearGradient>
+          <linearGradient id="gDark" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%" stop-color="#0D1B2A" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#00264D" stop-opacity="0.8"/>
+          </linearGradient>
+          <linearGradient id="gBrand" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%"   stop-color="#003F7A" stop-opacity="0.75"/>
+            <stop offset="50%"  stop-color="#0058A3" stop-opacity="0.75"/>
+            <stop offset="100%" stop-color="#FFDA1A" stop-opacity="0.75"/>
+          </linearGradient>
+          <linearGradient id="gAccenture" x1="0.2" y1="0" x2="0.8" y2="1">
+            <stop offset="0%"   stop-color="#001A3D" stop-opacity="0.92"/>
+            <stop offset="50%"  stop-color="#002D5C" stop-opacity="0.85"/>
+            <stop offset="100%" stop-color="#003F7A" stop-opacity="0.75"/>
+          </linearGradient>
+
+          <!-- Screen glow filters -->
+          <filter id="glowBlue" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glowYellow" x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+        </defs>
+
+        <!-- Outer bounding box / studio floor -->
+        <rect x="1" y="1" width="958" height="418" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+        <!-- Non-interactive utility block (SVC) -->
+        <rect x="600" y="142" width="65" height="265" fill="#1a1a1a" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+        <text x="632" y="278" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.2)" letter-spacing="1">SVC</text>
+
+        <!-- Zone rects — ordered back to front -->
+        <!-- N: Annex -->
+        <rect id="zone-n" class="zone-rect" data-zone="n" x="5" y="70" width="135" height="210"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="70" y="163" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">N</text>
+        <text x="70" y="175" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">ANNEX</text>
+
+        <!-- A: Entrance -->
+        <rect id="zone-a" class="zone-rect" data-zone="a" x="140" y="240" width="85" height="90"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="182" y="283" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">A</text>
+        <text x="182" y="295" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">ENTRANCE</text>
+
+        <!-- M: Tech Room -->
+        <rect id="zone-m" class="zone-rect" data-zone="m" x="195" y="12" width="90" height="95"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="240" y="58" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">M</text>
+        <text x="240" y="70" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">TECH</text>
+
+        <!-- E: Studio North -->
+        <rect id="zone-e" class="zone-rect" data-zone="e" x="285" y="12" width="190" height="130"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="380" y="71" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">E</text>
+        <text x="380" y="83" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">STUDIO NORTH</text>
+
+        <!-- D: Main Upper -->
+        <rect id="zone-d" class="zone-rect" data-zone="d" x="475" y="12" width="190" height="130"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="570" y="71" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">D</text>
+        <text x="570" y="83" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">MAIN UPPER</text>
+
+        <!-- L: Lab -->
+        <rect id="zone-l" class="zone-rect" data-zone="l" x="665" y="12" width="100" height="90"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="715" y="53" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">L</text>
+        <text x="715" y="65" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">LAB</text>
+
+        <!-- J: Office NE -->
+        <rect id="zone-j" class="zone-rect" data-zone="j" x="765" y="12" width="130" height="90"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="830" y="53" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">J</text>
+        <text x="830" y="65" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">OFFICE NE</text>
+
+        <!-- B: Main Hall W -->
+        <rect id="zone-b" class="zone-rect" data-zone="b" x="285" y="142" width="190" height="145"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="380" y="208" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">B</text>
+        <text x="380" y="220" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">MAIN HALL W</text>
+
+        <!-- C: Main Hall E -->
+        <rect id="zone-c" class="zone-rect" data-zone="c" x="475" y="142" width="130" height="145"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="540" y="208" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">C</text>
+        <text x="540" y="220" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">MAIN HALL E</text>
+
+        <!-- K: Studio East -->
+        <rect id="zone-k" class="zone-rect" data-zone="k" x="665" y="102" width="100" height="130"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="715" y="163" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">K</text>
+        <text x="715" y="175" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">STUDIO EAST</text>
+
+        <!-- I: Office Mid -->
+        <rect id="zone-i" class="zone-rect" data-zone="i" x="765" y="102" width="130" height="130"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="830" y="163" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">I</text>
+        <text x="830" y="175" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">OFFICE MID</text>
+
+        <!-- F: Production -->
+        <rect id="zone-f" class="zone-rect" data-zone="f" x="285" y="287" width="190" height="115"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="380" y="341" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">F</text>
+        <text x="380" y="353" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">PRODUCTION</text>
+
+        <!-- G: Workshop -->
+        <rect id="zone-g" class="zone-rect" data-zone="g" x="475" y="287" width="130" height="115"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="540" y="341" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">G</text>
+        <text x="540" y="353" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">WORKSHOP</text>
+
+        <!-- H: Office South -->
+        <rect id="zone-h" class="zone-rect" data-zone="h" x="765" y="232" width="130" height="170"
+          fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+        <text x="830" y="313" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">H</text>
+        <text x="830" y="325" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">OFFICE SOUTH</text>
+
+        <!-- LIGHTING OVERLAY RECTS -->
+        <g id="lighting-layer" style="display:none">
+          <rect id="light-n" class="light-rect" data-zone="n" x="5"   y="70"  width="135" height="210" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-a" class="light-rect" data-zone="a" x="140" y="240" width="85"  height="90"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-m" class="light-rect" data-zone="m" x="195" y="12"  width="90"  height="95"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-e" class="light-rect" data-zone="e" x="285" y="12"  width="190" height="130" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-d" class="light-rect" data-zone="d" x="475" y="12"  width="190" height="130" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-l" class="light-rect" data-zone="l" x="665" y="12"  width="100" height="90"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-j" class="light-rect" data-zone="j" x="765" y="12"  width="130" height="90"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-b" class="light-rect" data-zone="b" x="285" y="142" width="190" height="145" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-c" class="light-rect" data-zone="c" x="475" y="142" width="130" height="145" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-k" class="light-rect" data-zone="k" x="665" y="102" width="100" height="130" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-i" class="light-rect" data-zone="i" x="765" y="102" width="130" height="130" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-f" class="light-rect" data-zone="f" x="285" y="287" width="190" height="115" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-g" class="light-rect" data-zone="g" x="475" y="287" width="130" height="115" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          <rect id="light-h" class="light-rect" data-zone="h" x="765" y="232" width="130" height="170" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+        </g>
+
+        <!-- SCREENS (wall LED panels) -->
+        <!-- S1: top wall of B -->
+        <rect id="screen-s1" x="285" y="142" width="190" height="5"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+        <!-- S2: top wall of D -->
+        <rect id="screen-s2" x="475" y="12" width="190" height="5"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+        <!-- S3: right wall of B -->
+        <rect id="screen-s3" x="470" y="142" width="5" height="145"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+        <!-- S4: bottom wall of F -->
+        <rect id="screen-s4" x="285" y="397" width="190" height="5"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+        <!-- S5: left wall of E -->
+        <rect id="screen-s5" x="285" y="12" width="5" height="130"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+        <!-- S6: right wall of C -->
+        <rect id="screen-s6" x="600" y="142" width="5" height="145"
+          fill="#0058A3" opacity="0.3" stroke="none"/>
+      </svg>
+      </div>
+      <div id="fp-popup">
+        <svg id="floorplan-popup" viewBox="0 0 937 420" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet" style="width:100%;height:auto;max-height:100%">
+          <defs>
+            <linearGradient id="pgBlue" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#0058A3" stop-opacity="0.7"/>
+              <stop offset="100%" stop-color="#003F7A" stop-opacity="0.7"/>
+            </linearGradient>
+            <linearGradient id="pgYellow" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="#FFDA1A" stop-opacity="0.65"/>
+              <stop offset="100%" stop-color="#F0C400" stop-opacity="0.65"/>
+            </linearGradient>
+            <linearGradient id="pgDark" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%" stop-color="#0D1B2A" stop-opacity="0.8"/>
+              <stop offset="100%" stop-color="#00264D" stop-opacity="0.8"/>
+            </linearGradient>
+            <linearGradient id="pgBrand" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%"   stop-color="#003F7A" stop-opacity="0.75"/>
+              <stop offset="50%"  stop-color="#0058A3" stop-opacity="0.75"/>
+              <stop offset="100%" stop-color="#FFDA1A" stop-opacity="0.75"/>
+            </linearGradient>
+            <linearGradient id="pgAccenture" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0%"   stop-color="#001A3D" stop-opacity="0.92"/>
+              <stop offset="50%"  stop-color="#002D5C" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="#003F7A" stop-opacity="0.75"/>
+            </linearGradient>
+          </defs>
+
+          <!-- Outer bounding box -->
+          <rect x="1" y="1" width="935" height="418" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <!-- ENTRANCE — L-shaped: vertical left column + horizontal base   -->
+          <!-- ═══════════════════════════════════════════════════════════════ -->
+          <!-- Vertical column -->
+          <rect x="2" y="2" width="96" height="356" fill="#111111" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+          <!-- Horizontal base (extends right below Zone A and up to Station 1) -->
+          <rect x="2" y="358" width="435" height="60" fill="#111111" stroke="rgba(255,255,255,0.1)" stroke-width="1"/>
+
+          <!-- Door 1 — top of left exterior wall (opens inward right) -->
+          <rect x="2" y="22" width="4" height="28" fill="#111111"/>
+          <line x1="2" y1="22" x2="2" y2="50" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+          <path d="M 2 50 A 28 28 0 0 0 30 22" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.75" stroke-dasharray="3,2"/>
+
+          <!-- Staircase — closer to Door 2 -->
+          <rect x="36" y="365" width="80" height="48" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.75"/>
+          <line x1="36" y1="375" x2="116" y2="375" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <line x1="36" y1="385" x2="116" y2="385" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <line x1="36" y1="395" x2="116" y2="395" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <line x1="36" y1="405" x2="116" y2="405" stroke="rgba(255,255,255,0.14)" stroke-width="0.5"/>
+          <!-- Direction arrow → (toward Main Cloud) -->
+          <line x1="116" y1="389" x2="126" y2="389" stroke="rgba(255,255,255,0.28)" stroke-width="0.75"/>
+          <polygon points="129,389 123,386 123,392" fill="rgba(255,255,255,0.28)"/>
+
+          <!-- Door 2 — left wall of L base, aligned with Door 1 above (opens inward right) -->
+          <rect x="2" y="378" width="4" height="28" fill="#111111"/>
+          <line x1="2" y1="378" x2="2" y2="406" stroke="rgba(255,255,255,0.55)" stroke-width="1.5"/>
+          <path d="M 2 406 A 28 28 0 0 0 30 378" fill="none" stroke="rgba(255,255,255,0.22)" stroke-width="0.75" stroke-dasharray="3,2"/>
+
+          <!-- Entrance label -->
+          <text x="49" y="200" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.18)" letter-spacing="0.5">ENTRANCE</text>
+
+          <!-- ═══════════════════════════════════════════════════════ -->
+          <!-- CLICKABLE ZONES                                         -->
+          <!-- ═══════════════════════════════════════════════════════ -->
+
+          <!-- G: Control Center (top-left, widened) -->
+          <rect id="pu-zone-g" class="zone-rect" data-zone="g" onclick="selectZone('g')" x="102" y="2" width="335" height="80" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <!-- Wardrobe — room box, top-right corner of Control Center -->
+          <rect x="337" y="2" width="100" height="40" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.38)" stroke-width="0.75" pointer-events="none"/>
+          <text x="387" y="25" text-anchor="middle" font-family="monospace" font-size="6.5" fill="rgba(255,255,255,0.5)" pointer-events="none" letter-spacing="0.5">WARDROBE</text>
+          <text x="270" y="48" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">G</text>
+          <text x="270" y="60" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">CONTROL CENTER</text>
+
+          <!-- H: Station 3 (top-centre, reduced) -->
+          <rect id="pu-zone-h" class="zone-rect" data-zone="h" onclick="selectZone('h')" x="437" y="2" width="256" height="80" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="565" y="36" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">H</text>
+          <text x="565" y="48" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">STATION 3</text>
+
+          <!-- K: Tech (top-right, 2/3 width) -->
+          <rect id="pu-zone-k" class="zone-rect" data-zone="k" onclick="selectZone('k')" x="693" y="2" width="243" height="80" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="815" y="36" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">K</text>
+          <text x="815" y="48" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">TECH</text>
+
+          <!-- A: Main Cloud (left tall) -->
+          <rect id="pu-zone-a" class="zone-rect" data-zone="a" onclick="selectZone('a')" x="102" y="82" width="207" height="276" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="205" y="212" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">A</text>
+          <text x="205" y="224" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">MAIN CLOUD</text>
+
+          <!-- F: Cloud L (centre upper, flush with A) -->
+          <rect id="pu-zone-f" class="zone-rect" data-zone="f" onclick="selectZone('f')" x="309" y="82" width="384" height="134" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="501" y="141" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">F</text>
+          <text x="501" y="153" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">CLOUD L</text>
+
+          <!-- E: Cloud R (centre lower, flush with A) -->
+          <rect id="pu-zone-e" class="zone-rect" data-zone="e" onclick="selectZone('e')" x="309" y="216" width="384" height="142" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="501" y="278" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">E</text>
+          <text x="501" y="290" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">CLOUD R</text>
+
+          <!-- D: Main Hall (right tall, 2/3 width) -->
+          <rect id="pu-zone-d" class="zone-rect" data-zone="d" onclick="selectZone('d')" x="693" y="82" width="243" height="276" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="815" y="212" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">D</text>
+          <text x="815" y="224" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">MAIN HALL</text>
+
+          <!-- B: Station 1 (bottom, flush left of Station 2) -->
+          <rect id="pu-zone-b" class="zone-rect" data-zone="b" onclick="selectZone('b')" x="437" y="358" width="256" height="60" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="565" y="385" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">B</text>
+          <text x="565" y="397" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">STATION 1</text>
+
+          <!-- C: Station 2 (bottom-right, 2/3 width) -->
+          <rect id="pu-zone-c" class="zone-rect" data-zone="c" onclick="selectZone('c')" x="693" y="358" width="243" height="60" fill="#1e1e1e" stroke="#0a0a0a" stroke-width="2"/>
+          <text x="815" y="385" text-anchor="middle" font-family="monospace" font-size="9" fill="rgba(255,255,255,0.6)" pointer-events="none" letter-spacing="1">C</text>
+          <text x="815" y="397" text-anchor="middle" font-family="monospace" font-size="7" fill="rgba(255,255,255,0.3)" pointer-events="none" letter-spacing="0.5">STATION 2</text>
+
+          <!-- LIGHTING OVERLAY RECTS (popup) -->
+          <g id="pu-lighting-layer" style="display:none">
+            <rect id="pu-light-g" class="light-rect" data-zone="g" x="102" y="2"   width="335" height="80"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-h" class="light-rect" data-zone="h" x="437" y="2"   width="256" height="80"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-k" class="light-rect" data-zone="k" x="693" y="2"   width="243" height="80"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-a" class="light-rect" data-zone="a" x="102" y="82"  width="207" height="276" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-f" class="light-rect" data-zone="f" x="309" y="82"  width="384" height="134" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-e" class="light-rect" data-zone="e" x="309" y="216" width="384" height="142" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-d" class="light-rect" data-zone="d" x="693" y="82"  width="243" height="276" fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-b" class="light-rect" data-zone="b" x="437" y="358" width="256" height="60"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+            <rect id="pu-light-c" class="light-rect" data-zone="c" x="693" y="358" width="243" height="60"  fill="#111" fill-opacity="0.85" stroke="none" pointer-events="none"/>
+          </g>
+
+          <!-- SCREENS -->
+          <!-- PP-S1: top of Station 3 -->
+          <rect id="screen-pp-s1" x="437" y="2"   width="256" height="5"   fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S2: right side of Main Cloud -->
+          <rect id="screen-pp-s2" x="307" y="120" width="5"   height="190" fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S3: divider between Cloud L and Cloud R (upper) -->
+          <rect id="screen-pp-s3" x="335" y="208" width="320" height="4"   fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S4: divider between Cloud L and Cloud R (lower) -->
+          <rect id="screen-pp-s4" x="335" y="214" width="320" height="4"   fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S5: back (right) wall of Main Hall -->
+          <rect id="screen-pp-s5" x="931"  y="120" width="5"  height="190" fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S6: bottom of Station 1 -->
+          <rect id="screen-pp-s6" x="437" y="414" width="256" height="4"   fill="#0058A3" opacity="0.3" stroke="none"/>
+          <!-- PP-S7: bottom of Station 2 -->
+          <rect id="screen-pp-s7" x="693" y="414" width="243" height="4"   fill="#0058A3" opacity="0.3" stroke="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- INLINE BRAND BUILDER — Mode 2, slides over main canvas -->
+  </main>
+
+  <!-- RIGHT PANEL: STUDIO AGENT CHAT -->
+  <aside id="controls">
+    <div id="chat-header">
+      <div style="display:flex;align-items:center;gap:7px">
+        <span class="chat-status-dot"></span>
+        Studio Agent
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <button id="tts-btn" class="tts-btn" onclick="toggleTTS()" title="Enable voice responses" aria-label="Toggle voice responses"></button>
+        <div id="voice-status"></div>
+      </div>
+    </div>
+
+    <div id="chat-messages"></div>
+
+    <div id="quick-actions">
+      <button class="quick-action-btn" onclick="triggerQuickAction('Start Studio Setup', this.parentElement)">Start Studio Setup</button>
+    </div>
+    <div id="chat-input-area">
+      <div id="chat-wave-row">
+        <canvas id="voice-canvas" width="252" height="22"></canvas>
+      </div>
+      <div id="chat-text-row">
+        <input type="text" id="chat-input" placeholder="Type a command…"
+          onkeydown="if(event.key==='Enter')sendChatMessage()"
+          oninput="document.getElementById('chat-send').disabled=!this.value.trim()">
+        <button id="voice-btn" class="voice-btn" onclick="toggleVoice()"
+          title="Press to speak" aria-label="Voice command"></button>
+        <button id="chat-send" onclick="sendChatMessage()" title="Send" aria-label="Send" disabled>↑</button>
+      </div>
+    </div>
+  </aside>
+
+
+</div>
+
+
+<!-- Toast notification -->
+<div class="toast" id="toast"></div>
+
+<!-- Screen hover file preview tooltip -->
+<div id="screen-hover-preview" style="
+  display:none; position:fixed; z-index:999; pointer-events:none;
+  border:1px solid var(--border); background:#0a0a0a;
+  padding:3px; box-shadow:0 8px 24px rgba(0,0,0,0.6);
+  max-width:220px;
+"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="/static/javascript/v2/control.js?v={{ app_version }}"></script>
+</body>
+</html>
