@@ -27,13 +27,17 @@ BRANDS: dict[str, dict] = {
         # BEST-GUESS mapping (image filename -> original backend screen name ->
         # physical zone) — VERIFY with the operator, like the zone map.
         # Zones not listed fall back to a light-mimicking gradient.
-        # Orientation-matched: horizontal images on horizontal screens,
-        # vertical (cloud) images on the vertical cloud screens.
+        # Images on every zone screen EXCEPT the main one (Main Cloud = gradient),
+        # orientation-matched (horizontal images on horizontal screens, the
+        # vertical cloud images on the vertical cloud screens).
         "content": {
             "a": "IKEA/Screen_3.png",  # Main Cloud — horizontal big screen
+            "b": "IKEA/Screen_2.png",  # Station 1 — horizontal
+            "c": "IKEA/Screen_3.png",  # Station 2 — horizontal
             "d": "IKEA/Screen_2.png",  # Main Hall — horizontal
             "e": "IKEA/Cloud_1.jpg",   # Cloud R — vertical
             "f": "IKEA/Cloud_2.png",   # Cloud L — vertical
+            "h": "IKEA/Screen_3.png",  # Station 3 — horizontal
         },
     },
 }
@@ -96,8 +100,11 @@ async def apply_brand_full(brand_id: str) -> dict:
         img = content.get(zone)
         for sid in (z.get("screens") or []):
             s = by_id.get(sid)
-            if s is None or not s.connected:
+            if s is None:
                 continue
+            # Set content even on OFFLINE screens — they load their current
+            # content when they reconnect (so zones whose display is briefly
+            # off still come back on-brand).
             if img:
                 s.type = "picture"
                 s.picture = img
@@ -106,7 +113,8 @@ async def apply_brand_full(brand_id: str) -> dict:
                 s.type = "gradient"
                 s.text = "mimic|animated|100"  # track the new brand lighting
                 gradient_screens.append(sid)
-            await connection_manager.notify_screen(screen=s)
+            if s.connected:
+                await connection_manager.notify_screen(screen=s)
     if gradient_screens or picture_screens:
         screen_manager.save_screens()
     return {"ok": True, "brand": brand_id, "lighting": lighting,
