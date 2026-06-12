@@ -30,7 +30,9 @@ PORT = int(os.environ.get("ARM_VISION_PORT", "8000"))
 # (by track_id) to be reported. Marginal detections (e.g. a transparent bottle at ~0.1-0.3
 # confidence) flicker in and out frame to frame; voting makes the reported list stable
 # enough to target a grab, without raising the confidence threshold and losing the object.
-VOTE_WINDOW = int(os.environ.get("ARM_VISION_VOTE_WINDOW", "8"))
+# The window also bounds COASTING (see the loop): a voted object that drops out keeps its
+# last bbox for up to VOTE_WINDOW frames, so 30 bridges multi-second detection dropouts.
+VOTE_WINDOW = int(os.environ.get("ARM_VISION_VOTE_WINDOW", "30"))
 VOTE_MIN = int(os.environ.get("ARM_VISION_VOTE_MIN", "2"))
 
 app = Flask(__name__)
@@ -54,9 +56,86 @@ def _set_status(status):
         _state["status"] = status
 
 
+_latest_frame = None   # newest camera frame (BGR), shared capture -> detect
+
+
+def _detect_loop():
+    """Run YOLO tracking on the newest frame at whatever rate the model manages.
+    Decoupled from capture so detection latency doesn't throttle /raw -- the marker
+    servo needs FRESH raw frames or it measures pre-move gripper positions and learns
+    a bad Jacobian (live failure: probe response measured at 7-26 px/unit instead of
+    ~90, then the grab closed shallow or behind the object)."""
+    global _latest_frame
+    detector = V.Detector()
+    _set_status("loading model")
+    _log(f"loading {detector.model_name} - importing PyTorch (first run also downloads "
+         f"the weights, ~20 MB for yolo11s-seg). This is the slow part, ~10-30s ...")
+    t = time.time()
+    dev = detector.load()
+    _log(f"model loaded on '{dev}' in {time.time() - t:.1f}s.")
+
+    _set_status("warming up")
+    _log("warming up (compiling GPU kernels on the first inference) ...")
+    t = time.time()
+    detector.warmup()
+    _log(f"warmup done in {time.time() - t:.1f}s.")
+
+    _set_status("ready")
+    _log(f"READY  ->  open http://localhost:{PORT}")
+
+    history = deque(maxlen=VOTE_WINDOW)   # recent frames' track_id sets, for voting
+    last_seen = {}                        # track_id -> (frame_idx, object dict)
+    fidx = 0
+    while _running:
+        with _lock:
+            frame = _latest_frame
+        if frame is None:
+            time.sleep(0.05)
+            continue
+        frame = frame.copy()              # capture keeps writing; detect on a snapshot
+        result = detector.track(frame)
+        # MULTIFRAME VOTE: report objects whose track_id appeared in >= VOTE_MIN of the
+        # last VOTE_WINDOW frames. Also COAST: a voted object missing from just this
+        # frame keeps its last bbox (flagged "coasted") -- marginal detections flicker,
+        # and a grab target vanishing for one frame shouldn't drop it from the scene.
+        fidx += 1
+        cur = {o["track_id"]: o for o in result.get("objects", [])
+               if o.get("track_id") is not None}
+        for tid, o in cur.items():
+            last_seen[tid] = (fidx, o)
+        history.append(set(cur))
+        votes = {}
+        for ids in history:
+            for tid in ids:
+                votes[tid] = votes.get(tid, 0) + 1
+        if len(history) >= VOTE_MIN:
+            objs = [o for o in result.get("objects", [])
+                    if o.get("track_id") is None
+                    or votes.get(o["track_id"], 0) >= VOTE_MIN]
+            for tid, n in votes.items():
+                if n >= VOTE_MIN and tid not in cur and tid in last_seen:
+                    seen_at, o = last_seen[tid]
+                    if fidx - seen_at <= VOTE_WINDOW:
+                        objs.append({**o, "coasted": fidx - seen_at})
+            result["objects"] = objs
+        if len(last_seen) > 64:           # prune stale ids
+            last_seen = {t: v for t, v in last_seen.items()
+                         if fidx - v[0] <= 4 * VOTE_WINDOW}
+        V.annotate(frame, result)
+        ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
+        if ok:
+            with _lock:
+                _state["jpeg"] = buf.tobytes()
+                _state["result"] = result
+
+
 def _capture_loop():
-    """Own the camera, load + warm up the model, then keep the latest JPEG + detection fresh.
-    Each slow step (camera open, PyTorch import + weights, GPU warmup) prints progress."""
+    """Own the camera and keep /raw fresh at camera rate; detection runs in its own
+    thread on the newest frame. Draining the camera at full rate also keeps OpenCV's
+    frame buffer from backing up (a slow read loop serves stale frames). /raw serves
+    the un-annotated frame for the marker servo and calibrate.py frame-differencing,
+    so boxes don't pollute it."""
+    global _latest_frame
     cap = None
     try:
         _set_status("opening camera")
@@ -74,71 +153,18 @@ def _capture_loop():
             return
         _log(f"camera open ({frame.shape[1]}x{frame.shape[0]}).")
 
-        detector = V.Detector()
-        _set_status("loading model")
-        _log(f"loading {detector.model_name} - importing PyTorch (first run also downloads "
-             f"~6 MB weights). This is the slow part, ~10-30s ...")
-        t = time.time()
-        dev = detector.load()
-        _log(f"model loaded on '{dev}' in {time.time() - t:.1f}s.")
+        threading.Thread(target=_detect_loop, daemon=True).start()
 
-        _set_status("warming up")
-        _log("warming up (compiling GPU kernels on the first inference) ...")
-        t = time.time()
-        detector.warmup()
-        _log(f"warmup done in {time.time() - t:.1f}s.")
-
-        _set_status("ready")
-        _log(f"READY  ->  open http://localhost:{PORT}")
-
-        history = deque(maxlen=VOTE_WINDOW)   # recent frames' track_id sets, for voting
-        last_seen = {}                        # track_id -> (frame_idx, object dict)
-        fidx = 0
         while _running:
             ok, frame = cap.read()
             if not ok or frame is None:
                 time.sleep(0.05)
                 continue
-            result = detector.track(frame)
-            # MULTIFRAME VOTE: report objects whose track_id appeared in >= VOTE_MIN of the
-            # last VOTE_WINDOW frames. Also COAST: a voted object missing from just this
-            # frame keeps its last bbox (flagged "coasted") -- marginal detections flicker,
-            # and a grab target vanishing for one frame shouldn't drop it from the scene.
-            fidx += 1
-            cur = {o["track_id"]: o for o in result.get("objects", [])
-                   if o.get("track_id") is not None}
-            for tid, o in cur.items():
-                last_seen[tid] = (fidx, o)
-            history.append(set(cur))
-            votes = {}
-            for ids in history:
-                for tid in ids:
-                    votes[tid] = votes.get(tid, 0) + 1
-            if len(history) >= VOTE_MIN:
-                objs = [o for o in result.get("objects", [])
-                        if o.get("track_id") is None
-                        or votes.get(o["track_id"], 0) >= VOTE_MIN]
-                for tid, n in votes.items():
-                    if n >= VOTE_MIN and tid not in cur and tid in last_seen:
-                        seen_at, o = last_seen[tid]
-                        if fidx - seen_at <= VOTE_WINDOW:
-                            objs.append({**o, "coasted": fidx - seen_at})
-                result["objects"] = objs
-            if len(last_seen) > 64:           # prune stale ids
-                last_seen = {t: v for t, v in last_seen.items()
-                             if fidx - v[0] <= 4 * VOTE_WINDOW}
-            # Encode the RAW frame before annotation -- /raw serves this for
-            # frame-differencing (calibrate.py move-and-detect), so detection
-            # boxes don't pollute the diff.
             ok_raw, raw_buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 90])
-            V.annotate(frame, result)
-            ok, buf = cv2.imencode(".jpg", frame, [cv2.IMWRITE_JPEG_QUALITY, 80])
-            if ok:
-                with _lock:
-                    _state["jpeg"] = buf.tobytes()
-                    if ok_raw:
-                        _state["raw_jpeg"] = raw_buf.tobytes()
-                    _state["result"] = result
+            with _lock:
+                _latest_frame = frame
+                if ok_raw:
+                    _state["raw_jpeg"] = raw_buf.tobytes()
     finally:
         if cap is not None:
             cap.release()

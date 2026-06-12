@@ -37,13 +37,17 @@ FRAME_W = int(os.environ.get("ARM_CAM_WIDTH", "640"))
 FRAME_H = int(os.environ.get("ARM_CAM_HEIGHT", "480"))
 
 # --- YOLO config --------------------------------------------------------------
-YOLO_MODEL = os.environ.get("ARM_YOLO_MODEL", "yolo11n-seg.pt")  # nano seg, ~6 MB
-YOLO_CONF = float(os.environ.get("ARM_YOLO_CONF", "0.15"))       # detection threshold -- low on purpose:
-#   the vision server's multiframe voting suppresses one-frame false positives, and a transparent
-#   bottle only scores ~0.1-0.3 from oblique views (0.35 made it invisible)
+YOLO_MODEL = os.environ.get("ARM_YOLO_MODEL", "yolo11s-seg.pt")  # small seg, ~20 MB
+YOLO_CONF = float(os.environ.get("ARM_YOLO_CONF", "0.10"))       # detection threshold -- low on purpose:
+#   the vision server's multiframe voting suppresses one-frame false positives, and marginal
+#   objects (transparent bottle, pink can) only score ~0.1-0.3 (0.15 still dropped frames)
 YOLO_DEVICE = os.environ.get("ARM_YOLO_DEVICE", "")              # "", "mps", "cpu" ("" = auto)
 YOLO_IMGSZ = int(os.environ.get("ARM_YOLO_IMGSZ", "640"))        # inference size; lower = faster
 MAX_OBJECTS = int(os.environ.get("ARM_YOLO_MAX", "10"))          # cap reported detections
+# Tracker config: project botsort yaml tuned for low-conf objects + long occlusion
+# (the arm sweeping over the scene); see tracker.yaml for the why.
+YOLO_TRACKER = os.environ.get(
+    "ARM_YOLO_TRACKER", os.path.join(os.path.dirname(os.path.abspath(__file__)), "tracker.yaml"))
 
 # --- Colour naming (tuning surface) -------------------------------------------
 SAT_MIN = 60           # pixels below this saturation are "grey" -> ignored
@@ -228,7 +232,8 @@ class Detector:
         """Detection with persistent track IDs across frames (the server loop)."""
         m = self._ensure()
         r = m.track(frame, conf=self.conf, device=self.device, imgsz=YOLO_IMGSZ,
-                    retina_masks=True, persist=True, verbose=False)[0]
+                    retina_masks=True, persist=True, verbose=False,
+                    tracker=YOLO_TRACKER)[0]
         return _build_result(frame, r)
 
 

@@ -403,6 +403,12 @@ MARKER_RELAX_VAL = int(os.environ.get("ARM_MARKER_RELAX_VAL", "50"))    # strip 
 # Marker measurements are far less noisy than the waggle differencing, so the servo can run
 # MUCH tighter tolerances (live miss: a 13px ~ 20mm residual passed the waggle-sized gates,
 # one finger contacted first and clipped the bottle out of the gap instead of wrapping it).
+MARKER_STABLE_PX = float(os.environ.get("ARM_MARKER_STABLE_PX", "2.5"))   # two consecutive reads must
+#   agree within this to count as a STATIONARY gripper -- wait_settled() returns on the firmware's
+#   COMMANDED pose, so the physical arm can still be moving/ringing when measurement starts (live:
+#   strips found mid-motion at a displaced position -> probe response 7-26 px/unit instead of ~90)
+MARKER_STABLE_TRIES = int(os.environ.get("ARM_MARKER_STABLE_TRIES", "12"))  # read budget (~2s) before
+#   giving up on stability and falling back to a median of the last reads
 MARKER_TOL_PX = float(os.environ.get("ARM_MARKER_TOL_PX", "10"))        # align convergence (the marker
 #   midpoint jitters ~+/-5px frame to frame; tighter than that and the servo hunts forever)
 MARKER_FINE_MIN_PX = float(os.environ.get("ARM_MARKER_FINE_MIN", "9"))  # correct descent stages above this
@@ -502,19 +508,37 @@ async def _measure_gripper_pixel(client, settle=0.3, reads=3):
     global _MARKER_MODE
     import asyncio
     if FINGER_MARKERS and _MARKER_MODE in (None, True):
-        pts = []
-        for _ in range(3):                     # 3 reads -> median rejects single-frame jitter
-            await asyncio.sleep(0.15)          # let the vision loop publish a post-move frame
+        # STABILITY-GATED reads: wait_settled() returns on the firmware's COMMANDED pose, so
+        # the physical arm can still be moving/ringing when measurement starts. A read taken
+        # mid-motion SUCCEEDS at a displaced position and silently corrupts the probe-learned
+        # Jacobian (live: reach response measured 7-26 px/unit instead of ~90 -> shallow
+        # grabs, forward plows). Accept a reading only once two consecutive reads agree
+        # within MARKER_STABLE_PX -- proof the gripper is stationary IN THE IMAGE, robust to
+        # servo speed and settle lag. The read budget also rides out post-move motion blur,
+        # which used to fail all reads and condemn the whole grab to the waggle.
+        reads = []
+        for _ in range(MARKER_STABLE_TRIES):
+            await asyncio.sleep(0.15)          # let the vision loop publish a fresh frame
             try:
                 loc = locate_finger_markers(grab_raw_frame())
             except Exception:
                 loc = None
-            if loc:
-                pts.append(loc)
-        if pts:
+            if not loc:
+                continue
+            if reads and abs(loc[0] - reads[-1][0]) <= MARKER_STABLE_PX \
+                     and abs(loc[1] - reads[-1][1]) <= MARKER_STABLE_PX:
+                _MARKER_MODE = True
+                return (float((loc[0] + reads[-1][0]) / 2.0),
+                        float((loc[1] + reads[-1][1]) / 2.0))
+            reads.append(loc)
+        if reads:
+            # Never stabilized within the budget (lingering vibration or marker flicker):
+            # median of the last reads is the pre-gating behavior -- still better than
+            # refusing to measure a stationary-but-noisy scene.
+            tail = reads[-3:]
             _MARKER_MODE = True
-            return (float(np.median([p[0] for p in pts])),
-                    float(np.median([p[1] for p in pts])))
+            return (float(np.median([p[0] for p in tail])),
+                    float(np.median([p[1] for p in tail])))
         if _MARKER_MODE is True:
             return None                        # markers were working: do NOT start waggling
         _MARKER_MODE = False                   # no markers on this rig: use the waggle

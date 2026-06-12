@@ -105,11 +105,14 @@ keys are still present (now describing the primary object).
 
 **Model / tuning** (env vars):
 
-- `ARM_YOLO_MODEL` (default `yolo11n-seg.pt`) — any Ultralytics model; `-seg` variants
+- `ARM_YOLO_MODEL` (default `yolo11s-seg.pt`) — any Ultralytics model; `-seg` variants
   give per-object masks for cleaner color sampling. **Downloaded automatically on first
-  run** (~6 MB, needs internet; cached afterward).
-- `ARM_YOLO_CONF` (default `0.35`) — detection confidence threshold; raise it if you get
-  noisy/spurious boxes.
+  run** (~20 MB, needs internet; cached afterward).
+- `ARM_YOLO_CONF` (default `0.10`) — detection confidence threshold; deliberately low so
+  marginal objects stay visible (the server's multiframe voting suppresses the noise);
+  raise it if you get persistent spurious boxes.
+- `ARM_YOLO_TRACKER` (default `tracker.yaml` next to `vision.py`) — BoT-SORT config tuned
+  to give low-confidence objects track ids and keep them through ~90 frames of occlusion.
 - `ARM_YOLO_DEVICE` (default auto) — `mps` on Apple Silicon, else `cpu`.
 - `ARM_YOLO_MAX` (default `10`) — cap on reported detections.
 
