@@ -17,6 +17,18 @@ BRANDS: dict[str, dict] = {
         "name": "Accenture",
         "primary": "#A100FF",
         "secondary": "#7500C0",
+        # Accenture logo on every zone screen (orientation-matched logo card on
+        # white). The one screen playing video is the separate VLC display, not
+        # a screen-mgr screen, so all web screens get the logo.
+        "content": {
+            "a": "Accenture/logo_h.png",  # Main Cloud — horizontal
+            "b": "Accenture/logo_h.png",  # Station 1 — horizontal
+            "c": "Accenture/logo_h.png",  # Station 2 — horizontal
+            "d": "Accenture/logo_h.png",  # Main Hall — horizontal
+            "e": "Accenture/logo_v.png",  # Cloud R — vertical
+            "f": "Accenture/logo_v.png",  # Cloud L — vertical
+            "h": "Accenture/logo_v.png",  # Station 3 — vertical
+        },
     },
     "ikea": {
         "id": "ikea",
