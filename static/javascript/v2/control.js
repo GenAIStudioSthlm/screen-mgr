@@ -452,6 +452,18 @@ function renderZone(zoneId) {
     : document.getElementById(`zone-${zoneId}`);
   if (!el) return;
 
+  // LIVE: when the backend reports real Hue colours for this zone, the floor
+  // plan mirrors the actual room (gradients mimic the lights). Falls back to
+  // the mock gradient when the zone has no lit lights.
+  if (z.liveColors && z.liveColors.length) {
+    el.setAttribute('fill', z.liveColors[0]);
+    el.style.opacity = '0.95';
+    el.classList.remove('anim-animated', 'anim-trippy');
+    if (z.anim === 'animated') el.classList.add('anim-animated');
+    if (z.anim === 'trippy')   el.classList.add('anim-trippy');
+    return;
+  }
+
   // Fill — light mode uses a warm light-grey for off zones so they're readable
   const isLightMode = document.documentElement.classList.contains('light');
   const offFill = isLightMode ? '#D2D2CF' : '#1e1e1e';
@@ -486,6 +498,22 @@ function renderZone(zoneId) {
 
 function renderAllZones() {
   Object.keys(ZONES).forEach(zoneId => renderZone(zoneId));
+}
+
+// ── LIVE STATE ────────────────────────────────────────────────────────────────
+// Mirror the real room: pull each zone's current Hue light colours from the
+// backend and repaint the floor plan so the UI reflects reality.
+async function syncLiveState() {
+  try {
+    const r = await fetch('/api/studio/state?plan=' + currentFloorplan, { cache: 'no-store' });
+    if (!r.ok) return;
+    const d = await r.json();
+    const zones = d.zones || {};
+    Object.keys(zones).forEach(k => {
+      if (ZONES[k]) ZONES[k].liveColors = zones[k].colors || [];
+    });
+    renderAllZones();
+  } catch (e) { /* keep last frame on transient errors */ }
 }
 
 // ── SCREEN SVG RENDERING ──────────────────────────────────────────────────────
@@ -2303,3 +2331,6 @@ checkPendingBrand();
 initVoice();
 initTTS();
 initAgent();
+// Mirror the real room on the floor plan, then keep it fresh.
+syncLiveState();
+setInterval(syncLiveState, 5000);

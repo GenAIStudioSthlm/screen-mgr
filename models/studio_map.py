@@ -78,19 +78,25 @@ def light_to_hex(state: dict) -> str | None:
     return "#ffefd9"
 
 
-def zone_light_hexes(zone: dict | None) -> list[str]:
-    """Current colours of the zone's mapped lights (skips off/unknown)."""
-    if not zone:
-        return []
+def _all_lights() -> dict:
+    """Fetch every Hue light's state once ({} if unavailable)."""
     from modules import registry
 
     mod = registry.get("hue")
     client = getattr(mod, "client", None) if mod else None
     if client is None:
-        return []
+        return {}
     lights = client.get_lights()
-    if not isinstance(lights, dict) or "error" in lights:
+    return lights if isinstance(lights, dict) and "error" not in lights else {}
+
+
+def zone_light_hexes(zone: dict | None, lights: dict | None = None) -> list[str]:
+    """Current colours of the zone's mapped lights (skips off/unknown).
+    Pass a preloaded `lights` dict to avoid a bridge call per zone."""
+    if not zone:
         return []
+    if lights is None:
+        lights = _all_lights()
     out: list[str] = []
     for lid in (zone.get("light_ids") or []):
         light = lights.get(str(lid)) or lights.get(lid)
@@ -100,6 +106,34 @@ def zone_light_hexes(zone: dict | None) -> list[str]:
         if hexc:
             out.append(hexc)
     return out
+
+
+def studio_state(plan: str = "popup") -> dict:
+    """All zones enriched with live light colours + real screen state, in one
+    pass (single bridge fetch). The new /admin/studio UI polls this to mirror
+    and drive the real room."""
+    from screens import screen_manager
+
+    zones_map = load_map().get(plan, {})
+    lights = _all_lights()
+    by_id = {s.id: s for s in screen_manager.screens}
+    zones: dict = {}
+    for key, z in zones_map.items():
+        if key.startswith("_") or not isinstance(z, dict):
+            continue
+        screens = []
+        for sid in (z.get("screens") or []):
+            s = by_id.get(sid)
+            if s is not None:
+                screens.append({"id": s.id, "connected": s.connected, "type": s.type})
+        zones[key] = {
+            "name": z.get("name"),
+            "orientation": z.get("orientation"),
+            "light_ids": z.get("light_ids") or [],
+            "colors": zone_light_hexes(z, lights),
+            "screens": screens,
+        }
+    return {"plan": plan, "zones": zones}
 
 
 def screen_gradient_spec(screen_id: int, plan: str = "popup") -> dict:

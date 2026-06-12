@@ -148,3 +148,13 @@ async def api_screen_gradient(screen_id: int):
     from models.studio_map import screen_gradient_spec
 
     return JSONResponse(screen_gradient_spec(screen_id))
+
+
+@router.get("/api/studio/state")
+async def api_studio_state(plan: str = "popup"):
+    """All zones with live light colours + real screen state, in one call.
+    The /admin/studio floor plan polls this to mirror the real room."""
+    from fastapi.responses import JSONResponse
+    from models.studio_map import studio_state
+
+    return JSONResponse(studio_state(plan))
