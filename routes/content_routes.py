@@ -123,3 +123,28 @@ async def screen_share(request: Request, room_id: str):
         "content/screen_share.html",
         {"request": request, "room_id": room_id},
     )
+
+
+# ---------------------------------------------------------------------
+# Gradient — animated brand gradient that mimics the zone's lighting.
+# The page renders an initial gradient and then polls the JSON endpoint
+# so the screen tracks its zone's Hue lights live.
+# ---------------------------------------------------------------------
+@router.get("/gradient/{screen_id}", response_class=HTMLResponse)
+async def show_gradient(request: Request, screen_id: int):
+    from models.studio_map import screen_gradient_spec
+
+    spec = screen_gradient_spec(screen_id)
+    return templates.TemplateResponse(
+        "content/gradient.html",
+        {"request": request, **spec},
+    )
+
+
+@router.get("/api/studio/screen/{screen_id}/gradient")
+async def api_screen_gradient(screen_id: int):
+    """Live gradient spec (zone + current light colours) for polling."""
+    from fastapi.responses import JSONResponse
+    from models.studio_map import screen_gradient_spec
+
+    return JSONResponse(screen_gradient_spec(screen_id))

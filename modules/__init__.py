@@ -16,6 +16,7 @@ from modules.url import UrlModule
 from modules.text import TextModule
 from modules.video import VideoModule
 from modules.picture import PictureModule
+from modules.gradient import GradientModule
 from modules.pdf import PdfModule
 from modules.default import DefaultModule
 from modules.slideshow import SlideshowModule
@@ -28,6 +29,7 @@ registry.register(UrlModule())
 registry.register(TextModule())
 registry.register(VideoModule())
 registry.register(PictureModule())
+registry.register(GradientModule())
 registry.register(PdfModule())
 registry.register(DefaultModule())
 registry.register(SlideshowModule())
