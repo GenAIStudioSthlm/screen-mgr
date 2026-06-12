@@ -23,6 +23,15 @@ BRANDS: dict[str, dict] = {
         "name": "IKEA",
         "primary": "#0058A3",
         "secondary": "#FFDA1A",
+        # Per-zone on-brand screen content (folder-prefixed picture paths).
+        # BEST-GUESS mapping (image filename -> original backend screen name ->
+        # physical zone) — VERIFY with the operator, like the zone map.
+        # Zones not listed fall back to a light-mimicking gradient.
+        "content": {
+            "a": "IKEA/Cloud_1.jpg",   # Main Cloud (screen 1)
+            "f": "IKEA/Screen_2.png",  # Cloud L (screen 4 = backend 'Screen 2')
+            "e": "IKEA/Screen_3.png",  # Cloud R (screen 5 = backend 'Screen 3')
+        },
     },
 }
 
@@ -71,18 +80,31 @@ async def apply_brand_full(brand_id: str) -> dict:
     from models.studio_map import load_map
 
     zmap = load_map().get("popup", {})
-    zone_screen_ids = {
-        sid for k, z in zmap.items()
-        if isinstance(z, dict) for sid in (z.get("screens") or [])
-    }
-    changed: list[int] = []
-    for s in screen_manager.screens:
-        if s.id in zone_screen_ids and s.connected:
-            s.type = "gradient"
-            s.text = "mimic|animated|100"  # track the new brand lighting
-            changed.append(s.id)
+    content = brand.get("content", {})
+    by_id = {s.id: s for s in screen_manager.screens}
+    gradient_screens: list[int] = []
+    picture_screens: list[int] = []
+
+    # Per zone: show the brand's on-brand image where mapped, else a
+    # light-mimicking gradient. Only touch connected screens.
+    for zone, z in zmap.items():
+        if zone.startswith("_") or not isinstance(z, dict):
+            continue
+        img = content.get(zone)
+        for sid in (z.get("screens") or []):
+            s = by_id.get(sid)
+            if s is None or not s.connected:
+                continue
+            if img:
+                s.type = "picture"
+                s.picture = img
+                picture_screens.append(sid)
+            else:
+                s.type = "gradient"
+                s.text = "mimic|animated|100"  # track the new brand lighting
+                gradient_screens.append(sid)
             await connection_manager.notify_screen(screen=s)
-    if changed:
+    if gradient_screens or picture_screens:
         screen_manager.save_screens()
     return {"ok": True, "brand": brand_id, "lighting": lighting,
-            "screens_set_gradient": changed}
+            "screens_gradient": gradient_screens, "screens_picture": picture_screens}
