@@ -17,6 +17,7 @@ BRANDS: dict[str, dict] = {
         "name": "Accenture",
         "primary": "#A100FF",
         "secondary": "#7500C0",
+        "video": "http://192.168.2.65:8000/static/videos/ACN_Main_screen.mp4",
         # Accenture logo on every zone screen (orientation-matched logo card on
         # white). The one screen playing video is the separate VLC display, not
         # a screen-mgr screen, so all web screens get the logo.
@@ -35,6 +36,9 @@ BRANDS: dict[str, dict] = {
         "name": "IKEA",
         "primary": "#0058A3",
         "secondary": "#FFDA1A",
+        # Brand video played on the VLC screen, sourced from the Pi (backup
+        # media library). VLC streams it over HTTP.
+        "video": "http://192.168.2.65:8000/static/videos/IKEA_Main_screen.mov",
         # Per-zone on-brand screen content (folder-prefixed picture paths).
         # BEST-GUESS mapping (image filename -> original backend screen name ->
         # physical zone) — VERIFY with the operator, like the zone map.
@@ -129,5 +133,19 @@ async def apply_brand_full(brand_id: str) -> dict:
                 await connection_manager.notify_screen(screen=s)
     if gradient_screens or picture_screens:
         screen_manager.save_screens()
+
+    # Play the brand video on the VLC screen (sourced from the Pi backup
+    # media library). Best-effort — VLC may be down/unreachable.
+    video = brand.get("video")
+    vlc_result = None
+    if video:
+        try:
+            from mcps.vlc import vlc_client
+            await vlc_client.command("in_play", input=video)
+            vlc_result = {"ok": True, "playing": video}
+        except Exception as e:
+            vlc_result = {"ok": False, "error": str(e)}
+
     return {"ok": True, "brand": brand_id, "lighting": lighting,
-            "screens_gradient": gradient_screens, "screens_picture": picture_screens}
+            "screens_gradient": gradient_screens, "screens_picture": picture_screens,
+            "video": vlc_result}
