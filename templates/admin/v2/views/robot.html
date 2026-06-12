@@ -1,0 +1,53 @@
+{# views/robot.html — Braccio robot-arm setup, view-only.
+
+   Embeds the vision server's own live dashboard (MJPEG feed with YOLO
+   boxes + the detected-objects panel). The vision server runs on the
+   machine the webcam is plugged into — today a phone at
+   192.168.2.104:8000 (it binds 0.0.0.0, so it's reachable across the
+   LAN). If the webcam host moves, change VISION_DASHBOARD below.
+
+   Quick iframe embed (no proxy): the browser viewing /admin must be on
+   the same LAN and able to reach the vision host directly. The arm
+   itself is controlled separately via the braccio MCP (ws to the arm);
+   this view is the *perception* half — what the camera sees.
+
+   No <script> tag / x-data needed — it's a static embed. #}
+
+<div style="display:flex;flex-direction:column;gap:var(--s-3);min-height:0">
+
+  {# ---------- Header ---------- #}
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--s-3);flex-wrap:wrap">
+    <div>
+      <h1 style="margin:0">Robot</h1>
+      <p style="margin:var(--s-1) 0 0;color:var(--text-dim);font-size:12px">
+        Live view from the arm's webcam (YOLO object + colour detection).
+        Vision host: <code>192.168.2.104:8000</code>. Arm motion control is
+        wired separately via the <code>braccio</code> MCP.
+      </p>
+    </div>
+    <div style="display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap">
+      <a href="http://192.168.2.104:8000/" target="_blank" rel="noopener"
+         class="btn btn-brand" style="text-decoration:none">
+        ↗ Open dashboard in new tab
+      </a>
+    </div>
+  </div>
+
+  {# ---------- Embedded vision dashboard ----------
+       GET / is the live MJPEG feed + object list. If the panel renders
+       blank / "refused to connect", the vision host is down or this
+       browser can't reach it on the LAN — use "Open in new tab". #}
+  <div class="card" style="padding:0;flex:1;min-height:560px;display:flex;flex-direction:column">
+    <iframe src="http://192.168.2.104:8000/"
+            style="flex:1;width:100%;border:0;min-height:560px;background:var(--bg)"
+            referrerpolicy="origin"
+            title="Braccio vision dashboard"></iframe>
+  </div>
+
+  <div style="font-size:10px;color:var(--text-dim);font-style:italic">
+    Tip: blank panel usually means the webcam host (the phone) is asleep or
+    off the LAN. The arm appears as a tall red object — the YOLO model has no
+    "robot arm" class, so it's often labelled "fire hydrant".
+  </div>
+
+</div>

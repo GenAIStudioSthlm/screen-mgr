@@ -41,6 +41,7 @@
         <button class="btn" :class="view === 'lighting' ? 'btn-brand' : 'btn-ghost'" @click="view='lighting'">Lighting</button>
         <button class="btn" :class="view === 'audio'    ? 'btn-brand' : 'btn-ghost'" @click="view='audio'">Audio</button>
         <button class="btn" :class="view === 'music'    ? 'btn-brand' : 'btn-ghost'" @click="view='music'">Music</button>
+        <button class="btn" :class="view === 'robot'    ? 'btn-brand' : 'btn-ghost'" @click="view='robot'">Robot</button>
         <button class="btn" :class="view === 'modules'  ? 'btn-brand' : 'btn-ghost'" @click="view='modules'">Modules</button>
       </div>
 
@@ -87,6 +88,7 @@
       <div x-show="view === 'lighting'">{% include "admin/v2/views/lighting.html" %}</div>
       <div x-show="view === 'audio'">{% include "admin/v2/views/audio.html" %}</div>
       <div x-show="view === 'music'">{% include "admin/v2/views/music.html" %}</div>
+      <div x-show="view === 'robot'">{% include "admin/v2/views/robot.html" %}</div>
       <div x-show="view === 'modules'">{% include "admin/v2/views/modules.html" %}</div>
 
     </main>
