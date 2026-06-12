@@ -510,7 +510,11 @@ async function syncLiveState() {
     const d = await r.json();
     const zones = d.zones || {};
     Object.keys(zones).forEach(k => {
-      if (ZONES[k]) ZONES[k].liveColors = zones[k].colors || [];
+      if (ZONES[k]) {
+        ZONES[k].liveColors = zones[k].colors || [];
+        // Real backend screen ids for this zone (for pushing gradient content).
+        ZONES[k].realScreens = (zones[k].screens || []).map(s => s.id);
+      }
     });
     renderAllZones();
   } catch (e) { /* keep last frame on transient errors */ }
@@ -630,6 +634,45 @@ function enableZoneScreens(zoneId) {
   });
 }
 
+// ── PUSH GRADIENT/ANIMATION TO REAL SCREENS ────────────────────────────────────
+// The Screens-tab gradient menu + animation drive the zone's real screen(s):
+// set them to the `gradient` content type with explicit stop colours, the
+// chosen animation (static/animated/trippy) and intensity.
+const _pushTimers = {};
+
+function gradStops(gradId) {
+  if (gradId === 'off') return [];
+  const idx = GRADIENTS.findIndex(g => g.id === gradId);
+  if (idx < 0) return [];
+  const stops = (activeCompany === 'accenture')
+    ? (ACCENTURE_GRADIENTS[idx] && ACCENTURE_GRADIENTS[idx].svgStops)
+    : DEFAULT_SVG_STOPS[idx];
+  return stops || [];
+}
+
+function buildGradSpec(z) {
+  const colorspec = z.grad === 'off' ? 'off' : (gradStops(z.grad).join(',') || 'mimic');
+  const anim = z.anim || 'animated';
+  const intensity = (z.intensity == null ? 100 : z.intensity);
+  return colorspec + '|' + anim + '|' + intensity;
+}
+
+function pushZoneGradient(zoneId) {
+  const z = ZONES[zoneId];
+  const ids = (z && z.realScreens) || [];
+  if (!ids.length) return;
+  const spec = buildGradSpec(z);
+  clearTimeout(_pushTimers[zoneId]);
+  _pushTimers[zoneId] = setTimeout(() => {
+    ids.forEach(id => {
+      const body = new URLSearchParams();
+      body.append('content_type', 'gradient');
+      body.append('content_value', spec);
+      fetch('/api/screens/' + id + '/set_content', { method: 'POST', body }).catch(() => {});
+    });
+  }, 350);
+}
+
 function onGradChange(gradId) {
   ZONES[selectedZone].grad = gradId;
   if (gradId !== 'off') enableZoneScreens(selectedZone);
@@ -638,6 +681,7 @@ function onGradChange(gradId) {
   renderAllScreens();
   renderRightPanel();
   clearSceneHighlight();
+  pushZoneGradient(selectedZone);
 }
 
 function onIntensityChange(val) {
@@ -647,6 +691,7 @@ function onIntensityChange(val) {
   renderZone(selectedZone);
   renderPreview();
   clearSceneHighlight();
+  pushZoneGradient(selectedZone);
 }
 
 function onAnimChange(animId) {
@@ -659,6 +704,7 @@ function onAnimChange(animId) {
   renderZone(selectedZone);
   renderPreview();
   clearSceneHighlight();
+  pushZoneGradient(selectedZone);
 }
 
 // ── FILE UPLOAD & PREVIEW ─────────────────────────────────────────────────────
@@ -886,6 +932,7 @@ function applyToAllZones() {
   renderRightPanel();
   showToast('Applied to all zones');
   clearSceneHighlight();
+  Object.keys(ZONES).forEach(pushZoneGradient);
 }
 
 function updateApplyAllState() {

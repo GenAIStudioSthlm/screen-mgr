@@ -137,13 +137,48 @@ def studio_state(plan: str = "popup") -> dict:
 
 
 def screen_gradient_spec(screen_id: int, plan: str = "popup") -> dict:
-    """Everything a gradient screen needs: the zone, its live light colours,
-    and display orientation."""
+    """Everything a gradient screen needs: colours, animation, intensity.
+
+    The per-screen spec is stored on the Screen's `text` field as
+    "colorspec|animation|intensity":
+      - colorspec "mimic" (or empty)  -> track the zone's live light colours
+      - colorspec "off"                -> no colours (idle/black)
+      - colorspec "#hex,#hex,..."      -> explicit gradient stops (set from the
+                                          Screens gradient menu)
+      - animation: static | animated | trippy   (default animated)
+      - intensity: 0-100                          (default 100)
+    """
+    from screens import screen_manager
+
     key, zone = zone_for_screen(screen_id, plan)
+    s = next((x for x in screen_manager.screens if x.id == screen_id), None)
+    raw = (s.text if (s and s.type == "gradient") else "") or ""
+
+    colorspec, animation, intensity = "mimic", "animated", 100
+    if raw:
+        parts = raw.split("|")
+        colorspec = parts[0].strip() or "mimic"
+        if len(parts) > 1 and parts[1].strip():
+            animation = parts[1].strip()
+        if len(parts) > 2 and parts[2].strip():
+            try:
+                intensity = max(0, min(100, int(float(parts[2]))))
+            except ValueError:
+                pass
+
+    if colorspec in ("mimic", ""):
+        colors = zone_light_hexes(zone)
+    elif colorspec == "off":
+        colors = []
+    else:
+        colors = [c.strip() for c in colorspec.split(",") if c.strip()]
+
     return {
         "screen_id": screen_id,
         "zone": key,
         "zone_name": (zone or {}).get("name"),
         "orientation": (zone or {}).get("orientation"),
-        "colors": zone_light_hexes(zone),
+        "colors": colors,
+        "animation": animation if animation in ("static", "animated", "trippy") else "animated",
+        "intensity": intensity,
     }
