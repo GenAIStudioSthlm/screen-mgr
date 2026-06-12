@@ -38,7 +38,9 @@ FRAME_H = int(os.environ.get("ARM_CAM_HEIGHT", "480"))
 
 # --- YOLO config --------------------------------------------------------------
 YOLO_MODEL = os.environ.get("ARM_YOLO_MODEL", "yolo11n-seg.pt")  # nano seg, ~6 MB
-YOLO_CONF = float(os.environ.get("ARM_YOLO_CONF", "0.35"))       # detection threshold
+YOLO_CONF = float(os.environ.get("ARM_YOLO_CONF", "0.15"))       # detection threshold -- low on purpose:
+#   the vision server's multiframe voting suppresses one-frame false positives, and a transparent
+#   bottle only scores ~0.1-0.3 from oblique views (0.35 made it invisible)
 YOLO_DEVICE = os.environ.get("ARM_YOLO_DEVICE", "")              # "", "mps", "cpu" ("" = auto)
 YOLO_IMGSZ = int(os.environ.get("ARM_YOLO_IMGSZ", "640"))        # inference size; lower = faster
 MAX_OBJECTS = int(os.environ.get("ARM_YOLO_MAX", "10"))          # cap reported detections

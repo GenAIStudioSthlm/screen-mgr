@@ -18,6 +18,7 @@ import logging
 import os
 import threading
 import time
+from collections import deque
 
 import cv2
 from flask import Flask, Response, jsonify
@@ -25,6 +26,12 @@ from flask import Flask, Response, jsonify
 import vision as V
 
 PORT = int(os.environ.get("ARM_VISION_PORT", "8000"))
+# Multiframe voting: an object must appear in >= VOTE_MIN of the last VOTE_WINDOW frames
+# (by track_id) to be reported. Marginal detections (e.g. a transparent bottle at ~0.1-0.3
+# confidence) flicker in and out frame to frame; voting makes the reported list stable
+# enough to target a grab, without raising the confidence threshold and losing the object.
+VOTE_WINDOW = int(os.environ.get("ARM_VISION_VOTE_WINDOW", "8"))
+VOTE_MIN = int(os.environ.get("ARM_VISION_VOTE_MIN", "2"))
 
 app = Flask(__name__)
 
@@ -84,12 +91,42 @@ def _capture_loop():
         _set_status("ready")
         _log(f"READY  ->  open http://localhost:{PORT}")
 
+        history = deque(maxlen=VOTE_WINDOW)   # recent frames' track_id sets, for voting
+        last_seen = {}                        # track_id -> (frame_idx, object dict)
+        fidx = 0
         while _running:
             ok, frame = cap.read()
             if not ok or frame is None:
                 time.sleep(0.05)
                 continue
             result = detector.track(frame)
+            # MULTIFRAME VOTE: report objects whose track_id appeared in >= VOTE_MIN of the
+            # last VOTE_WINDOW frames. Also COAST: a voted object missing from just this
+            # frame keeps its last bbox (flagged "coasted") -- marginal detections flicker,
+            # and a grab target vanishing for one frame shouldn't drop it from the scene.
+            fidx += 1
+            cur = {o["track_id"]: o for o in result.get("objects", [])
+                   if o.get("track_id") is not None}
+            for tid, o in cur.items():
+                last_seen[tid] = (fidx, o)
+            history.append(set(cur))
+            votes = {}
+            for ids in history:
+                for tid in ids:
+                    votes[tid] = votes.get(tid, 0) + 1
+            if len(history) >= VOTE_MIN:
+                objs = [o for o in result.get("objects", [])
+                        if o.get("track_id") is None
+                        or votes.get(o["track_id"], 0) >= VOTE_MIN]
+                for tid, n in votes.items():
+                    if n >= VOTE_MIN and tid not in cur and tid in last_seen:
+                        seen_at, o = last_seen[tid]
+                        if fidx - seen_at <= VOTE_WINDOW:
+                            objs.append({**o, "coasted": fidx - seen_at})
+                result["objects"] = objs
+            if len(last_seen) > 64:           # prune stale ids
+                last_seen = {t: v for t, v in last_seen.items()
+                             if fidx - v[0] <= 4 * VOTE_WINDOW}
             # Encode the RAW frame before annotation -- /raw serves this for
             # frame-differencing (calibrate.py move-and-detect), so detection
             # boxes don't pollute the diff.

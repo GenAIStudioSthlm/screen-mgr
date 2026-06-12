@@ -47,6 +47,11 @@ MIN_BLOB_AREA = int(os.environ.get("ARM_CALIB_MIN_BLOB", "120"))   # px^2; small
 # Gripper-waggle (fingers open/close) is a SMALL local motion; a big red blob that
 # moved is background (e.g. a person shifting), not the gripper -- reject it.
 MAX_BLOB_AREA = int(os.environ.get("ARM_CALIB_MAX_BLOB", "2500"))
+# The gripper waggle is the largest, most CONCENTRATED red-motion. Warm clutter (wood floor,
+# leather, a can) + inter-frame noise make small specks scattered across the frame; their
+# centroid lands off the gripper. So keep only motion blobs within this radius (px) of the
+# biggest blob -- the gripper cluster -- and reject the far scatter.
+CLUSTER_RADIUS = int(os.environ.get("ARM_CALIB_CLUSTER_RADIUS", "90"))
 SETTLE_S = 0.5               # let the camera/arm settle after an ARM move
 # The gripper waggle (open<->close) is localized by frame-differencing two frames; the
 # longer the gap between them, the more a moving person/background contaminates the diff.
@@ -77,10 +82,11 @@ def make_poses(n):
     # the lowest level must not let the fingers sweep the tabletop. Still spans depth
     # (which an overhead camera reads as height) for a well-conditioned solve.
     heights = [115.0, 185.0, 255.0, 320.0]   # mm above the table (Z)
-    # symmetric, wide yaw sweep so the WHOLE working area is sampled (interpolated, not
-    # extrapolated) -- the old narrow [-25..20] left the table's left/wide edge uncovered,
-    # which made back-projection there blow up. make_poses drops any that aren't reachable.
-    yaws_deg = [-45.0, -30.0, -15.0, 0.0, 15.0, 30.0, 45.0]
+    # Moderate yaw sweep. NOTE: widening this (or lowering `heights`) destabilizes the raw DLT
+    # into a near-degenerate solve whose back-projection blows up -- this compact range is the
+    # configuration that stays physical. Full-table coverage needs a checkerboard-based intrinsic
+    # calibration (cv2.calibrateCamera over many planar views), not wider single-view DLT.
+    yaws_deg = [-25.0, -12.0, 0.0, 12.0, 25.0]
     seen, poses = set(), []
     for z in heights:
         for r in reaches:
@@ -155,8 +161,17 @@ def locate_gripper(frame_a, frame_b):
     cands = [c for c in cnts if MIN_BLOB_AREA <= cv2.contourArea(c) <= MAX_BLOB_AREA]
     if not cands:
         return None
+    # Anchor on the biggest red-motion blob (the gripper's waggle) and keep only blobs CLUSTERED
+    # near it -- this rejects the scattered specks from warm clutter + inter-frame noise that
+    # would otherwise drag the centroid off the gripper into empty space.
+    def _cen(c):
+        m = cv2.moments(c)
+        return (m["m10"] / m["m00"], m["m01"] / m["m00"]) if m["m00"] else (-1e9, -1e9)
+    bx, by = _cen(max(cands, key=cv2.contourArea))
+    cluster = [c for c in cands
+               if (_cen(c)[0] - bx) ** 2 + (_cen(c)[1] - by) ** 2 <= CLUSTER_RADIUS ** 2]
     mask = np.zeros(th.shape, np.uint8)
-    cv2.drawContours(mask, cands, -1, 255, -1)
+    cv2.drawContours(mask, cluster, -1, 255, -1)
     M = cv2.moments(mask, binaryImage=True)
     if M["m00"] == 0:
         return None
@@ -355,50 +370,148 @@ async def run(args):
     print(f"debug overlays in {debug_dir}/")
 
 
-def fit_cv2(pts3d, pts2d, image_size):
-    """Robust pinhole + lens-distortion calibration via cv2.calibrateCamera on our single
-    'view' of non-coplanar 3D->2D correspondences. Far more stable than raw DLT (which
-    degenerates to a near-affine camera on wide data). Returns (K, dist, rvec, tvec, rms)."""
+# --- Table-plane homography calibration (the robust model for an overhead view) ---------
+HOMOG_Z = float(os.environ.get("ARM_HOMOG_Z", "80"))   # table-plane height to calibrate at
+
+
+def table_grid():
+    """(X,Y) targets spanning the reachable table at the grab height (HOMOG_Z)."""
+    reaches = [150.0, 195.0, 240.0, 285.0]
+    yaws = [-40.0, -27.0, -14.0, 0.0, 14.0, 27.0, 40.0]
+    out = []
+    for r in reaches:
+        for yd in yaws:
+            th = np.radians(yd)
+            x, y = r * np.cos(th), r * np.sin(th)
+            if A.solve_auto(x, y, HOMOG_Z)["reachable"]:
+                out.append((x, y))
+    return out
+
+
+async def run_homography(args):
+    """Calibrate a 2D table-plane HOMOGRAPHY (image <-> table at z=HOMOG_Z). Sweep the gripper
+    across the reachable table at the grab height, waggle-detect each pixel, fit H. Stable for an
+    overhead view (no depth ambiguity, unlike the 3D DLT) and accurate for on-table objects."""
+    targets = table_grid()
+    speed, settle = args.speed, args.settle
+    print(f"homography calibration: {len(targets)} table points at z={HOMOG_Z:.0f}, "
+          f"speed={speed} settle={settle}\n")
+    if args.delay:
+        for s in range(args.delay, 0, -1):
+            print(f"  starting in {s}s -- clear the table ...", flush=True)
+            await asyncio.sleep(1)
+
+    client = A.ArmClient(WS_URL)
+    await asyncio.wait_for(client.connect(), 6)
+    await asyncio.sleep(0.8)
+
+    XY, PX, records = [], [], []
+    for i, (tx, ty) in enumerate(targets):
+        sol = A.solve_auto(tx, ty, HOMOG_Z)
+        await move_to(client, sol["base"], sol["shoulder"], sol["elbow"], sol["wrist_pitch"],
+                      GRIP_OPEN, speed=speed)
+        await asyncio.sleep(settle)
+        await set_joint(client, 4, WAGGLE_ROT_A, speed=GRIP_WAGGLE_SPEED)
+        await asyncio.sleep(GRIP_SETTLE)
+        fa = median_frame()
+        await set_joint(client, 4, WAGGLE_ROT_B, speed=GRIP_WAGGLE_SPEED)
+        await asyncio.sleep(GRIP_SETTLE)
+        fb = median_frame()
+        await set_joint(client, 4, 90, speed=GRIP_WAGGLE_SPEED)
+        loc = locate_gripper(fa, fb)
+        fk = A.forward(sol["base"], sol["shoulder"], sol["elbow"], sol["wrist_pitch"])
+        if loc is None:
+            print(f"  h{i:02d} table=({fk['x']:6.0f},{fk['y']:6.0f})  -> no detection, SKIP")
+            continue
+        XY.append([fk["x"], fk["y"]])
+        PX.append([loc[0], loc[1]])
+        records.append({"xy": [fk["x"], fk["y"]], "pixel": [loc[0], loc[1]]})
+        print(f"  h{i:02d} table=({fk['x']:6.0f},{fk['y']:6.0f})  -> pixel=({loc[0]:6.0f},{loc[1]:6.0f})")
+    await go_home(client, speed)
+
+    if len(XY) < 6:
+        print(f"\nonly {len(XY)} points detected -- need >=6. Re-run with the table clear.")
+        return
+    XY = np.array(XY, np.float64)
+    PX = np.array(PX, np.float64)
+    H, inliers = cv2.findHomography(XY, PX, cv2.RANSAC, 4.0)
+    proj = cv2.perspectiveTransform(XY.reshape(-1, 1, 2), H).reshape(-1, 2)
+    errs_px = np.sqrt(((proj - PX) ** 2).sum(1))
+    back = cv2.perspectiveTransform(PX.reshape(-1, 1, 2), np.linalg.inv(H)).reshape(-1, 2)
+    errs_mm = np.sqrt(((back - XY) ** 2).sum(1))
+    print(f"\n=== table-plane homography ===")
+    print(f"used {int(inliers.sum())}/{len(XY)} inliers")
+    print(f"reprojection px     median={np.median(errs_px):.1f}  max={errs_px.max():.1f}")
+    print(f"back-projection mm  median={np.median(errs_mm):.1f}  max={errs_mm.max():.1f}  "
+          f"(this is what grasping uses)")
+
+    out = {"model": "homography",
+           "image_size": [int(grab_raw().shape[1]), int(grab_raw().shape[0])],
+           "H": H.tolist(), "homog_z": HOMOG_Z,
+           "backproj_err_mm": {"median": float(np.median(errs_mm)), "max": float(errs_mm.max())},
+           "num_points": len(XY), "correspondences": records}
+    if os.path.exists(OUT_PATH):
+        try:
+            prev = json.load(open(OUT_PATH))
+            for k in ("table_z_mm", "grasp_offset_mm", "grasp_lateral_mm"):
+                if k in prev:
+                    out[k] = prev[k]
+        except Exception:
+            pass
+    with open(OUT_PATH, "w") as fh:
+        json.dump(out, fh, indent=2)
+    print(f"\nsaved {OUT_PATH}")
+
+
+def fit_pnp(pts3d, pts2d, image_size):
+    """STABLE camera fit: fix the principal point at the image centre, SEARCH the focal length,
+    and solve the pose with cv2.solvePnP at each focal -- pick the focal with the lowest
+    reprojection. Unlike raw DLT / single-view calibrateCamera (which degenerate to a near-
+    orthographic camera on this weak-perspective overhead view), solvePnP with a fixed K can't
+    collapse, so back-projection stays physical. Returns (K, rvec, tvec, focal, mean_err_px)."""
     w, h = image_size
-    obj = [np.asarray(pts3d, np.float32)]
-    img = [np.asarray(pts2d, np.float32).reshape(-1, 1, 2)]
-    K0 = np.array([[550.0, 0, w / 2.0], [0, 550.0, h / 2.0], [0, 0, 1.0]])  # rough webcam guess
-    flags = (cv2.CALIB_USE_INTRINSIC_GUESS | cv2.CALIB_FIX_ASPECT_RATIO |
-             cv2.CALIB_ZERO_TANGENT_DIST | cv2.CALIB_FIX_K3)   # estimate fx(=fy),cx,cy,k1,k2
-    rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(obj, img, (w, h), K0, None, flags=flags)
-    return K, dist, rvecs[0], tvecs[0], float(rms)
+    obj = np.ascontiguousarray(np.asarray(pts3d, np.float64))
+    img = np.ascontiguousarray(np.asarray(pts2d, np.float64))
+    best = None
+    for f in range(220, 1400, 10):
+        K = np.array([[float(f), 0, w / 2.0], [0, float(f), h / 2.0], [0, 0, 1.0]])
+        ok, rvec, tvec = cv2.solvePnP(obj, img, K, None, flags=cv2.SOLVEPNP_ITERATIVE)
+        if not ok:
+            continue
+        proj = cv2.projectPoints(obj, rvec, tvec, K, None)[0].reshape(-1, 2)
+        err = float(np.sqrt(((proj - img) ** 2).sum(axis=1)).mean())
+        if best is None or err < best[0]:
+            best = (err, float(f), K, rvec, tvec)
+    return best[2], best[3], best[4], best[1], best[0]
 
 
 def solve_and_report(pts3d, pts2d, records, image_size):
-    """Robustly fit the camera (cv2 pinhole+distortion), report quality, save calibration.json."""
+    """Robustly fit the camera (focal search + solvePnP), report quality, save calibration.json."""
     if len(pts3d) < 6:
         print("NOT ENOUGH points to solve (need >=6). Inspect calib_debug/ overlays "
               "and re-run with the workspace clear and the arm steady.")
         return None
 
-    # 1) DLT robust pass only to DROP outlier correspondences
-    Pd, keep = fit_projection_robust(pts3d, pts2d, min_keep=max(6, len(pts3d) - 4))
+    # DLT robust pass only to DROP outlier correspondences (reprojection-based)
+    _Pd, keep = fit_projection_robust(pts3d, pts2d, min_keep=max(6, len(pts3d) - 4))
     dropped = sorted(set(range(len(pts3d))) - set(keep))
     p3 = [pts3d[i] for i in keep]
     p2 = [pts2d[i] for i in keep]
 
-    # 2) robust pinhole + distortion fit on the kept points
-    K, dist, rvec, tvec, rms = fit_cv2(p3, p2, image_size)
+    K, rvec, tvec, focal, _ = fit_pnp(p3, p2, image_size)
     R, _ = cv2.Rodrigues(rvec)
-    C = (-R.T @ tvec.reshape(3))                       # camera centre in arm frame (mm)
-    proj = cv2.projectPoints(np.asarray(p3, np.float32), rvec, tvec, K, dist)[0].reshape(-1, 2)
+    C = -R.T @ tvec.reshape(3)
+    proj = cv2.projectPoints(np.asarray(p3, np.float64), rvec, tvec, K, None)[0].reshape(-1, 2)
     errs = np.sqrt(((proj - np.asarray(p2, float)) ** 2).sum(axis=1))
-    P = K @ np.hstack([R, tvec.reshape(3, 1)])         # linear P (no distortion) for aim_joints
+    P = K @ np.hstack([R, tvec.reshape(3, 1)])
     P = P / P[2, 3]
 
-    print("\n=== calibration result (cv2 pinhole + distortion) ===")
+    print("\n=== calibration result (focal-search + solvePnP) ===")
     print(f"used {len(keep)}/{len(pts3d)} points"
           + (f" (dropped outliers: {dropped})" if dropped else ""))
     print(f"reprojection error  mean={errs.mean():.2f}px  median={np.median(errs):.2f}px  "
           f"max={errs.max():.2f}px")
-    print(f"focal length (px)   fx={K[0,0]:.1f}  fy={K[1,1]:.1f}")
-    print(f"principal point     cx={K[0,2]:.1f}  cy={K[1,2]:.1f}")
-    print(f"distortion k1,k2    {dist.flatten()[0]:.3f}, {dist.flatten()[1]:.3f}")
+    print(f"focal length (px)  {focal:.0f}   principal point  ({K[0,2]:.0f},{K[1,2]:.0f})")
     print(f"camera position in arm frame (mm)  x={C[0]:.0f}  y={C[1]:.0f}  z={C[2]:.0f}")
     if np.median(errs) > 8.0:
         print("\n  WARNING: high reprojection error -> calibration may be unreliable.")
@@ -406,7 +519,7 @@ def solve_and_report(pts3d, pts2d, records, image_size):
     out = {
         "model": "cv2_pinhole",
         "image_size": image_size,
-        "K": K.tolist(), "dist": dist.flatten().tolist(),
+        "K": K.tolist(), "dist": [0.0, 0.0, 0.0, 0.0, 0.0],
         "rvec": rvec.flatten().tolist(), "tvec": tvec.flatten().tolist(),
         "R": R.tolist(), "P": P.tolist(),
         "camera_xyz_arm_mm": C.tolist(),
@@ -516,10 +629,14 @@ if __name__ == "__main__":
                     help="re-solve from saved calibration.json (no arm/camera)")
     ap.add_argument("--verify", action="store_true",
                     help="held-out check: predict vs detect gripper at fresh poses")
+    ap.add_argument("--homography", action="store_true",
+                    help="calibrate a 2D table-plane homography (the robust overhead model)")
     args = ap.parse_args()
     if args.refit:
         refit()
     elif args.verify:
         asyncio.run(verify())
+    elif args.homography:
+        asyncio.run(run_homography(args))
     else:
         asyncio.run(run(args))
