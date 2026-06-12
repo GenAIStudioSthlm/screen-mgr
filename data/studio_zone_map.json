@@ -1,7 +1,7 @@
 {
   "_comment": "Maps Madalena's design floor-plan zones to REAL backend screen ids and Hue light ids. Verified empirically 2026-06-12: screens by displaying their id on the physical display; lights by turning each on in a distinct colour and having the operator report the zone. IMPORTANT: backend screen *names* do NOT match physical zones (e.g. screen id 3 'Station 3' is physically in zone b 'Station 1') — trust this map. 'orientation' = physical display rotation. light_ids = Hue light ids (group 81 'Studio' spots 10-22; group 2 'Maker' strips 5,7,8,9).",
   "popup": {
-    "a": { "name": "Main Cloud",     "screens": [1], "orientation": "vertical",   "light_ids": [17, 20] },
+    "a": { "name": "Main Cloud",     "screens": [1], "orientation": "horizontal", "light_ids": [17, 20] },
     "b": { "name": "Station 1",      "screens": [3], "orientation": "horizontal", "light_ids": [11, 18] },
     "c": { "name": "Station 2",      "screens": [2], "orientation": "horizontal", "light_ids": [] },
     "d": { "name": "Main Hall",      "screens": [], "orientation": "horizontal", "light_ids": [12, 15, 16], "_note": "horizontal 'screen 9' — backend screen id TBD (offline)" },

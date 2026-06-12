@@ -27,10 +27,13 @@ BRANDS: dict[str, dict] = {
         # BEST-GUESS mapping (image filename -> original backend screen name ->
         # physical zone) — VERIFY with the operator, like the zone map.
         # Zones not listed fall back to a light-mimicking gradient.
+        # Orientation-matched: horizontal images on horizontal screens,
+        # vertical (cloud) images on the vertical cloud screens.
         "content": {
-            "a": "IKEA/Cloud_1.jpg",   # Main Cloud (screen 1)
-            "f": "IKEA/Screen_2.png",  # Cloud L (screen 4 = backend 'Screen 2')
-            "e": "IKEA/Screen_3.png",  # Cloud R (screen 5 = backend 'Screen 3')
+            "a": "IKEA/Screen_3.png",  # Main Cloud — horizontal big screen
+            "d": "IKEA/Screen_2.png",  # Main Hall — horizontal
+            "e": "IKEA/Cloud_1.jpg",   # Cloud R — vertical
+            "f": "IKEA/Cloud_2.png",   # Cloud L — vertical
         },
     },
 }
