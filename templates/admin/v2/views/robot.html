@@ -3,7 +3,7 @@
    Embeds the vision server's own live dashboard (MJPEG feed with YOLO
    boxes + the detected-objects panel). The vision server runs on the
    machine the webcam is plugged into — today a phone at
-   192.168.2.104:8000 (it binds 0.0.0.0, so it's reachable across the
+   192.168.2.178:8000 (it binds 0.0.0.0, so it's reachable across the
    LAN). If the webcam host moves, change VISION_DASHBOARD below.
 
    Quick iframe embed (no proxy): the browser viewing /admin must be on
@@ -21,12 +21,12 @@
       <h1 style="margin:0">Robot</h1>
       <p style="margin:var(--s-1) 0 0;color:var(--text-dim);font-size:12px">
         Live view from the arm's webcam (YOLO object + colour detection).
-        Vision host: <code>192.168.2.104:8000</code>. Arm motion control is
+        Vision host: <code>192.168.2.178:8000</code>. Arm motion control is
         wired separately via the <code>braccio</code> MCP.
       </p>
     </div>
     <div style="display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap">
-      <a href="http://192.168.2.104:8000/" target="_blank" rel="noopener"
+      <a href="http://192.168.2.178:8000/" target="_blank" rel="noopener"
          class="btn btn-brand" style="text-decoration:none">
         ↗ Open dashboard in new tab
       </a>
@@ -38,7 +38,7 @@
        blank / "refused to connect", the vision host is down or this
        browser can't reach it on the LAN — use "Open in new tab". #}
   <div class="card" style="padding:0;flex:1;min-height:560px;display:flex;flex-direction:column">
-    <iframe src="http://192.168.2.104:8000/"
+    <iframe src="http://192.168.2.178:8000/"
             style="flex:1;width:100%;border:0;min-height:560px;background:var(--bg)"
             referrerpolicy="origin"
             title="Braccio vision dashboard"></iframe>
