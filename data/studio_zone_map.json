@@ -8,7 +8,7 @@
     "e": { "name": "Cloud R",        "screens": [5], "orientation": "vertical",   "light_ids": [21] },
     "f": { "name": "Cloud L",        "screens": [4], "orientation": "vertical",   "light_ids": [22] },
     "g": { "name": "Control Center", "screens": [], "orientation": null, "light_ids": [10, 19] },
-    "h": { "name": "Station 3",      "screens": [8], "orientation": "horizontal", "light_ids": [13] },
+    "h": { "name": "Station 3",      "screens": [8], "orientation": "vertical", "light_ids": [13] },
     "k": { "name": "Tech",           "screens": [], "orientation": null, "light_ids": [14] },
     "wardrobe": { "name": "Wardrobe", "screens": [], "orientation": null, "light_ids": [5, 7, 8, 9], "_note": "the 4 Maker-group light-strips; labeled area on the floor plan, not one of the 9 controllable popup zones" }
   },

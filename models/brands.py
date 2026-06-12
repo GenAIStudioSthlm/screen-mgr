@@ -37,7 +37,7 @@ BRANDS: dict[str, dict] = {
             "d": "IKEA/Screen_2.png",  # Main Hall — horizontal
             "e": "IKEA/Cloud_1.jpg",   # Cloud R — vertical
             "f": "IKEA/Cloud_2.png",   # Cloud L — vertical
-            "h": "IKEA/Screen_3.png",  # Station 3 — horizontal
+            "h": "IKEA/Wardrobe.jpg",  # Station 3 — vertical
         },
     },
 }
