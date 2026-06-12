@@ -517,6 +517,10 @@ async function syncLiveState() {
       }
     });
     renderAllZones();
+    // Lighting view: paint each zone's light-overlay rect with its REAL Hue
+    // colour (the mock updateLightOverlay used preset colours, so the room
+    // showed wrong per-zone colours on the Lighting tab).
+    Object.keys(zones).forEach(paintLiveLightOverlay);
   } catch (e) { /* keep last frame on transient errors */ }
 }
 
@@ -1266,11 +1270,26 @@ let currentView = 'screens';
 
 function setView(view) {
   currentView = view;
-  document.body.classList.remove('view-screens','view-lighting','view-combined');
+  document.body.classList.remove('view-screens','view-lighting','view-combined','view-audio','view-robot');
   document.body.classList.add('view-' + view);
   document.querySelectorAll('.sv-btn').forEach(t => {
     t.classList.toggle('active', t.dataset.view === view);
   });
+
+  // Audio / Robot tabs replace the floor plan with their own panel and hide
+  // the per-zone sidebar controls (which only apply to Screens/Lighting).
+  const fpWrap = document.getElementById('floorplan-wrap');
+  const robotView = document.getElementById('robot-view');
+  const audioView = document.getElementById('audio-view');
+  const sidebarBody = document.getElementById('sidebar-body');
+  const sidebarFooter = document.getElementById('sidebar-footer');
+  const isExtra = (view === 'audio' || view === 'robot');
+  if (fpWrap) fpWrap.style.display = isExtra ? 'none' : '';
+  if (robotView) robotView.style.display = (view === 'robot') ? 'block' : 'none';
+  if (audioView) audioView.style.display = (view === 'audio') ? 'flex' : 'none';
+  if (sidebarBody) sidebarBody.style.display = isExtra ? 'none' : '';
+  if (sidebarFooter) sidebarFooter.style.display = isExtra ? 'none' : '';
+  if (isExtra) { renderRightPanel(); return; }
 
   const lightingLayer = document.getElementById('lighting-layer');
   const popupLightingLayer = document.getElementById('pu-lighting-layer');
@@ -1435,6 +1454,42 @@ function updateLightOverlay(zoneId) {
 
 function refreshAllLightOverlays() {
   Object.keys(ZONES).forEach(zid => updateLightOverlay(zid));
+}
+
+// Paint a zone's light-overlay rect (lighting view) with its REAL current Hue
+// colour from /api/studio/state, so the room mirrors actual lighting per zone.
+function paintLiveLightOverlay(zoneId) {
+  const z = ZONES[zoneId];
+  if (!z) return;
+  const rect = currentFloorplan === 'popup'
+    ? document.getElementById('pu-light-' + zoneId)
+    : document.getElementById('light-' + zoneId);
+  if (!rect) return;
+  const colors = z.liveColors || [];
+  if (!colors.length) {
+    rect.setAttribute('fill-opacity', '0');
+    return;
+  }
+  rect.setAttribute('fill', colors[0]);
+  rect.setAttribute('fill-opacity', '0.72');
+}
+
+// ── AUDIO TAB ──────────────────────────────────────────────────────────────────
+function marantzTest() {
+  const msg = document.getElementById('audio-msg');
+  if (msg) msg.textContent = 'Playing…';
+  fetch('/api/music/marantz/play_local_file', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ file_path: 'lunchroombeating.mp3', volume_pct: 50, duration_seconds: 4, ramp_seconds: 2, ramp_from: 20 }),
+  }).then(r => r.json()).then(d => {
+    if (msg) msg.textContent = (d && d.ok === false) ? ('error: ' + (d.error || '')) : 'done';
+  }).catch(() => { if (msg) msg.textContent = 'error'; });
+}
+
+function marantzStop() {
+  const msg = document.getElementById('audio-msg');
+  fetch('/api/music/marantz/stop', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' })
+    .then(() => { if (msg) msg.textContent = 'stopped'; }).catch(() => {});
 }
 
 // ── COLOR WHEEL ───────────────────────────────────────────────────────────────

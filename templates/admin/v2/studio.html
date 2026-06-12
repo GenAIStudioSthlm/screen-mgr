@@ -84,7 +84,9 @@
     <!-- ── VIEW TOGGLE ── -->
     <div id="sidebar-view-toggle">
       <button class="sv-btn active" data-view="screens" onclick="setView('screens')">Screens</button>
-      <button class="sv-btn" data-view="lighting" onclick="setView('lighting')">Lighting</button>
+      <button class="sv-btn" data-view="lighting" onclick="setView('lighting')">Lights</button>
+      <button class="sv-btn" data-view="audio" onclick="setView('audio')">Audio</button>
+      <button class="sv-btn" data-view="robot" onclick="setView('robot')">Robot</button>
     </div>
 
     <!-- ── SCROLLABLE BODY ── -->
@@ -504,6 +506,27 @@
           <rect id="screen-pp-s7" x="693" y="414" width="243" height="4"   fill="#0058A3" opacity="0.3" stroke="none"/>
         </svg>
       </div>
+    </div>
+
+    <!-- ROBOT VIEW — webcam vision dashboard (shown on the Robot tab) -->
+    <div id="robot-view" style="display:none; width:100%; height:100%; min-height:0;">
+      <iframe src="http://192.168.2.178:8000/"
+              style="width:100%; height:100%; border:0; background:#060606;"
+              referrerpolicy="origin" title="Robot vision"></iframe>
+    </div>
+
+    <!-- AUDIO VIEW — Spotify + Marantz (shown on the Audio tab) -->
+    <div id="audio-view" style="display:none; width:100%; height:100%; min-height:0; flex-direction:column; gap:12px; padding:4px;">
+      <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+        <button class="btn-generate" style="width:auto; padding:8px 14px;" onclick="marantzTest()">▶ Marantz test</button>
+        <button class="btn-generate" style="width:auto; padding:8px 14px; background:#7F1D1D;" onclick="marantzStop()">■ Stop</button>
+        <a class="btn-generate" style="width:auto; padding:8px 14px; text-decoration:none; display:inline-block;"
+           href="https://open.spotify.com/" target="_blank" rel="noopener">↗ Open Spotify</a>
+        <span id="audio-msg" style="font-size:11px; color:var(--dim);"></span>
+      </div>
+      <iframe src="https://open.spotify.com/" title="Spotify"
+              style="flex:1; width:100%; border:0; background:var(--bg); min-height:420px;"
+              allow="autoplay; clipboard-read; clipboard-write; encrypted-media"></iframe>
     </div>
 
     <!-- INLINE BRAND BUILDER — Mode 2, slides over main canvas -->
