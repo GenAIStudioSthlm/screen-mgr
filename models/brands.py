@@ -53,3 +53,36 @@ def apply_lighting(brand: dict) -> dict:
     client.set_group(_STUDIO_GROUP, {"on": True, "bri": 254, "hue": ph, "sat": ps})
     client.set_group(_MAKER_GROUP, {"on": True, "bri": 220, "hue": sh, "sat": ss})
     return {"ok": True, "studio": brand["primary"], "maker": brand["secondary"]}
+
+
+async def apply_brand_full(brand_id: str) -> dict:
+    """Apply a brand end-to-end: set the Hue lights to the palette, then switch
+    every zone-mapped, connected screen to a light-mimicking gradient. Shared by
+    the HTTP route and the MCP tool (chat/voice)."""
+    brand = BRANDS.get((brand_id or "").lower())
+    if not brand:
+        return {"ok": False, "error": f"unknown brand '{brand_id}'",
+                "available": list(BRANDS.keys())}
+
+    lighting = apply_lighting(brand)
+
+    from connections import connection_manager
+    from screens import screen_manager
+    from models.studio_map import load_map
+
+    zmap = load_map().get("popup", {})
+    zone_screen_ids = {
+        sid for k, z in zmap.items()
+        if isinstance(z, dict) for sid in (z.get("screens") or [])
+    }
+    changed: list[int] = []
+    for s in screen_manager.screens:
+        if s.id in zone_screen_ids and s.connected:
+            s.type = "gradient"
+            s.text = "mimic|animated|100"  # track the new brand lighting
+            changed.append(s.id)
+            await connection_manager.notify_screen(screen=s)
+    if changed:
+        screen_manager.save_screens()
+    return {"ok": True, "brand": brand_id, "lighting": lighting,
+            "screens_set_gradient": changed}

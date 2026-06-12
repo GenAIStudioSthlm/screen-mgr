@@ -266,6 +266,28 @@ async def reload_all_screens() -> dict:
 
 
 @server.tool()
+def list_brands() -> dict:
+    """List the studio brand profiles that can be applied (id + name + colours).
+
+    Use the id with `apply_brand`."""
+    from models.brands import BRANDS
+    return {"brands": list(BRANDS.values())}
+
+
+@server.tool()
+async def apply_brand(brand_id: str) -> dict:
+    """Apply a studio brand profile across the room. `brand_id` is one of the
+    ids from `list_brands` (e.g. "accenture", "ikea").
+
+    Sets the Hue lights to the brand palette (primary on the Studio spots,
+    secondary on the Maker/Wardrobe strips) and switches every connected,
+    zone-mapped screen to a light-mimicking gradient — so the screens glow the
+    brand colours. Say e.g. "set the brand to Accenture" / "make it IKEA"."""
+    from models.brands import apply_brand_full
+    return await apply_brand_full(brand_id)
+
+
+@server.tool()
 async def apply_scene(scene_id: str) -> dict:
     """Apply a saved Studio scene by id.
 

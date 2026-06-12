@@ -172,37 +172,12 @@ async def api_studio_brands():
 async def api_studio_apply_brand(brand_id: str):
     """Apply a brand: set the studio lights to the palette and switch the
     zones' connected screens to the gradient content type (so they mimic the
-    new lighting)."""
+    new lighting). Shared logic lives in models.brands.apply_brand_full."""
     from fastapi import HTTPException
     from fastapi.responses import JSONResponse
-    from connections import connection_manager
-    from screens import screen_manager
-    from models.brands import BRANDS, apply_lighting
-    from models.studio_map import load_map
+    from models.brands import apply_brand_full
 
-    brand = BRANDS.get(brand_id)
-    if not brand:
-        raise HTTPException(status_code=404, detail=f"unknown brand '{brand_id}'")
-
-    lighting = apply_lighting(brand)
-
-    # Switch each zone-mapped, connected screen to the gradient content type.
-    zmap = load_map().get("popup", {})
-    zone_screen_ids = {
-        sid for k, z in zmap.items()
-        if isinstance(z, dict) for sid in (z.get("screens") or [])
-    }
-    changed: list[int] = []
-    for s in screen_manager.screens:
-        if s.id in zone_screen_ids and s.connected:
-            s.type = "gradient"
-            changed.append(s.id)
-            await connection_manager.notify_screen(screen=s)
-    if changed:
-        screen_manager.save_screens()
-
-    return JSONResponse({
-        "brand": brand_id,
-        "lighting": lighting,
-        "screens_set_gradient": changed,
-    })
+    result = await apply_brand_full(brand_id)
+    if not result.get("ok"):
+        raise HTTPException(status_code=404, detail=result.get("error", "unknown brand"))
+    return JSONResponse(result)
