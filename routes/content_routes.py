@@ -181,3 +181,17 @@ async def api_studio_apply_brand(brand_id: str):
     if not result.get("ok"):
         raise HTTPException(status_code=404, detail=result.get("error", "unknown brand"))
     return JSONResponse(result)
+
+
+@router.post("/api/studio/brand/{brand_id}/save")
+async def api_studio_save_brand(brand_id: str):
+    """Capture the CURRENT studio state (per-zone light colours + screen content)
+    and persist it as this brand's profile, so live tweaks become the default."""
+    from fastapi import HTTPException
+    from fastapi.responses import JSONResponse
+    from models.brands import save_brand_profile
+
+    result = save_brand_profile(brand_id)
+    if not result.get("ok"):
+        raise HTTPException(status_code=404, detail=result.get("error", "unknown brand"))
+    return JSONResponse(result)

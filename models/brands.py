@@ -9,6 +9,12 @@ zones' gradient screens then mimic those colours automatically.
 from __future__ import annotations
 
 import colorsys
+import json
+from pathlib import Path
+
+# Saved overrides captured from the live studio (per-zone lights + content).
+# Merged over the seeded BRANDS below, so operator tweaks become the default.
+_OVERRIDES_FILE = Path("data/brand_profiles.json")
 
 # Palettes from Madalena's design (control.html company swatches).
 BRANDS: dict[str, dict] = {
@@ -72,6 +78,95 @@ def hex_to_hue_sat(hexstr: str) -> tuple[int, int]:
     return int(hh * 65535), int(ss * 254)
 
 
+# --- persistence (seeded BRANDS + saved overrides) -----------------------
+
+def load_overrides() -> dict:
+    try:
+        with open(_OVERRIDES_FILE, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def _save_overrides(data: dict) -> None:
+    _OVERRIDES_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(_OVERRIDES_FILE, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
+
+
+def load_brands() -> dict:
+    """Seeded BRANDS merged with saved overrides. An override's keys (lights /
+    content / colours) win over the seed, so saved tweaks are the new default."""
+    merged = {bid: dict(b) for bid, b in BRANDS.items()}
+    for bid, ov in load_overrides().items():
+        base = dict(merged.get(bid, {"id": bid, "name": bid.title()}))
+        base.update({k: v for k, v in (ov or {}).items() if v is not None})
+        merged[bid] = base
+    return merged
+
+
+def get_brand(brand_id: str) -> dict | None:
+    return load_brands().get((brand_id or "").strip().lower())
+
+
+def apply_zone_lights(lights_map: dict) -> dict:
+    """Set each zone's mapped Hue lights to a saved per-zone colour."""
+    from modules import registry
+    from models.studio_map import load_map
+
+    mod = registry.get("hue")
+    client = getattr(mod, "client", None) if mod else None
+    if client is None:
+        return {"ok": False, "error": "hue unavailable"}
+    zmap = load_map().get("popup", {})
+    applied: dict = {}
+    for zone, hexc in (lights_map or {}).items():
+        z = zmap.get(zone)
+        if not isinstance(z, dict) or not hexc:
+            continue
+        hh, ss = hex_to_hue_sat(hexc)
+        for lid in (z.get("light_ids") or []):
+            client.set_light(str(lid), {"on": True, "bri": 254, "hue": hh, "sat": ss})
+        applied[zone] = hexc
+    return {"ok": True, "zone_lights": applied}
+
+
+def save_brand_profile(brand_id: str) -> dict:
+    """Capture the CURRENT studio state (per-zone light colour + per-zone screen
+    content) and persist it as this brand's profile, so live tweaks become the
+    brand default. Stored in data/brand_profiles.json (merged over the seed)."""
+    bid = (brand_id or "").strip().lower()
+    if bid not in load_brands():
+        return {"ok": False, "error": f"unknown brand '{brand_id}'",
+                "available": list(load_brands().keys())}
+    from models.studio_map import load_map, zone_light_hexes, _all_lights
+    from screens import screen_manager
+
+    zmap = load_map().get("popup", {})
+    lights_all = _all_lights()
+    by_id = {s.id: s for s in screen_manager.screens}
+    lights: dict = {}
+    content: dict = {}
+    for zone, z in zmap.items():
+        if zone.startswith("_") or not isinstance(z, dict):
+            continue
+        hexes = zone_light_hexes(z, lights_all)
+        if hexes:
+            lights[zone] = hexes[0]
+        for sid in (z.get("screens") or []):
+            s = by_id.get(sid)
+            if s is not None and s.type == "picture" and s.picture:
+                content[zone] = s.picture
+                break
+    ov = load_overrides()
+    entry = dict(ov.get(bid, {}))
+    entry["lights"] = lights
+    entry["content"] = content
+    ov[bid] = entry
+    _save_overrides(ov)
+    return {"ok": True, "brand": bid, "lights": lights, "content": content}
+
+
 def apply_lighting(brand: dict) -> dict:
     """Drive the real Hue lights to the brand palette. Best-effort."""
     from modules import registry
@@ -91,12 +186,17 @@ async def apply_brand_full(brand_id: str) -> dict:
     """Apply a brand end-to-end: set the Hue lights to the palette, then switch
     every zone-mapped, connected screen to a light-mimicking gradient. Shared by
     the HTTP route and the MCP tool (chat/voice)."""
-    brand = BRANDS.get((brand_id or "").lower())
+    brand = get_brand(brand_id)
     if not brand:
         return {"ok": False, "error": f"unknown brand '{brand_id}'",
-                "available": list(BRANDS.keys())}
+                "available": list(load_brands().keys())}
 
-    lighting = apply_lighting(brand)
+    # If a saved profile captured per-zone light colours, restore those;
+    # otherwise use the seed's primary/secondary group palette.
+    if brand.get("lights"):
+        lighting = apply_zone_lights(brand["lights"])
+    else:
+        lighting = apply_lighting(brand)
 
     from connections import connection_manager
     from screens import screen_manager

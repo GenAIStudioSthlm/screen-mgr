@@ -288,6 +288,17 @@ async def apply_brand(brand_id: str) -> dict:
 
 
 @server.tool()
+def save_brand(brand_id: str) -> dict:
+    """Save the CURRENT studio state as a brand profile (brand_id 'ikea' or
+    'accenture'). Captures each zone's current light colour AND screen content
+    and persists them, so live tweaks (e.g. after changing zone lights) become
+    the brand default. Use after the operator says "save this as the IKEA
+    profile" / "update the Accenture profile"."""
+    from models.brands import save_brand_profile
+    return save_brand_profile(brand_id)
+
+
+@server.tool()
 async def apply_scene(scene_id: str) -> dict:
     """Apply a saved Studio scene by id.
 
