@@ -6,6 +6,8 @@
 #   - .venv/          (1.1 GB, machine-specific absolute paths — partner recreates it)
 #   - __pycache__/    (stale bytecode)
 #   - calibration.json + calib_debug/  (room-specific to the original camera placement)
+#   - mcp_arm/        (a stale nested snapshot from an earlier handoff)
+#   - *.zip           (don't nest old packages inside the new one)
 #   - .DS_Store       (macOS cruft)
 #
 # Usage:  ./package_for_partner.sh  [output.zip]
@@ -36,6 +38,8 @@ zip -r "$OUT" mcp_arm \
      'mcp_arm/__pycache__/*' \
      'mcp_arm/calib_debug/*' \
      'mcp_arm/calibration.json' \
+     'mcp_arm/mcp_arm/*' \
+     'mcp_arm/*.zip' \
      'mcp_arm/*.DS_Store' \
      'mcp_arm/.DS_Store'
 

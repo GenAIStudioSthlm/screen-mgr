@@ -1,0 +1,23 @@
+# BoT-SORT config for the arm's vision server (used by vision.py Detector.track();
+# override with ARM_YOLO_TRACKER). Copy of the ultralytics botsort defaults with two
+# changes for our scene -- marginal objects (pink can, transparent bottle) that only
+# score ~0.1-0.3, and the arm regularly occluding the target for seconds at a time:
+#   * thresholds lowered so low-conf detections get/keep a track_id promptly
+#     (defaults assume conf >= 0.25; ours would never start a track)
+#   * track_buffer 30 -> 90 frames so an id survives the arm sweeping over the object
+#     instead of churning (the "track_id N not in view" failure)
+
+tracker_type: botsort
+track_high_thresh: 0.12 # first-stage match threshold (default 0.25; our objects sit below it)
+track_low_thresh: 0.05 # second-stage threshold for low-score matches (default 0.1)
+new_track_thresh: 0.12 # start a new track if no match >= this (default 0.25)
+track_buffer: 90 # frames to keep lost tracks alive (default 30; ~6-10 s at our fps)
+match_thresh: 0.8 # association similarity threshold
+fuse_score: True # fuse detection score with motion/IoU; stabilizes weak detections
+
+# BoT-SORT specifics (ultralytics defaults)
+gmc_method: sparseOptFlow
+proximity_thresh: 0.5
+appearance_thresh: 0.8
+with_reid: False
+model: auto

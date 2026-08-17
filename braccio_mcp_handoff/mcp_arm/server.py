@@ -277,6 +277,104 @@ async def _move(tgt, speed=None, wait=True):
     return t
 
 
+# --- Autonomous grasp (visual servoing; no calibration needed) -----------------
+
+async def _verify_grasp_scene(object_name, prev_center, radius_px=70):
+    """Vision-only grasp check. The firmware reports COMMANDED servo angles (not measured),
+    so there is no proprioceptive grip feedback -- the camera is the only truth."""
+    scene = await _detect()
+    objs = scene.get("objects", []) or []
+    if object_name:
+        objs = [o for o in objs if (o.get("object") or "").lower() == object_name.lower()]
+    if prev_center is None:
+        return {"grasped": None, "scene": scene.get("objects"),
+                "note": "no pre-grasp position to compare against -- judge with look()"}
+    still = [o for o in objs
+             if o.get("center")
+             and (o["center"][0] - prev_center[0]) ** 2
+             + (o["center"][1] - prev_center[1]) ** 2 <= radius_px ** 2]
+    if still:
+        return {"grasped": False, "still_there": still, "scene": scene.get("objects"),
+                "evidence": f"a matching object is still detected within {radius_px}px of "
+                            f"its pre-grasp position {list(prev_center)}"}
+    return {"grasped": True, "scene": scene.get("objects"),
+            "evidence": f"no matching object remains near its pre-grasp position "
+                        f"{list(prev_center)} (lifted, or occluded by the gripper). "
+                        f"Confirm with look() if it matters."}
+
+
+@mcp.tool()
+async def pick_object(track_id: Optional[int] = None, object_name: Optional[str] = None,
+                      u: Optional[float] = None, v: Optional[float] = None,
+                      speed: int = 50) -> dict:
+    """Autonomously PICK UP an object by visual servoing -- the full grab: aim, approach,
+    verify, close, lift. SLOW (1-3 minutes) and moves the arm extensively; tell the user
+    before calling. Target by `track_id` from detect_objects (preferred), by `object_name`
+    (a detected class, e.g. 'bottle'), or by a raw pixel (u, v).
+
+    Needs the vision server running AND the two coloured marker strips on the gripper
+    fingers (see HANDOFF.md). No hand-eye calibration needed: the camera<->arm map is
+    re-learned every grab, so a moved camera is fine.
+
+    Returns the grasp diagnostics. On success it includes `verify.grasped` (vision-based;
+    there is no force feedback on this arm). It ABORTS safely with an `error` explaining
+    why rather than close on a bad approach -- the retry loop is YOURS: if grasped is
+    false/null or it aborted, `look()`, re-run detect_objects, and call again (each
+    attempt starts by homing, so no cleanup needed between tries)."""
+    await client.ensure()
+    try:
+        # the vision server specifically (not _detect()'s direct-capture fallback, which
+        # would pointlessly load YOLO here): the grasp needs its /raw endpoint anyway
+        scene = await asyncio.to_thread(_read_vision_server)
+    except Exception:
+        return {"error": "vision server not reachable -- pick_object requires it (it serves "
+                         "/raw for the gripper localizer). Start vision_server.py and retry."}
+    match, label, prev_center = None, None, None
+    if track_id is not None:
+        match = next((o for o in scene.get("objects", [])
+                      if o.get("track_id") == track_id), None)
+        if match is None:
+            return {"error": f"track_id {track_id} not in view (ids churn when the arm "
+                             f"occludes things -- re-run detect_objects)",
+                    "scene": scene.get("objects")}
+    elif object_name:
+        match = handeye.choose_object(scene, object_name=object_name)
+        if match is None:
+            return {"error": f"no {object_name!r} detected", "scene": scene.get("objects")}
+    if match is not None:
+        target_px = handeye.vpick_pixel(match)       # the object's point at servo height
+        prev_center = match.get("center")
+        label = f'{match.get("object")} #{match.get("track_id")}'
+        object_name = object_name or match.get("object")
+    elif u is not None and v is not None:
+        target_px = (float(u), float(v))
+        prev_center = [int(u), int(v)]
+        label = f"pixel ({u:.0f},{v:.0f})"
+    else:
+        return {"error": "pass track_id (preferred), object_name, or a raw pixel (u, v)"}
+    res = await handeye.visual_pick(client, target_px,
+                                    speed=int(A.clampv(speed, 20, 200)))
+    res["target"] = label
+    if res.get("ok"):
+        res["verify"] = await _verify_grasp_scene(object_name, prev_center)
+    return res
+
+
+@mcp.tool()
+async def verify_grasp(object_name: Optional[str] = None,
+                       prev_center_u: Optional[float] = None,
+                       prev_center_v: Optional[float] = None) -> dict:
+    """Vision-based check of whether the last grasp is holding: re-detects the scene and
+    compares against the object's pre-grasp position (pass the `center` you saw in
+    detect_objects before picking). grasped=false means a matching object still sits where
+    it was (the grab missed); true means it is gone from there (lifted -- or occluded);
+    null means not enough information, judge with look(). Does not move the arm."""
+    prev = None
+    if prev_center_u is not None and prev_center_v is not None:
+        prev = (float(prev_center_u), float(prev_center_v))
+    return await _verify_grasp_scene(object_name, prev)
+
+
 async def _gesture_wave():
     """red -> raise arm and waggle the wrist rotation a few times."""
     p = list(client.pose)

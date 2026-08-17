@@ -12,7 +12,7 @@ class Screen(BaseModel):
     name: str = Field(..., description="Name of the screen")
     type: str = Field(
         ...,
-        pattern="^(text|url|default|video|picture|pdf|slideshow|news|screen_share)$",
+        pattern="^(text|url|default|video|picture|pdf|slideshow|news|screen_share|gradient)$",
         description="Type of the screen content",
     )
     text: str = Field("", description="Text content for the screen")

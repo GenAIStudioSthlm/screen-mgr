@@ -134,6 +134,11 @@ async def set_screen_content(
                 screen.news_mode = content_value
         elif content_type == "screen_share":
             screen.screen_share = content_value
+        elif content_type == "gradient":
+            # Gradient spec lives in `text` (free for this type):
+            # "colorspec|animation|intensity" where colorspec is
+            # "mimic" (track the zone's lights), "off", or "#hex,#hex,...".
+            screen.text = content_value
         # "default" needs no content_value — type alone routes to the studio logo
 
         # Save the updated screens to the file

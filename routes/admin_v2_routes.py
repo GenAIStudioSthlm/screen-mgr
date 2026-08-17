@@ -47,3 +47,15 @@ async def admin_v2_preview(request: Request):
         "admin/v2/preview.html",
         {"request": request},
     )
+
+
+@router.get("/admin/studio", response_class=HTMLResponse)
+async def admin_studio(request: Request):
+    """The Reinvention Studio control surface — Madalena's design ported
+    verbatim (control.html). Built here at /admin/studio while the wired
+    Alpine admin stays primary at /admin; cut over once functional parity
+    is reached (see TASKS/UI_REBUILD_FUNCTIONALITY_CHECKLIST.md)."""
+    return templates.TemplateResponse(
+        "admin/v2/studio.html",
+        {"request": request},
+    )

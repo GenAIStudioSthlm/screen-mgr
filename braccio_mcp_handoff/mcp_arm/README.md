@@ -59,6 +59,12 @@ sees **both the objects and the arm's gripper**.
   or a raw `u`). Approximate by design — refine with `look` + `nudge`.
 - `nudge(joint, delta, wait?)` — relative single-joint tweak for fine correction
   (`nudge('base', -5)` to turn left, `nudge('wrist_pitch', 8)` to tip up).
+- `pick_object(track_id? | object_name? | u?, v?, speed?)` — **autonomously grab an
+  object** (the visual-servo grasp below, as one tool call; slow, 1–3 min). Returns the
+  grasp diagnostics + a vision-based `verify.grasped` verdict. Aborts safely with a
+  reason rather than close on a bad approach — the AI owns the retry loop.
+- `verify_grasp(object_name?, prev_center_u?, prev_center_v?)` — re-detect and judge
+  whether the last grab is holding (no force feedback exists; the camera is the truth).
 
 **Typical AI loop:** `detect_objects` → `point_at(target)` → `look` (see the offset) →
 `nudge` → `look` again. Claude judges the gripper-vs-target error by eye, so a rough camera
@@ -99,11 +105,14 @@ keys are still present (now describing the primary object).
 
 **Model / tuning** (env vars):
 
-- `ARM_YOLO_MODEL` (default `yolo11n-seg.pt`) — any Ultralytics model; `-seg` variants
+- `ARM_YOLO_MODEL` (default `yolo11s-seg.pt`) — any Ultralytics model; `-seg` variants
   give per-object masks for cleaner color sampling. **Downloaded automatically on first
-  run** (~6 MB, needs internet; cached afterward).
-- `ARM_YOLO_CONF` (default `0.35`) — detection confidence threshold; raise it if you get
-  noisy/spurious boxes.
+  run** (~20 MB, needs internet; cached afterward).
+- `ARM_YOLO_CONF` (default `0.10`) — detection confidence threshold; deliberately low so
+  marginal objects stay visible (the server's multiframe voting suppresses the noise);
+  raise it if you get persistent spurious boxes.
+- `ARM_YOLO_TRACKER` (default `tracker.yaml` next to `vision.py`) — BoT-SORT config tuned
+  to give low-confidence objects track ids and keep them through ~90 frames of occlusion.
 - `ARM_YOLO_DEVICE` (default auto) — `mps` on Apple Silicon, else `cpu`.
 - `ARM_YOLO_MAX` (default `10`) — cap on reported detections.
 
@@ -152,7 +161,24 @@ arm, then talk to Claude:
 The contrast to sell: this isn't a fixed color→gesture script; the camera is Claude's eyes,
 the tools are its hands, and the decisions are the model's.
 
+## Autonomous grasp (visual servoing, no calibration)
+
+`handeye.py --vpick` picks up a detected object hands-off:
+
+```sh
+ARM_WS_URL=ws://<arm-ip>:81 .venv/bin/python handeye.py --object bottle --vpick
+```
+
+It locates the gripper by two coloured paper strips taped on the fingers (green + blue),
+learns the local image↔arm Jacobian online each grab (immune to the camera being moved),
+visually servos the finger gap onto the object — turning only while retracted, so it can't
+sweep sideways into it — then descends in measured stages, verifies, seats, closes, lifts.
+It aborts with a reason rather than close on a bad approach. Setup requirements (finger
+strips, camera placement) and tuning knobs are documented in `HANDOFF.md`; debug with
+`ARM_VPICK_DEBUG=1` (per-step prints + `/tmp/vstep_*.jpg`).
+
 ## Roadmap
-- Phase 3: hand-eye calibration (gripper marker → image↔table homography) — would make
-  `point_at` exact and unlock precise reaching without the visual `nudge` loop.
-- Phase 4: AI pick-and-place.
+- Phase 3 (done): hand-eye — solved calibration-FREE by per-grab visual servoing (above);
+  the calibrate.py DLT/homography path remains for the calibrated `point_at`/`--pick`.
+- Phase 4 (done): autonomous pick, exposed over MCP as `pick_object` + `verify_grasp` —
+  the AI runs the grab-verify-retry loop itself.

@@ -224,6 +224,48 @@ def set_group(
 
 
 @server.tool()
+def set_zone_lights(
+    zone: str,
+    on: bool | None = None,
+    brightness_pct: int | None = None,
+    color_hex: str | None = None,
+    kelvin: int | None = None,
+) -> dict:
+    """Set every Hue light in a STUDIO ZONE in one call. Use this for requests
+    like "change the lights in zone A to red" or "make Station 1 warm".
+
+    `zone` accepts the zone letter ("a".."h", "k") OR its name ("Main Cloud",
+    "Station 1", "Cloud R", ...). Resolves the zone to its mapped Hue light ids
+    (data/studio_zone_map.json) and applies the same state to each. Other
+    parameters mirror set_light (color_hex "#RRGGBB", brightness_pct 0-100,
+    kelvin, on)."""
+    from models.studio_map import load_map
+
+    zmap = load_map().get("popup", {})
+    zin = (zone or "").strip().lower()
+    z = zmap.get(zin)
+    if not isinstance(z, dict):
+        for k, v in zmap.items():
+            if isinstance(v, dict) and str(v.get("name", "")).lower() == zin:
+                z = v
+                break
+    if not isinstance(z, dict):
+        return {"error": f"unknown zone '{zone}'",
+                "zones": [k for k in zmap if not k.startswith("_")]}
+    light_ids = z.get("light_ids") or []
+    if not light_ids:
+        return {"ok": False, "zone": zone, "name": z.get("name"),
+                "error": "this zone has no mapped Hue lights"}
+    state = _build_state(on, brightness_pct, color_hex, kelvin)
+    if not state:
+        return {"error": "no state parameters provided"}
+    client = _client()
+    results = {str(lid): client.set_light(str(lid), state) for lid in light_ids}
+    return {"ok": True, "zone": zin, "name": z.get("name"),
+            "lights": light_ids, "results": results}
+
+
+@server.tool()
 def recall_scene(scene_id: str) -> dict:
     """Activate a Hue scene by id. Scene ids come from list_scenes.
 

@@ -17,11 +17,19 @@ HueClient via `.client` and `modules/hue/routes.py` mounts the rich API.
 
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from modules.base import ServiceModule
 from modules.hue.client import HueClient
-from modules.hue.config import load as load_config
+from modules.hue.config import (
+    load as load_config,
+    save as save_config,
+    discover_bridges,
+)
+
+# Don't hammer the cloud discovery service while the bridge is down.
+_REDISCOVER_INTERVAL_S = 30.0
 
 
 class HueModule(ServiceModule):
@@ -35,6 +43,7 @@ class HueModule(ServiceModule):
 
     def __init__(self) -> None:
         self._client: HueClient | None = None
+        self._last_rediscover = 0.0
 
     def _refresh_client(self) -> HueClient | None:
         cfg = load_config()
@@ -46,7 +55,57 @@ class HueModule(ServiceModule):
                 or self._client.bridge_ip != cfg["bridge_ip"]
                 or self._client.username != cfg["username"]):
             self._client = HueClient(cfg["bridge_ip"], cfg["username"])
+        # Self-heal a changed DHCP address: if the bridge isn't reachable at
+        # the stored IP, rediscover it by bridge id and patch the config.
+        # (We can't set router reservations, so the IP can move under us.)
+        if not self._client.is_alive():
+            healed = self._try_rediscover(cfg)
+            if healed is not None:
+                self._client = healed
+        elif not cfg.get("bridge_id"):
+            # Opportunistically learn + persist the bridge id while reachable,
+            # so future rediscovery can match the exact bridge.
+            self._learn_bridge_id(cfg)
         return self._client
+
+    def _learn_bridge_id(self, cfg: dict) -> None:
+        try:
+            conf = self._client.get_config() if self._client else {}
+            bid = conf.get("bridgeid") if isinstance(conf, dict) else None
+            if bid:
+                save_config(cfg["bridge_ip"], cfg["username"],
+                            cfg.get("clientkey"), bridge_id=bid)
+        except Exception:
+            pass
+
+    def _try_rediscover(self, cfg: dict) -> HueClient | None:
+        now = time.monotonic()
+        if now - self._last_rediscover < _REDISCOVER_INTERVAL_S:
+            return None
+        self._last_rediscover = now
+        bridges = discover_bridges()
+        if not bridges:
+            return None
+        want = cfg.get("bridge_id")
+        chosen = None
+        for b in bridges:
+            if want and str(b.get("id", "")).lower() == str(want).lower():
+                chosen = b
+                break
+        if chosen is None and not want:
+            chosen = bridges[0]  # no stored id yet — best effort
+        if chosen is None:
+            return None
+        new_ip = chosen.get("internalipaddress")
+        if not new_ip or new_ip == cfg["bridge_ip"]:
+            return None
+        candidate = HueClient(new_ip, cfg["username"])
+        if not candidate.is_alive():
+            return None
+        save_config(new_ip, cfg["username"], cfg.get("clientkey"),
+                    bridge_id=chosen.get("id") or cfg.get("bridge_id"))
+        print(f"[hue] bridge moved {cfg['bridge_ip']} -> {new_ip}; config updated")
+        return candidate
 
     @property
     def client(self) -> HueClient | None:

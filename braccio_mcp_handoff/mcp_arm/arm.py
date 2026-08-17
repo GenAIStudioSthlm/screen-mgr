@@ -16,8 +16,13 @@ import math
 
 import websockets
 
-# --- Link geometry (mm). Mirror index_html.h; tune on the real arm. -----------
-L0, L1, L2, L3 = 71.5, 125.0, 125.0, 137.0
+# --- Link geometry (mm) -------------------------------------------------------
+# Official Braccio DH dimensions: d1=71.5 (base->shoulder axis), a2=a3=125
+# (shoulder->elbow->wrist-pitch), d5=192 (wrist-pitch axis -> gripper TIP).
+# L3 was 137 here for a long time (ported from index_html.h) -- 55 mm short of the
+# real fingertip, which every FK/IK reach decision silently inherited (and which
+# the hand-tuned grasp offsets in handeye.py were absorbing).
+L0, L1, L2, L3 = 71.5, 125.0, 125.0, 192.0
 DEG = 180.0 / math.pi
 RAD = math.pi / 180.0
 

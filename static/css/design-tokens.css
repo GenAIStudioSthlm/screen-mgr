@@ -22,6 +22,13 @@
   --text-mid: rgba(255, 255, 255, 0.65);
   --text-dim: rgba(255, 255, 255, 0.45);
 
+  /* Aliases matching the design prototype's token names (component-library.html).
+     Let the ported component catalog (components.css) reference --mid/--dim/--green
+     verbatim. These mirror --text-mid / --text-dim above. */
+  --mid: rgba(255, 255, 255, 0.65);
+  --dim: rgba(255, 255, 255, 0.45);
+  --green: #4caf50;
+
   /* Brand (Accenture purple by default; will be overridden per brand-profile in Phase 7) */
   --brand: #A100FF;
   --brand-dark: #7500C0;
@@ -66,13 +73,15 @@
 html.light {
   --bg: #F1F1EF;
   --panel: #F8F8F6;
-  --card: #ffffff;
-  --border: #DCDCD8;
+  --card: #EEEEED;
+  --border: rgba(0, 0, 0, 0.08);
   --hover: rgba(0, 0, 0, 0.04);
 
   --text: rgba(0, 0, 0, 0.88);
   --text-mid: rgba(0, 0, 0, 0.6);
   --text-dim: rgba(0, 0, 0, 0.4);
+  --mid: rgba(0, 0, 0, 0.6);
+  --dim: rgba(0, 0, 0, 0.4);
 }
 
 /* ============================================================
